@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections import defaultdict
 from urllib import unquote_plus
 from urlparse import urlsplit
 
@@ -178,7 +179,7 @@ class Scribe(object):
         self.plugins = plugins
 
         self.reports = {}
-        self.pages = {}
+        self._pages = defaultdict(Page)
         self.reportsByPage = {}
 
     def __urlToName(self, url):
@@ -197,19 +198,16 @@ class Scribe(object):
         assert url not in self.reports
         self.reports[url] = report
 
-        pageName = self.__urlToName(url)
-        page = self.pages.get(pageName)
-        if page is None:
-            self.pages[pageName] = page = Page()
+        page = self._pages[self.__urlToName(url)]
         page.addReport(report)
 
     def getFailedPages(self):
         return [
-            page for page in self.pages.itervalues() if page.failures != 0
+            page for page in self._pages.itervalues() if page.failures != 0
             ]
 
     def getSummary(self):
-        total = len(self.pages)
+        total = len(self._pages)
         numFailedPages = len(self.getFailedPages())
         return '%d pages checked, %d passed, %d failed' % (
             total, total - numFailedPages, numFailedPages
@@ -232,13 +230,13 @@ class Scribe(object):
                 self.presentFailedIndex(),
                 ((xml.h2[xml.a(name=name or 'base')[name or '(base)']],
                   page.present(self))
-                 for name, page in sorted(self.pages.iteritems()))
+                 for name, page in sorted(self._pages.iteritems()))
                 ]
             ]
 
     def presentFailedIndex(self):
         failedPageNames = [
-            name for name, page in self.pages.iteritems() if page.failures != 0
+            name for name, page in self._pages.iteritems() if page.failures != 0
             ]
         if failedPageNames:
             yield xml.p['Failed pages:']

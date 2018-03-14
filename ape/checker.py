@@ -70,6 +70,237 @@ def _getForeignNamespaces(root):
                         foreignAttrNamespaces.add(name[1 : index])
     return foreignElemNamespaces, foreignAttrNamespaces
 
+def fetchPage(request):
+    url = str(request)
+    fetchURL = url
+    removeIndex = False
+    if url.startswith('file:'):
+        # Emulate the way a web server handles directories.
+        path = unquote(urlsplit(url).path)
+        if not path.endswith('/') and isdir(path):
+            return RedirectResult(url + '/')
+        elif path.endswith('/'):
+            removeIndex = True
+            fetchURL = url + 'index.html'
+    # TODO: Figure out how to do authentication, "user:password@" in
+    #       the URL does not work.
+    urlRequest = URLRequest(fetchURL)
+    urlRequest.add_header(
+        'Accept',
+        'text/html; q=0.8, application/xhtml+xml; q=1.0'
+        )
+    while True:
+        try:
+            result = urlopen(urlRequest)
+            if removeIndex:
+                result.url = url
+            return result
+        except HTTPError, ex:
+            if ex.code == 503:
+                if 'retry-after' in ex.headers:
+                    try:
+                        seconds = int(ex.headers['retry-after'])
+                    except ValueError:
+                        # TODO: HTTP spec allows a date string here.
+                        print 'Parsing of "Retry-After" dates ' \
+                            'is not yet implemented'
+                        seconds = 5
+                else:
+                    seconds = 5
+                print 'Server not ready yet, trying again ' \
+                    'in %d seconds' % seconds
+                sleep(seconds)
+            elif ex.code == 400:
+                # Generic client error, could be because we submitted an
+                # invalid form value.
+                print 'Bad request (HTTP error 400):', ex.msg
+                if request.maybeBad:
+                    # Validate the error page body.
+                    return ex
+                else:
+                    raise FetchFailure(
+                        url, 'Bad request (HTTP error 400): %s' % ex.msg
+                        )
+            else:
+                raise FetchFailure(
+                    url, 'HTTP error %d: %s' % (ex.code, ex.msg)
+                    )
+        except URLError, ex:
+            raise FetchFailure(url, str(ex.reason))
+        except OSError, ex:
+            raise FetchFailure(url, ex.strerror)
+
+def parseDocument(content, report):
+    root = None
+    validationErrors = None
+    xmlnsdef = 'xmlns='
+    xmldoc = False
+
+    # Try to parse XML with a DTD validating parser.
+    # TODO: The content can be XML but also HTML
+    #        If the content is HTML, than we use the wrong parser (XML) now.
+    if xmlnsdef in content:
+        xmldoc = True
+
+    if xmldoc:
+        report.addNote('Page content is XML')
+        parser = etree.XMLParser(dtd_validation=True, no_network=True)
+    else:
+        report.addNote('Page content is HTML')
+        parser = etree.HTMLParser()
+    try:
+        root = etree.fromstring(content, parser)
+    except etree.XMLSyntaxError, ex:
+        report.addNote('Failed to parse with DTD validation.')
+        validationErrors = [ex]
+    else:
+        if parser.error_log:
+            # Parsing succeeded with errors; errors will be reported later.
+            validationErrors = parser.error_log
+        else:
+            # Parsing succeeded with no errors, so we are done.
+            return root
+
+    # Try to get a parsed version by being less strict.
+    for recover in (False, True):
+        if root is None:
+            parser = etree.XMLParser(
+                recover=recover,
+                dtd_validation=False,
+                load_dtd=True,
+                no_network=True,
+                )
+            try:
+                root = etree.fromstring(content, parser)
+            except etree.XMLSyntaxError, ex:
+                if recover:
+                    report.addNote('Failed to parse in recovery.')
+                else:
+                    report.addNote(
+                        'Failed to parse without DTD validation.'
+                        )
+                report.addValidationFailure(ex)
+    if root is None:
+        report.addValidationFailure(
+            'Unable to parse: page output does not look like XML or HTML.'
+            )
+        return None
+
+    mainNamespace = root.nsmap.get(None, None)
+    if mainNamespace:
+        foreignElemNamespaces, foreignAttrNamespaces = \
+            _getForeignNamespaces(root)
+        # Remove inline content we cannot validate, for example SVG.
+        namespacesToRemove = \
+            foreignElemNamespaces & set(_unvalidatableNamespaces)
+
+        if namespacesToRemove:
+            prunedRoot = deepcopy(root.getroottree()).getroot()
+            for namespace in sorted(namespacesToRemove):
+                print 'Removing inline content from namespace', namespace
+                report.addNote(
+                    'Page contains inline %s content; '
+                    'this will not be validated.'
+                    % _unvalidatableNamespaces[namespace]
+                    )
+                nodesToRemove = list(prunedRoot.iter('{%s}*' % namespace))
+                for elem in nodesToRemove:
+                    #report.addNote('Remove inline element: %s' % elem)
+                    elem.getparent().remove(elem)
+            # Recompute remaining foreign namespaces.
+            foreignElemNamespaces, foreignAttrNamespaces = \
+                _getForeignNamespaces(prunedRoot)
+        else:
+            prunedRoot = None
+
+        for namespace in sorted(foreignElemNamespaces
+                                | foreignAttrNamespaces):
+            report.addNote(
+                'Page contains %s from XML namespace "%s"; '
+                'these might be wrongly reported as invalid'
+                % (
+                    ' and '.join(
+                        description
+                        for description, category in (
+                            ('elements', foreignElemNamespaces),
+                            ('attributes', foreignAttrNamespaces),
+                            )
+                        if namespace in category
+                        ),
+                    namespace,
+                    )
+                )
+
+        if prunedRoot is not None:
+            # Try to parse pruned tree with a validating parser.
+            # We do this only for the error list: the tree we return is
+            # the full tree, since following links from for example SVG
+            # content will improve our ability to discover pages and
+            # queries.
+            parser = etree.XMLParser(dtd_validation=True, no_network=True)
+            docinfo = root.getroottree().docinfo
+            prunedContent = (
+                "<?xml version='%s' encoding='%s'?>\n" % (
+                    docinfo.xml_version.encode('ASCII'),
+                    docinfo.encoding.encode('ASCII'),
+                    ) +
+                etree.tostring(
+                    prunedRoot.getroottree(),
+                    encoding=docinfo.encoding,
+                    xml_declaration=False,
+                    )
+                )
+            #print prunedContent
+            report.addNote(
+                'Try to parse the pruned tree with a validated parser...'
+                )
+            try:
+                dummyRoot_ = etree.fromstring(prunedContent, parser)
+            except etree.XMLSyntaxError, ex:
+                report.addNote(
+                    'Failed to parse pruned tree with validation.'
+                    )
+                report.addValidationFailure(ex)
+            else:
+                # Error list from pruned tree will contain less false
+                # positives, so replace original error list.
+                validationErrors = parser.error_log
+                if validationErrors:
+                    report.addNote('Line numbers are inexact.')
+
+    if validationErrors:
+        for error in validationErrors:
+            report.addValidationFailure(error)
+    return root
+
+def parseInputControl(attrib):
+    print 'input:', attrib
+    disabled = 'disabled' in attrib
+    if disabled:
+        return None
+    # TODO: Support readonly controls?
+    name = attrib.get('name')
+    ctype = attrib.get('type')
+    value = attrib.get('value')
+    if ctype == 'text' or ctype == 'password':
+        return TextField(name, value)
+    elif ctype == 'checkbox':
+        return Checkbox(name, value)
+    elif ctype == 'radio':
+        return RadioButton(name, value)
+    elif ctype == 'file':
+        return FileInput(name, value)
+    elif ctype == 'hidden':
+        return HiddenInput(name, value)
+    elif ctype == 'submit' or ctype == 'image':
+        return SubmitButton(name, value)
+    elif ctype == 'button' or ctype == 'reset':
+        # Type "button" is used by JavaScript, "reset" by the browser.
+        return None
+    else:
+        # Invalid control type, will already be flagged by the DTD.
+        return None
+
 class PageChecker(object):
     '''Retrieves a page, validates the XML and parses the contents to find
     references to other pages.
@@ -83,72 +314,12 @@ class PageChecker(object):
         assert pageURL.startswith(self.baseURL), pageURL
         return pageURL[self.baseURL.rindex('/') + 1 : ]
 
-    def fetchPage(self, request):
-        url = str(request)
-        fetchURL = url
-        removeIndex = False
-        if url.startswith('file:'):
-            # Emulate the way a web server handles directories.
-            path = unquote(urlsplit(url).path)
-            if not path.endswith('/') and isdir(path):
-                return RedirectResult(url + '/')
-            elif path.endswith('/'):
-                removeIndex = True
-                fetchURL = url + 'index.html'
-        # TODO: Figure out how to do authentication, "user:password@" in
-        #       the URL does not work.
-        urlRequest = URLRequest(fetchURL)
-        urlRequest.add_header(
-            'Accept',
-            'text/html; q=0.8, application/xhtml+xml; q=1.0'
-            )
-        while True:
-            try:
-                result = urlopen(urlRequest)
-                if removeIndex:
-                    result.url = url
-                return result
-            except HTTPError, ex:
-                if ex.code == 503:
-                    if 'retry-after' in ex.headers:
-                        try:
-                            seconds = int(ex.headers['retry-after'])
-                        except ValueError:
-                            # TODO: HTTP spec allows a date string here.
-                            print 'Parsing of "Retry-After" dates ' \
-                                'is not yet implemented'
-                            seconds = 5
-                    else:
-                        seconds = 5
-                    print 'Server not ready yet, trying again ' \
-                        'in %d seconds' % seconds
-                    sleep(seconds)
-                elif ex.code == 400:
-                    # Generic client error, could be because we submitted an
-                    # invalid form value.
-                    print 'Bad request (HTTP error 400):', ex.msg
-                    if request.maybeBad:
-                        # Validate the error page body.
-                        return ex
-                    else:
-                        raise FetchFailure(
-                            url, 'Bad request (HTTP error 400): %s' % ex.msg
-                            )
-                else:
-                    raise FetchFailure(
-                        url, 'HTTP error %d: %s' % (ex.code, ex.msg)
-                        )
-            except URLError, ex:
-                raise FetchFailure(url, str(ex.reason))
-            except OSError, ex:
-                raise FetchFailure(url, ex.strerror)
-
     def check(self, checkRequest):
         pageURL = str(checkRequest)
         print 'Checking page:', self.shortURL(pageURL)
 
         try:
-            inp = self.fetchPage(checkRequest)
+            inp = fetchPage(checkRequest)
         except FetchFailure, report:
             print 'Failed to open page'
             self.scribe.addReport(report)
@@ -186,7 +357,7 @@ class PageChecker(object):
             inp.close()
 
         report = IncrementalReport(pageURL)
-        root = self.parseDocument(content, report)
+        root = parseDocument(content, report)
         if root is None:
             self.scribe.addReport(report)
             return []
@@ -268,7 +439,7 @@ class PageChecker(object):
             radioButtons = {}
             submitButtons = []
             for inp in formNode.getiterator(nsPrefix + 'input'):
-                control = self.parseInputControl(inp.attrib)
+                control = parseInputControl(inp.attrib)
                 if control is None:
                     pass
                 elif isinstance(control, RadioButton):
@@ -314,174 +485,3 @@ class PageChecker(object):
 
         self.scribe.addReport(report)
         return referrers
-
-    def parseDocument(self, content, report):
-        root = None
-        validationErrors = None
-        xmlnsdef = 'xmlns='
-        xmldoc = False
-
-        # Try to parse XML with a DTD validating parser.
-        # TODO: The content can be XML but also HTML
-        #        If the content is HTML, than we use the wrong parser (XML) now.
-        if xmlnsdef in content:
-            xmldoc = True
-
-        if xmldoc:
-            report.addNote('Page content is XML')
-            parser = etree.XMLParser(dtd_validation=True, no_network=True)
-        else:
-            report.addNote('Page content is HTML')
-            parser = etree.HTMLParser()
-        try:
-            root = etree.fromstring(content, parser)
-        except etree.XMLSyntaxError, ex:
-            report.addNote('Failed to parse with DTD validation.')
-            validationErrors = [ex]
-        else:
-            if parser.error_log:
-                # Parsing succeeded with errors; errors will be reported later.
-                validationErrors = parser.error_log
-            else:
-                # Parsing succeeded with no errors, so we are done.
-                return root
-
-        # Try to get a parsed version by being less strict.
-        for recover in (False, True):
-            if root is None:
-                parser = etree.XMLParser(
-                    recover=recover,
-                    dtd_validation=False,
-                    load_dtd=True,
-                    no_network=True,
-                    )
-                try:
-                    root = etree.fromstring(content, parser)
-                except etree.XMLSyntaxError, ex:
-                    if recover:
-                        report.addNote('Failed to parse in recovery.')
-                    else:
-                        report.addNote(
-                            'Failed to parse without DTD validation.'
-                            )
-                    report.addValidationFailure(ex)
-        if root is None:
-            report.addValidationFailure(
-                'Unable to parse: page output does not look like XML or HTML.'
-                )
-            return None
-
-        mainNamespace = root.nsmap.get(None, None)
-        if mainNamespace:
-            foreignElemNamespaces, foreignAttrNamespaces = \
-                _getForeignNamespaces(root)
-            # Remove inline content we cannot validate, for example SVG.
-            namespacesToRemove = \
-                foreignElemNamespaces & set(_unvalidatableNamespaces)
-
-            if namespacesToRemove:
-                prunedRoot = deepcopy(root.getroottree()).getroot()
-                for namespace in sorted(namespacesToRemove):
-                    print 'Removing inline content from namespace', namespace
-                    report.addNote(
-                        'Page contains inline %s content; '
-                        'this will not be validated.'
-                        % _unvalidatableNamespaces[namespace]
-                        )
-                    nodesToRemove = list(prunedRoot.iter('{%s}*' % namespace))
-                    for elem in nodesToRemove:
-                        #report.addNote('Remove inline element: %s' % elem)
-                        elem.getparent().remove(elem)
-                # Recompute remaining foreign namespaces.
-                foreignElemNamespaces, foreignAttrNamespaces = \
-                    _getForeignNamespaces(prunedRoot)
-            else:
-                prunedRoot = None
-
-            for namespace in sorted(foreignElemNamespaces
-                                    | foreignAttrNamespaces):
-                report.addNote(
-                    'Page contains %s from XML namespace "%s"; '
-                    'these might be wrongly reported as invalid'
-                    % (
-                        ' and '.join(
-                            description
-                            for description, category in (
-                                ('elements', foreignElemNamespaces),
-                                ('attributes', foreignAttrNamespaces),
-                                )
-                            if namespace in category
-                            ),
-                        namespace,
-                        )
-                    )
-
-            if prunedRoot is not None:
-                # Try to parse pruned tree with a validating parser.
-                # We do this only for the error list: the tree we return is
-                # the full tree, since following links from for example SVG
-                # content will improve our ability to discover pages and
-                # queries.
-                parser = etree.XMLParser(dtd_validation=True, no_network=True)
-                docinfo = root.getroottree().docinfo
-                prunedContent = (
-                    "<?xml version='%s' encoding='%s'?>\n" % (
-                        docinfo.xml_version.encode('ASCII'),
-                        docinfo.encoding.encode('ASCII'),
-                        ) +
-                    etree.tostring(
-                        prunedRoot.getroottree(),
-                        encoding=docinfo.encoding,
-                        xml_declaration=False,
-                        )
-                    )
-                #print prunedContent
-                report.addNote(
-                    'Try to parse the pruned tree with a validated parser...'
-                    )
-                try:
-                    dummyRoot_ = etree.fromstring(prunedContent, parser)
-                except etree.XMLSyntaxError, ex:
-                    report.addNote(
-                        'Failed to parse pruned tree with validation.'
-                        )
-                    report.addValidationFailure(ex)
-                else:
-                    # Error list from pruned tree will contain less false
-                    # positives, so replace original error list.
-                    validationErrors = parser.error_log
-                    if validationErrors:
-                        report.addNote('Line numbers are inexact.')
-
-        if validationErrors:
-            for error in validationErrors:
-                report.addValidationFailure(error)
-        return root
-
-    def parseInputControl(self, attrib):
-        print 'input:', attrib
-        disabled = 'disabled' in attrib
-        if disabled:
-            return None
-        # TODO: Support readonly controls?
-        name = attrib.get('name')
-        ctype = attrib.get('type')
-        value = attrib.get('value')
-        if ctype == 'text' or ctype == 'password':
-            return TextField(name, value)
-        elif ctype == 'checkbox':
-            return Checkbox(name, value)
-        elif ctype == 'radio':
-            return RadioButton(name, value)
-        elif ctype == 'file':
-            return FileInput(name, value)
-        elif ctype == 'hidden':
-            return HiddenInput(name, value)
-        elif ctype == 'submit' or ctype == 'image':
-            return SubmitButton(name, value)
-        elif ctype == 'button' or ctype == 'reset':
-            # Type "button" is used by JavaScript, "reset" by the browser.
-            return None
-        else:
-            # Invalid control type, will already be flagged by the DTD.
-            return None

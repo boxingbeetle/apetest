@@ -231,7 +231,7 @@ class Form(Referrer):
 
         # For most forms, there will be nothing left after eliminating the
         # simple cases, because the control names do not overlap.
-        if len(producesPairs) == 0:
+        if not producesPairs:
             return True
 
         # Recursively try to find a solution.

@@ -338,12 +338,12 @@ class PageChecker(object):
             report.addNote('Failed to parse with DTD validation.')
             validationErrors = [ex]
         else:
-            if len(parser.error_log) == 0:
-                # Parsing succeeded with no errors, so we are done.
-                return root
-            else:
+            if parser.error_log:
                 # Parsing succeeded with errors; errors will be reported later.
                 validationErrors = parser.error_log
+            else:
+                # Parsing succeeded with no errors, so we are done.
+                return root
 
         # Try to get a parsed version by being less strict.
         for recover in (False, True):

@@ -42,8 +42,8 @@ from codecs import getencoder
 
 _asciiencode = getencoder('ASCII')
 _translation = ''.join(
-    (' ', chr(c))[c > 32 and c < 127 or c in (9, 10, 13)]
-    for c in xrange(0, 256)
+    chr(c) if c > 32 and c < 127 or c in (9, 10, 13) else ' '
+    for c in xrange(256)
     )
 def _escapeXML(text):
     '''Converts special characters to XML entities.
@@ -62,10 +62,7 @@ def _checkType(value, types):
         raise TypeError(type(value))
 
 def _normalizeValue(value):
-    if isinstance(value, basestring):
-        return value
-    else:
-        return str(value)
+    return value if isinstance(value, basestring) else str(value)
 
 class _XMLSerializable(object):
     '''Base class for objects that can be serialized to XML.
@@ -120,10 +117,7 @@ class _XMLSequence(_XMLSerializable):
         if that is not guaranteed, use _addChild() to add and convert.
         '''
         _XMLSerializable.__init__(self)
-        if children is None:
-            self.__children = []
-        else:
-            self.__children = list(children)
+        self.__children = [] if children is None else list(children)
 
     def __cmp__(self, other):
         # pylint: disable=protected-access
@@ -220,13 +214,9 @@ class XMLNode(_XMLSerializable):
 
     def _toFragments(self):
         attribs = self.__attributes
-        if attribs is None:
-            attribStr = ''
-        else:
-            attribStr = ''.join(
-                ' %s="%s"' % item
-                for item in attribs.iteritems()
-                )
+        attribStr = '' if attribs is None else ''.join(
+            ' %s="%s"' % item for item in attribs.iteritems()
+            )
         children = self.__children
         if children is None:
             yield '<%s%s />' % (self.__name, attribStr)
@@ -309,15 +299,10 @@ class CData(_XMLSerializable):
             or cmp(self.__comment, other.__comment)
 
     def _toFragments(self):
-        if self.__comment:
-            yield '/*<![CDATA[*/'
-        else:
-            yield '<![CDATA['
+        comment = self.__comment
+        yield '/*<![CDATA[*/' if comment else '<![CDATA['
         yield self.__text
-        if self.__comment:
-            yield '/*]]>*/'
-        else:
-            yield ']]>'
+        yield '/*]]>*/' if comment else ']]>'
 
 def concat(*siblings):
     '''Creates an XML sequence containing the given siblings.

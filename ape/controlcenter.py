@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-from plugin import Plugin
-
 import os
+
+from plugin import Plugin
 
 class DataChangeMonitor(Plugin):
 

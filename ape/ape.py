@@ -2,13 +2,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import sys
+
 from checker import PageChecker
 from plugin import PluginError, loadPlugins
 from report import Scribe
 from request import Request
 from spider import Spider
-
-import sys
 
 if len(sys.argv) < 3:
     print 'Usage:'

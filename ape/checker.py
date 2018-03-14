@@ -1,5 +1,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from copy import deepcopy
+from os.path import isdir
+from time import sleep
+from urllib import unquote
+from urllib2 import HTTPError, URLError, Request as URLRequest, urlopen
+from urlparse import urljoin, urlsplit, urlunsplit
+
+from lxml import etree
+
 from control import (
     Checkbox, FileInput, HiddenInput, RadioButton, RadioButtonGroup,
     SelectSingle, SelectMultiple, SubmitButton, SubmitButtons,
@@ -8,14 +17,6 @@ from control import (
 from referrer import Form, LinkSet, Redirect
 from report import FetchFailure, IncrementalReport
 from request import Request
-
-from copy import deepcopy
-from lxml import etree
-from os.path import isdir
-from time import sleep
-from urllib import unquote
-from urllib2 import HTTPError, URLError, Request as URLRequest, urlopen
-from urlparse import urljoin, urlsplit, urlunsplit
 
 def normalizeURL(url):
     '''Returns a unique string for the given URL.

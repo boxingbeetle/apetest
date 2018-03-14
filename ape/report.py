@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-from request import Request
-from xmlgen import xml
-
 from urllib import unquote_plus
 from urlparse import urlsplit
+
+from request import Request
+from xmlgen import xml
 
 styleSheet = '''
 body {

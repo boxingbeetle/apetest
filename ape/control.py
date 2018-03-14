@@ -41,7 +41,7 @@ class FileInput(SingleValueControl):
     '''A control for selecting and uploading files.
     '''
 
-    def hasAlternative(self, name, value): # pylint: disable-msg=W0613
+    def hasAlternative(self, name, value):
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
@@ -57,7 +57,7 @@ class HiddenInput(SingleValueControl):
 
 class TextField(SingleValueControl):
 
-    def hasAlternative(self, name, value): # pylint: disable-msg=W0613
+    def hasAlternative(self, name, value):
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
@@ -68,7 +68,7 @@ class TextField(SingleValueControl):
 
 class TextArea(SingleValueControl):
 
-    def hasAlternative(self, name, value): # pylint: disable-msg=W0613
+    def hasAlternative(self, name, value):
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
@@ -91,7 +91,7 @@ class Checkbox(SingleValueControl):
 
 class RadioButton(SingleValueControl):
 
-    def hasAlternative(self, name, value): # pylint: disable-msg=W0613
+    def hasAlternative(self, name, value):
         assert False, 'radio button "%s" was not merged' % self.name
 
     def alternatives(self):

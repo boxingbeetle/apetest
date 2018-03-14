@@ -4,7 +4,6 @@ class Plugin(object):
     '''Abstract plugin: your plugin class should inherit this and override
     one or more methods.
     '''
-    # pylint: disable-msg=W0613
 
     def __init__(self):
         pass
@@ -58,7 +57,7 @@ def loadPlugins(pluginSpec):
         try:
             if issubclass(attr, Plugin) and attr is not Plugin:
                 newPlugins.append(attr)
-        except TypeError: # pylint: disable-msg=W0704
+        except TypeError:
             pass
     if not newPlugins:
         raise PluginError(

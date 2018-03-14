@@ -160,7 +160,7 @@ class Form(Referrer):
             at a time, offering methods to remove controls and pairs without
             disturbing the iteration in progress.
             '''
-            def removeControl(self): # pylint: disable-msg=W0221
+            def removeControl(self): # pylint: disable=arguments-differ
                 MatrixIterator.removeControl(self, self._index)
             def _getLength(self):
                 return len(producesPairs)
@@ -172,7 +172,7 @@ class Form(Referrer):
             methods to remove controls and pairs without disturbing the
             iteration in progress.
             '''
-            def removePair(self): # pylint: disable-msg=W0221
+            def removePair(self): # pylint: disable=arguments-differ
                 MatrixIterator.removePair(self, self._index)
             def _getLength(self):
                 return len(producesPairs[0]) if producesPairs else 0

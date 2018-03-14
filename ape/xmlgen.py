@@ -123,8 +123,8 @@ class _XMLSerializable(object):
         first = True
         for sibling in siblings:
             if not first:
-                sequence._addChild(self) # pylint: disable-msg=W0212
-            sequence._addChild(sibling) # pylint: disable-msg=W0212
+                sequence._addChild(self) # pylint: disable=protected-access
+            sequence._addChild(sibling) # pylint: disable=protected-access
             first = False
         return sequence
 
@@ -135,7 +135,7 @@ class Text(_XMLSerializable):
         self.__text = _escapeXML(text)
 
     def __cmp__(self, other):
-        # pylint: disable-msg=W0212
+        # pylint: disable=protected-access
         return not isinstance(other, Text) \
             or cmp(self.__text, other.__text)
 
@@ -156,7 +156,7 @@ class _XMLSequence(_XMLSerializable):
             self.__children = list(children)
 
     def __cmp__(self, other):
-        # pylint: disable-msg=W0212
+        # pylint: disable=protected-access
         return not isinstance(other, _XMLSequence) \
             or cmp(self.__children, other.__children)
 
@@ -168,7 +168,7 @@ class _XMLSequence(_XMLSerializable):
     def __radd__(self, other):
         ret = _XMLSequence()
         ret += other
-        ret.__children += self.__children # pylint: disable-msg=W0212
+        ret.__children += self.__children # pylint: disable=protected-access
         return ret
 
     def __iadd__(self, other):
@@ -195,7 +195,7 @@ class _XMLSequence(_XMLSerializable):
 
     def _toFragments(self):
         for content in self.__children:
-            # pylint: disable-msg=W0212
+            # pylint: disable=protected-access
             # "content" is an instance of _XMLSerializable, so we are
             # allowed to access protected methods.
             for fragment in content._toFragments():
@@ -226,13 +226,13 @@ class XMLNode(_XMLSerializable):
         #       optimizations, such as precalculating the flattening.
         assert self.__children is None
         self.__children = children = _XMLSequence()
-        children._addChild(index) # pylint: disable-msg=W0212
+        children._addChild(index) # pylint: disable=protected-access
         return self
 
     def __cmp__(self, other):
         # Note: None for attributes or children should be considered
         #       equivalent to empty.
-        # pylint: disable-msg=W0212
+        # pylint: disable=protected-access
         return not isinstance(other, XMLNode) \
             or cmp(self.__name, other.__name) \
             or cmp(self.__attributes or {}, other.__attributes or {}) \
@@ -263,7 +263,7 @@ class XMLNode(_XMLSerializable):
             yield '<%s%s />' % ( self.__name, attribStr )
         else:
             yield '<%s%s>' % ( self.__name, attribStr )
-            for fragment in children._toFragments(): # pylint: disable-msg=W0212
+            for fragment in children._toFragments(): # pylint: disable=protected-access
                 yield fragment
             yield '</%s>' % self.__name
 
@@ -286,7 +286,7 @@ class NamedEntity(_XMLSerializable):
         self.__name = name
 
     def __cmp__(self, other):
-        # pylint: disable-msg=W0212
+        # pylint: disable=protected-access
         return not isinstance(other, NamedEntity) \
             or cmp(self.__name, other.__name)
 
@@ -300,7 +300,7 @@ class NumericEntity(_XMLSerializable):
         self.__number = number
 
     def __cmp__(self, other):
-        # pylint: disable-msg=W0212
+        # pylint: disable=protected-access
         return not isinstance(other, NumericEntity) \
             or cmp(self.__number, other.__number)
 
@@ -334,7 +334,7 @@ class CData(_XMLSerializable):
         self.__comment = comment
 
     def __cmp__(self, other):
-        # pylint: disable-msg=W0212
+        # pylint: disable=protected-access
         return not isinstance(other, CData) \
             or cmp(self.__text, other.__text) \
             or cmp(self.__comment, other.__comment)
@@ -354,7 +354,7 @@ def concat(*siblings):
     '''Creates an XML sequence containing the given siblings.
     '''
     sequence = _XMLSequence()
-    sequence._addChild(siblings) # pylint: disable-msg=W0212
+    sequence._addChild(siblings) # pylint: disable=protected-access
     return sequence
 
 xml = XMLNodeFactory()

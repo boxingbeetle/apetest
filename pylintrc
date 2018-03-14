@@ -54,7 +54,15 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=print-statement,
+disable=no-else-return,
+    # An "if" statement where both the "if" and "else" part return can be more
+    # readable due to the symmetry.
+        too-few-public-methods,
+    # I'm not sure this is ever useful, but currently it is also generating
+    # false positives because methods for operator overloading are not
+    # considered to be public methods.
+    # https://github.com/PyCQA/pylint/issues/1933
+        print-statement,
         parameter-unpacking,
         unpacking-in-except,
         old-raise-syntax,
@@ -430,7 +438,7 @@ callbacks=cb_,
 
 # A regular expression matching the name of dummy variables (i.e. expectedly
 # not used).
-dummy-variables-rgx=_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_
+dummy-variables-rgx=[a-zA-Z]*[a-zA-Z0-9_]+?_$
 
 # Argument names that match this expression will be ignored. Default to name
 # with leading underscore

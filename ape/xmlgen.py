@@ -61,7 +61,7 @@ def _checkType(value, types):
         raise TypeError(type(value))
 
 def _normalizeValue(value):
-    if isinstance(value, (str, unicode)):
+    if isinstance(value, basestring):
         return value
     else:
         return str(value)
@@ -70,7 +70,7 @@ def validAsXMLChild(obj):
     '''Returns True iff the given object is valid as a child of an XML node.
     '''
     return (
-        isinstance(obj, (_XMLSerializable, str, unicode))
+        isinstance(obj, (_XMLSerializable, basestring))
         or hasattr(obj, 'toXML')
         or hasattr(obj, '__iter__')
         or obj is None
@@ -181,7 +181,7 @@ class _XMLSequence(_XMLSerializable):
             self.__children.append(child)
         elif hasattr(child, 'toXML'):
             self.__children.append(child.toXML())
-        elif isinstance(child, (str, unicode)):
+        elif isinstance(child, basestring):
             self.__children.append(Text(child))
         elif hasattr(child, '__iter__'):
             for grandChild in child:
@@ -327,7 +327,7 @@ class CData(_XMLSerializable):
     '''
 
     def __init__(self, text, comment = False):
-        _checkType(text, (str, unicode))
+        _checkType(text, basestring)
         _checkType(comment, bool)
         _XMLSerializable.__init__(self)
         self.__text = text

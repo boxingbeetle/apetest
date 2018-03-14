@@ -113,7 +113,7 @@ class RadioButtonGroup(Control):
                 raise ValueError(
                     'radio button name "%s" differs from '
                     'first radio button name "%s"'
-                    % ( button.name, name )
+                    % (button.name, name)
                     )
             values.append(button.value)
 
@@ -133,13 +133,10 @@ class SubmitButtons(Control):
 
     def __init__(self, buttons):
         Control.__init__(self)
-        self.buttons = tuple(
-            ( button.name, button.value )
-            for button in buttons
-            )
+        self.buttons = tuple((button.name, button.value) for button in buttons)
 
     def hasAlternative(self, name, value):
-        return ( name, value ) in self.buttons
+        return (name, value) in self.buttons
 
     def alternatives(self):
         return self.buttons

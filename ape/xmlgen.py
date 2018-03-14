@@ -49,10 +49,11 @@ def _escapeXML(text):
     '''Converts special characters to XML entities.
     '''
     return _asciiencode(
-        text.replace('&', '&amp;')
-            .replace('<', '&lt;')
-            .replace('>', '&gt;')
-            .replace('"', '&quot;'),
+        text
+        .replace('&', '&amp;')
+        .replace('<', '&lt;')
+        .replace('>', '&gt;')
+        .replace('"', '&quot;'),
         'xmlcharrefreplace'
         )[0].translate(_translation)
 
@@ -113,7 +114,7 @@ class Text(_XMLSerializable):
 
 class _XMLSequence(_XMLSerializable):
 
-    def __init__(self, children = None):
+    def __init__(self, children=None):
         '''Creates an XML sequence.
         The given children, if any, must all be _XMLSerializable instances;
         if that is not guaranteed, use _addChild() to add and convert.
@@ -182,7 +183,7 @@ class XMLNode(_XMLSerializable):
     def __call__(self, **attributes):
         assert self.__attributes is None
         self.__attributes = dict(
-            ( key.rstrip('_'), _escapeXML(_normalizeValue(value)) )
+            (key.rstrip('_'), _escapeXML(_normalizeValue(value)))
             for key, value in attributes.iteritems()
             if value is not None
             )
@@ -205,7 +206,7 @@ class XMLNode(_XMLSerializable):
             or cmp(self.__name, other.__name) \
             or cmp(self.__attributes or {}, other.__attributes or {}) \
             or cmp(self.__children or self.__emptySequence,
-                other.__children or self.__emptySequence)
+                   other.__children or self.__emptySequence)
 
     def __add__(self, other):
         return concat(self, other)
@@ -228,9 +229,9 @@ class XMLNode(_XMLSerializable):
                 )
         children = self.__children
         if children is None:
-            yield '<%s%s />' % ( self.__name, attribStr )
+            yield '<%s%s />' % (self.__name, attribStr)
         else:
-            yield '<%s%s>' % ( self.__name, attribStr )
+            yield '<%s%s>' % (self.__name, attribStr)
             for fragment in children._toFragments(): # pylint: disable=protected-access
                 yield fragment
             yield '</%s>' % self.__name
@@ -294,7 +295,7 @@ class CData(_XMLSerializable):
     This can be used to embed JavaScript or CSS in pages.
     '''
 
-    def __init__(self, text, comment = False):
+    def __init__(self, text, comment=False):
         _checkType(text, basestring)
         _checkType(comment, bool)
         _XMLSerializable.__init__(self)

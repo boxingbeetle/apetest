@@ -4,7 +4,7 @@ from plugin import Plugin
 
 class PropertiesPlugin(Plugin):
 
-    def __init__(self, propertiesDir = '.'):
+    def __init__(self, propertiesDir='.'):
         Plugin.__init__(self)
         self.propertiesDir = propertiesDir
 
@@ -22,5 +22,5 @@ class PropertiesPlugin(Plugin):
         print 'Writing metadata to "%s"...' % fullFileName
         out = file(fullFileName, 'w')
         for key in sorted(data.iterkeys()):
-            print >> out, '%s=%s' % ( key, data[key] )
+            print >> out, '%s=%s' % (key, data[key])
         out.close()

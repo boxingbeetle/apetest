@@ -36,7 +36,7 @@ def loadPlugins(pluginSpec):
             raise PluginError(
                 'Invalid argument for plugin "%s": '
                 'expected "<name>=<value>", got "%s"'
-                % ( pluginName, part )
+                % (pluginName, part)
                 )
         args[name] = value
 
@@ -47,7 +47,7 @@ def loadPlugins(pluginSpec):
         raise PluginError(
             'Could not load plugin module: "%s".\n'
             '  %s'
-            % ( pluginName, ex )
+            % (pluginName, ex)
             )
 
     # Search module for plugin classes.
@@ -73,7 +73,7 @@ def loadPlugins(pluginSpec):
             raise PluginError(
                 'First argument to constructor of "%s.%s" '
                 'is "%s" instead of "self"'
-                % ( pluginName, plugin.__name__, ctorArgs[0] )
+                % (pluginName, plugin.__name__, ctorArgs[0])
                 )
         acceptedArgs |= set(ctorArgs[1 : ])
 
@@ -82,7 +82,7 @@ def loadPlugins(pluginSpec):
         if name not in acceptedArgs:
             raise PluginError(
                 'No plugin constructor in "%s" accepts argument "%s"'
-                % ( pluginName, name )
+                % (pluginName, name)
                 )
 
     # Instantiate plugin classes.
@@ -107,7 +107,7 @@ def loadPlugins(pluginSpec):
                     )
                 )
         filteredArgs = dict(
-            ( name, value )
+            (name, value)
             for name, value in args.iteritems()
             if name in ctorArgs[1 : ]
             )

@@ -6,7 +6,7 @@ class Spider(object):
     maxQueriesPerPage = 100
 
     def __init__(self, firstRequest):
-        self.requestsToCheck = set([ firstRequest ])
+        self.requestsToCheck = set([firstRequest])
         self.requestsChecked = set()
         self.queriesPerPage = {}
         # Maps source request to referrers (destination).

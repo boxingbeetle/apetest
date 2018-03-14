@@ -83,15 +83,15 @@ class Form(Referrer):
         for control in controls:
             # Filter out duplicates.
             alternatives = set(
-                ( None, None ) if name is None or value is None
-                else ( name, value )
+                (None, None) if name is None or value is None
+                else (name, value)
                 for name, value in control.alternatives()
                 )
             if len(alternatives) == 1:
                 # If there is only once choice, make that choice now.
                 name, value = alternatives.pop()
                 if name is not None and value is not None:
-                    baseQuery.append(( name, value ))
+                    baseQuery.append((name, value))
             elif alternatives:
                 # Store possible choices.
                 allAlternatives.append(tuple(alternatives))
@@ -115,8 +115,8 @@ class Form(Referrer):
         # Create a matrix of bools that stores which control and pair
         # combinations are possible.
         producesPairs = [
-            [ control.hasAlternative(name, value)
-              for name, value in request.query ]
+            [control.hasAlternative(name, value)
+             for name, value in request.query]
             for control in self.controls
             ]
         # Store which controls can be omitted from the submission.
@@ -272,7 +272,7 @@ class Form(Referrer):
                 alternative = alternatives[choice]
                 if alternative[0] is not None:
                     query.append(alternative)
-            yield Request(self.pageURL, self.baseQuery + query, maybeBad = True)
+            yield Request(self.pageURL, self.baseQuery + query, maybeBad=True)
             progress = (progress + increment) % self.combinations
             if progress == 0:
                 # Because increment and combinations are relatively prime,

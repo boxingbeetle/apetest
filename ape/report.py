@@ -54,16 +54,16 @@ class Report(object):
 
     def present(self, scribe):
         if self.pluginWarnings:
-            yield xml.p[ 'Problems reported by plugins:' ]
+            yield xml.p['Problems reported by plugins:']
             yield xml.ul[(
-                xml.li[ warning ]
+                xml.li[warning]
                 for warning in self.pluginWarnings
                 )]
         if not self.ok:
-            yield xml.p[ 'Referenced by:' ]
+            yield xml.p['Referenced by:']
             # TODO: Store Request object instead of recreating it.
             request = Request.fromURL(self.url)
-            yield xml.ul[ scribe.presentReferrers(request) ]
+            yield xml.ul[scribe.presentReferrers(request)]
 
 class FetchFailure(Report, Exception):
     ok = False
@@ -74,7 +74,7 @@ class FetchFailure(Report, Exception):
         Exception.__init__(self, message)
 
     def present(self, scribe):
-        yield xml.p[ self.description, ': ', str(self) ]
+        yield xml.p[self.description, ': ', str(self)]
         yield Report.present(self, scribe)
 
 class IncrementalReport(Report):
@@ -91,7 +91,7 @@ class IncrementalReport(Report):
             description = 'Problem:'
         else:
             description = 'Problem found on line %d:' % line
-        return xml.dt[ description ], xml.dd[ str(failure) ]
+        return xml.dt[description], xml.dd[str(failure)]
 
     def __init__(self, url):
         Report.__init__(self, url)
@@ -122,9 +122,9 @@ class IncrementalReport(Report):
                 for failure in self.validationFailures
                 )]
         if self.queryWarnings:
-            yield xml.p[ 'Bad queries:' ]
+            yield xml.p['Bad queries:']
             yield xml.ul[(
-                xml.li[ warning ]
+                xml.li[warning]
                 for warning in self.queryWarnings
                 )]
         yield Report.present(self, scribe)
@@ -146,7 +146,7 @@ class Page(object):
         total = len(self.queryToReport)
         yield xml.p[
             '%d queries checked, %d passed, %d failed'
-            % ( total, total - self.failures, self.failures )
+            % (total, total - self.failures, self.failures)
             ]
         for query in sorted(self.queryToReport.iterkeys()):
             if query:
@@ -160,8 +160,8 @@ class Page(object):
             else:
                 queryStr = '(no query)'
             report = self.queryToReport[query]
-            yield xml.h3(class_ = 'pass' if report.ok else 'fail')[
-                xml.a(href = report.url)[ queryStr ]
+            yield xml.h3(class_='pass' if report.ok else 'fail')[
+                xml.a(href=report.url)[queryStr]
                 ]
             yield report.present(scribe)
 
@@ -223,16 +223,16 @@ class Scribe(object):
         title = 'APE - Automated Page Exerciser'
         yield xml.html[
             xml.head[
-                xml.title[ title ],
-                xml.style(type = 'text/css')[ styleSheet ]
+                xml.title[title],
+                xml.style(type='text/css')[styleSheet]
                 ],
             xml.body[
-                xml.h1[ title ],
-                xml.p[ self.getSummary() ],
+                xml.h1[title],
+                xml.p[self.getSummary()],
                 self.presentFailedIndex(),
-                ( ( xml.h2[ xml.a(name = name or 'base')[ name or '(base)' ] ],
-                    page.present(self) )
-                  for name, page in sorted(self.pages.iteritems()) )
+                ((xml.h2[xml.a(name=name or 'base')[name or '(base)']],
+                  page.present(self))
+                 for name, page in sorted(self.pages.iteritems()))
                 ]
             ]
 
@@ -241,10 +241,10 @@ class Scribe(object):
             name for name, page in self.pages.iteritems() if page.failures != 0
             ]
         if failedPageNames:
-            yield xml.p[ 'Failed pages:' ]
+            yield xml.p['Failed pages:']
             yield xml.ul[(
                 xml.li[
-                    xml.a(href = '#' + (name or 'base'))[ name or '(base)' ]
+                    xml.a(href='#' + (name or 'base'))[name or '(base)']
                     ]
                 for name in sorted(failedPageNames)
                 )]
@@ -256,4 +256,4 @@ class Scribe(object):
         for sourceRequest in self.spider.iterReferringRequests(request):
             pageNames.add(self.__urlToName(sourceRequest.pageURL))
         for pageName in sorted(pageNames):
-            yield xml.li[ xml.a(href = '#' + pageName)[ pageName ] ]
+            yield xml.li[xml.a(href='#' + pageName)[pageName]]

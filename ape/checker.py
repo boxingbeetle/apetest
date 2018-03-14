@@ -49,7 +49,7 @@ def _getForeignNamespaces(root):
     mainNamespace = root.nsmap[None]
     acceptedNSPrefixes = [
         '{%s}' % namespace
-        for namespace in [ mainNamespace ] + list(_validatableNamespaces)
+        for namespace in [mainNamespace] + list(_validatableNamespaces)
         ]
     foreignElemNamespaces = set()
     foreignAttrNamespaces = set()
@@ -62,9 +62,8 @@ def _getForeignNamespaces(root):
                     foreignElemNamespaces.add(tag[1 : index])
         for name in elem.attrib.iterkeys():
             if name.startswith('{'):
-                if not any(
-                    name.startswith(prefix) for prefix in acceptedNSPrefixes
-                    ):
+                if not any(name.startswith(prefix)
+                           for prefix in acceptedNSPrefixes):
                     index = name.find('}')
                     if index != -1:
                         foreignAttrNamespaces.add(name[1 : index])
@@ -136,7 +135,7 @@ class PageChecker(object):
                             )
                 else:
                     raise FetchFailure(
-                        url, 'HTTP error %d: %s' % ( ex.code, ex.msg )
+                        url, 'HTTP error %d: %s' % (ex.code, ex.msg)
                         )
             except URLError, ex:
                 raise FetchFailure(url, str(ex.reason))
@@ -161,7 +160,7 @@ class PageChecker(object):
             if contentURL.startswith(self.baseURL):
                 print 'Redirected to:', self.shortURL(contentURL)
                 try:
-                    referrers = [ Redirect(Request.fromURL(contentURL)) ]
+                    referrers = [Redirect(Request.fromURL(contentURL))]
                 except ValueError, ex:
                     report.addQueryWarning(str(ex))
             else:
@@ -298,7 +297,7 @@ class PageChecker(object):
                 disabled = 'disabled' in control.attrib
                 if disabled:
                     continue
-                print 'textarea "%s": %s' % ( name, value )
+                print 'textarea "%s": %s' % (name, value)
                 controls.append(TextArea(name, value))
 
             # Merge exclusive controls.
@@ -329,7 +328,7 @@ class PageChecker(object):
 
         if xmldoc:
             report.addNote('Page content is XML')
-            parser = etree.XMLParser(dtd_validation = True, no_network = True)
+            parser = etree.XMLParser(dtd_validation=True, no_network=True)
         else:
             report.addNote('Page content is HTML')
             parser = etree.HTMLParser()
@@ -337,7 +336,7 @@ class PageChecker(object):
             root = etree.fromstring(content, parser)
         except etree.XMLSyntaxError, ex:
             report.addNote('Failed to parse with DTD validation.')
-            validationErrors = [ ex ]
+            validationErrors = [ex]
         else:
             if len(parser.error_log) == 0:
                 # Parsing succeeded with no errors, so we are done.
@@ -350,10 +349,10 @@ class PageChecker(object):
         for recover in (False, True):
             if root is None:
                 parser = etree.XMLParser(
-                    recover = recover,
-                    dtd_validation = False,
-                    load_dtd = True,
-                    no_network = True,
+                    recover=recover,
+                    dtd_validation=False,
+                    load_dtd=True,
+                    no_network=True,
                     )
                 try:
                     root = etree.fromstring(content, parser)
@@ -398,9 +397,8 @@ class PageChecker(object):
             else:
                 prunedRoot = None
 
-            for namespace in sorted(
-                foreignElemNamespaces | foreignAttrNamespaces
-                ):
+            for namespace in sorted(foreignElemNamespaces
+                                    | foreignAttrNamespaces):
                 report.addNote(
                     'Page contains %s from XML namespace "%s"; '
                     'these might be wrongly reported as invalid'
@@ -408,8 +406,8 @@ class PageChecker(object):
                         ' and '.join(
                             description
                             for description, category in (
-                                ( 'elements', foreignElemNamespaces ),
-                                ( 'attributes', foreignAttrNamespaces ),
+                                ('elements', foreignElemNamespaces),
+                                ('attributes', foreignAttrNamespaces),
                                 )
                             if namespace in category
                             ),
@@ -423,9 +421,7 @@ class PageChecker(object):
                 # the full tree, since following links from for example SVG
                 # content will improve our ability to discover pages and
                 # queries.
-                parser = etree.XMLParser(
-                    dtd_validation = True, no_network = True
-                    )
+                parser = etree.XMLParser(dtd_validation=True, no_network=True)
                 docinfo = root.getroottree().docinfo
                 prunedContent = (
                     "<?xml version='%s' encoding='%s'?>\n" % (
@@ -434,8 +430,8 @@ class PageChecker(object):
                         ) +
                     etree.tostring(
                         prunedRoot.getroottree(),
-                        encoding = docinfo.encoding,
-                        xml_declaration = False,
+                        encoding=docinfo.encoding,
+                        xml_declaration=False,
                         )
                     )
                 #print prunedContent

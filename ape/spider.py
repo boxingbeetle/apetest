@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections import defaultdict
+
 class Spider(object):
     # TODO: Now just the first 100 are checked, it would be better to try
     #       variations of all query arguments.
@@ -8,11 +10,11 @@ class Spider(object):
     def __init__(self, firstRequest):
         self.requestsToCheck = set([firstRequest])
         self.requestsChecked = set()
-        self.queriesPerPage = {}
+        self.queriesPerPage = defaultdict(int)
         # Maps source request to referrers (destination).
         self.siteGraph = {}
         # Maps destination page to source requests.
-        self.pageReferredFrom = {}
+        self.pageReferredFrom = defaultdict(set)
 
     def __iter__(self):
         while self.requestsToCheck:
@@ -32,31 +34,24 @@ class Spider(object):
 
         for referrer in referrers:
             pageURL = referrer.pageURL
+            self.pageReferredFrom[pageURL].add(sourceRequest)
 
-            sources = self.pageReferredFrom.get(pageURL)
-            if sources is None:
-                self.pageReferredFrom[pageURL] = sources = set()
-            sources.add(sourceRequest)
-
-            count = self.queriesPerPage.get(pageURL, 0)
-            maxQueriesPerPage = self.maxQueriesPerPage
             for request in referrer.iterRequests():
                 if request in self.requestsChecked \
                 or request in self.requestsToCheck:
                     continue
-                if count >= maxQueriesPerPage:
+                if self.queriesPerPage[pageURL] >= self.maxQueriesPerPage:
                     print 'maximum number of queries reached for "%s"' % (
                         pageURL
                         )
                     break
-                count += 1
+                self.queriesPerPage[pageURL] += 1
                 self.requestsToCheck.add(request)
-            self.queriesPerPage[pageURL] = count
 
     def iterReferringRequests(self, destRequest):
         '''Iterate through the requests that refer to the given request.
         '''
-        for sourceRequest in self.pageReferredFrom.get(destRequest.pageURL, ()):
+        for sourceRequest in self.pageReferredFrom[destRequest]:
             for referrer in self.siteGraph[sourceRequest]:
                 if referrer.hasRequest(destRequest):
                     yield sourceRequest

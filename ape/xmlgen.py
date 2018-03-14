@@ -66,16 +66,6 @@ def _normalizeValue(value):
     else:
         return str(value)
 
-def validAsXMLChild(obj):
-    '''Returns True iff the given object is valid as a child of an XML node.
-    '''
-    return (
-        isinstance(obj, (_XMLSerializable, basestring))
-        or hasattr(obj, 'toXML')
-        or hasattr(obj, '__iter__')
-        or obj is None
-        )
-
 class _XMLSerializable(object):
     '''Base class for objects that can be serialized to XML.
     '''
@@ -92,27 +82,6 @@ class _XMLSerializable(object):
 
     def flatten(self):
         return ''.join(self._toFragments())
-
-    def flattenIndented(self):
-        indentedFragments = []
-        indent = '\n'
-        prevWasElem = False
-        for fragment in self._toFragments():
-            close = fragment.startswith('</')
-            open_ = not close and fragment.startswith('<')
-            if close:
-                indent = indent[ : -2]
-            if open_ and fragment.endswith('/>'):
-                close = True
-            thisIsElem = open_ or close
-            if prevWasElem and thisIsElem:
-                indentedFragments.append(indent)
-            indentedFragments.append(fragment)
-            if open_ and not close:
-                indent += '  '
-            prevWasElem = thisIsElem
-        indentedFragments.append('\n')
-        return ''.join(indentedFragments)
 
     def join(self, siblings):
         '''Creates an XML sequence with the given siblings as children,
@@ -176,7 +145,6 @@ class _XMLSequence(_XMLSerializable):
         return self
 
     def _addChild(self, child):
-        # Note: If you add a type here, add it in validAsXMLChild as well.
         if isinstance(child, _XMLSerializable):
             self.__children.append(child)
         elif hasattr(child, 'toXML'):

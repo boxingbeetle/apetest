@@ -68,7 +68,7 @@ def load_plugins(spec):
     accepted_args = set()
     for plugin in new_plugins:
         ctor = plugin.__init__
-        ctor_args = ctor.func_code.co_varnames[ : ctor.func_code.co_argcount]
+        ctor_args = ctor.__code__.co_varnames[ : ctor.__code__.co_argcount]
         if ctor_args[0] != 'self':
             raise PluginError(
                 'First argument to constructor of "%s.%s" '
@@ -88,9 +88,9 @@ def load_plugins(spec):
     # Instantiate plugin classes.
     for plugin in new_plugins:
         ctor = plugin.__init__
-        num_ctor_args = ctor.func_code.co_argcount
-        num_mandatory_ctor_args = num_ctor_args - len(ctor.func_defaults or ())
-        ctor_args = ctor.func_code.co_varnames[:num_ctor_args]
+        num_ctor_args = ctor.__code__.co_argcount
+        num_mandatory_ctor_args = num_ctor_args - len(ctor.__defaults__ or ())
+        ctor_args = ctor.__code__.co_varnames[:num_ctor_args]
         missing_args = set(
             arg
             for arg in ctor_args[1:num_mandatory_ctor_args]

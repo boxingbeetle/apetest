@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections import defaultdict
 from copy import deepcopy
 from os.path import isdir
 from time import sleep
@@ -364,7 +365,7 @@ class PageChecker(object):
 
         nsPrefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''
 
-        links = {}
+        links = defaultdict(LinkSet)
         for anchor in root.iter(nsPrefix + 'a'):
             try:
                 href = anchor.attrib['href']
@@ -380,12 +381,7 @@ class PageChecker(object):
                 except ValueError, ex:
                     report.addQueryWarning(str(ex))
                 else:
-                    linksToPage = links.get(request.pageURL)
-                    if linksToPage is None:
-                        linksToPage = LinkSet()
-                        links[request.pageURL] = linksToPage
-                    linksToPage.add(request)
-
+                    links[request.pageURL].add(request)
         referrers = list(links.itervalues())
 
         for link in root.iter(nsPrefix + 'link'):
@@ -436,14 +432,14 @@ class PageChecker(object):
             # Note: Disabled controls should not be submitted, so we pretend
             #       they do not even exist.
             controls = []
-            radioButtons = {}
+            radioButtons = defaultdict(list)
             submitButtons = []
             for inp in formNode.getiterator(nsPrefix + 'input'):
                 control = parseInputControl(inp.attrib)
                 if control is None:
                     pass
                 elif isinstance(control, RadioButton):
-                    radioButtons.setdefault(control.name, []).append(control)
+                    radioButtons[control.name].append(control)
                 elif isinstance(control, SubmitButton):
                     submitButtons.append(control)
                 else:

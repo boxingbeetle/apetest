@@ -38,10 +38,9 @@ def run(url, report_file_name, *plugin_specs):
     print('Done checking')
 
     print('Writing report to "%s"...' % report_file_name)
-    out = file(report_file_name, 'w')
-    for node in scribe.present():
-        out.write(node.flatten())
-    out.close()
+    with open(report_file_name, 'w') as out:
+        for node in scribe.present():
+            out.write(node.flatten())
     print('Done reporting')
 
     scribe.postprocess()

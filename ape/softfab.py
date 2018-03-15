@@ -21,7 +21,6 @@ class PropertiesPlugin(Plugin):
             }
         path = self.properties_dir + '/results.properties'
         print('Writing metadata to "%s"...' % path)
-        out = file(path, 'w')
-        for key in sorted(data.iterkeys()):
-            print('%s=%s' % (key, data[key]), file=out)
-        out.close()
+        with open(path, 'w') as out:
+            for key in sorted(data.iterkeys()):
+                print('%s=%s' % (key, data[key]), file=out)

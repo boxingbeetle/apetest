@@ -10,43 +10,48 @@ from report import Scribe
 from request import Request
 from spider import Spider
 
-if len(sys.argv) < 3:
-    print 'Usage:'
-    print '  ' + sys.argv[0] + ' <URL> <report> (<plugin>(#<name>=<value>)*)*'
-    sys.exit(2)
-
-try:
-    firstRequest = Request.fromURL(sys.argv[1])
-except ValueError, ex:
-    print 'Bad URL:', ex
-    sys.exit(1)
-reportFileName = sys.argv[2]
-plugins = []
-for pluginSpec in sys.argv[3 : ]:
+def run(url, reportFileName, *pluginSpecs):
     try:
-        for plugin in loadPlugins(pluginSpec):
-            plugins.append(plugin)
-    except PluginError, ex:
-        print ex
-        sys.exit(1)
+        firstRequest = Request.fromURL(url)
+    except ValueError, ex:
+        print 'Bad URL:', ex
+        return 1
+    plugins = []
+    for spec in pluginSpecs:
+        try:
+            for plugin in loadPlugins(spec):
+                plugins.append(plugin)
+        except PluginError, ex:
+            print ex
+            return 1
 
-spider = Spider(firstRequest)
-baseURL = firstRequest.pageURL
-scribe = Scribe(baseURL, spider, plugins)
-checker = PageChecker(baseURL, scribe)
+    spider = Spider(firstRequest)
+    baseURL = firstRequest.pageURL
+    scribe = Scribe(baseURL, spider, plugins)
+    checker = PageChecker(baseURL, scribe)
 
-print 'Checking "%s" and below...' % baseURL
-for request in spider:
-    referrers = checker.check(request)
-    spider.addRequests(request, referrers)
-print 'Done checking'
+    print 'Checking "%s" and below...' % baseURL
+    for request in spider:
+        referrers = checker.check(request)
+        spider.addRequests(request, referrers)
+    print 'Done checking'
 
-print 'Writing report to "%s"...' % reportFileName
-out = file(reportFileName, 'w')
-for node in scribe.present():
-    out.write(node.flatten())
-out.close()
-print 'Done reporting'
+    print 'Writing report to "%s"...' % reportFileName
+    out = file(reportFileName, 'w')
+    for node in scribe.present():
+        out.write(node.flatten())
+    out.close()
+    print 'Done reporting'
 
-scribe.postProcess()
-print 'Done post processing'
+    scribe.postProcess()
+    print 'Done post processing'
+
+    return 0
+
+if __name__ == '__main__':
+    if len(sys.argv) < 3:
+        print 'Usage:'
+        print '  %s <URL> <report> (<plugin>(#<name>=<value>)*)*' % sys.argv[0]
+        sys.exit(2)
+    else:
+        sys.exit(run(*sys.argv[1:])) # pylint: disable=no-value-for-parameter

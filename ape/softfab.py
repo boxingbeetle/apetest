@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import print_function
 from plugin import Plugin
 
 class PropertiesPlugin(Plugin):
@@ -19,8 +20,8 @@ class PropertiesPlugin(Plugin):
             'data.pages_fail': num_failed_pages,
             }
         path = self.properties_dir + '/results.properties'
-        print 'Writing metadata to "%s"...' % path
+        print('Writing metadata to "%s"...' % path)
         out = file(path, 'w')
         for key in sorted(data.iterkeys()):
-            print >> out, '%s=%s' % (key, data[key])
+            print('%s=%s' % (key, data[key]), file=out)
         out.close()

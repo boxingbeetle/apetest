@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import print_function
 from collections import defaultdict
 from copy import deepcopy
 from os.path import isdir
@@ -103,18 +104,18 @@ def fetch_page(request):
                         seconds = int(ex.headers['retry-after'])
                     except ValueError:
                         # TODO: HTTP spec allows a date string here.
-                        print 'Parsing of "Retry-After" dates ' \
-                            'is not yet implemented'
+                        print('Parsing of "Retry-After" dates '
+                              'is not yet implemented')
                         seconds = 5
                 else:
                     seconds = 5
-                print 'Server not ready yet, trying again ' \
-                    'in %d seconds' % seconds
+                print('Server not ready yet, trying again '
+                      'in %d seconds' % seconds)
                 sleep(seconds)
             elif ex.code == 400:
                 # Generic client error, could be because we submitted an
                 # invalid form value.
-                print 'Bad request (HTTP error 400):', ex.msg
+                print('Bad request (HTTP error 400):', ex.msg)
                 if request.maybe_bad:
                     # Validate the error page body.
                     return ex
@@ -198,7 +199,7 @@ def parse_document(content, report):
         if namespaces_to_remove:
             pruned_root = deepcopy(root.getroottree()).getroot()
             for namespace in sorted(namespaces_to_remove):
-                print 'Removing inline content from namespace', namespace
+                print('Removing inline content from namespace', namespace)
                 report.add_note(
                     'Page contains inline %s content; '
                     'this will not be validated.'
@@ -275,7 +276,7 @@ def parse_document(content, report):
     return root
 
 def parse_input_control(attrib):
-    print 'input:', attrib
+    print('input:', attrib)
     disabled = 'disabled' in attrib
     if disabled:
         return None
@@ -317,12 +318,12 @@ class PageChecker(object):
 
     def check(self, req):
         page_url = str(req)
-        print 'Checking page:', self.short_url(page_url)
+        print('Checking page:', self.short_url(page_url))
 
         try:
             inp = fetch_page(req)
         except FetchFailure as report:
-            print 'Failed to open page'
+            print('Failed to open page')
             self.scribe.add_report(report)
             return []
 
@@ -331,27 +332,27 @@ class PageChecker(object):
             report = IncrementalReport(page_url)
             referrers = []
             if content_url.startswith(self.base_url):
-                print 'Redirected to:', self.short_url(content_url)
+                print('Redirected to:', self.short_url(content_url))
                 try:
                     referrers = [Redirect(Request.from_url(content_url))]
                 except ValueError as ex:
                     report.add_query_warning(str(ex))
             else:
-                print 'Redirected outside:', content_url
+                print('Redirected outside:', content_url)
             if not content_url.startswith('file:'):
                 self.scribe.add_report(report)
                 inp.close()
             return referrers
 
         if inp.info().type not in ('text/html', 'application/xhtml+xml'):
-            print 'Skipping. Document type is not HTML or XHTML, but [%s].' % inp.info().type
+            print('Skipping. Document type is not HTML or XHTML, but [%s].' % inp.info().type)
             inp.close()
             return []
 
         try:
             content = inp.read()
         except IOError as ex:
-            print 'Failed to fetch'
+            print('Failed to fetch')
             self.scribe.add_report(FetchFailure(page_url, str(ex)))
             return []
         finally:
@@ -390,7 +391,7 @@ class PageChecker(object):
             except KeyError:
                 # Not containing a hyperlink link
                 continue
-            print ' Found link href: ', linkhref
+            print(' Found link href: ', linkhref)
 
         for image in root.iter(ns_prefix + 'img'):
             try:
@@ -398,7 +399,7 @@ class PageChecker(object):
             except KeyError:
                 # Not containing a src attribute
                 continue
-            print ' Found image src: ', imgsrc
+            print(' Found image src: ', imgsrc)
 
         for script in root.iter(ns_prefix + 'script'):
             try:
@@ -406,7 +407,7 @@ class PageChecker(object):
             except KeyError:
                 # Not containing a src attribute
                 continue
-            print ' Found script src: ', scriptsrc
+            print(' Found script src: ', scriptsrc)
 
         for form_node in root.getiterator(ns_prefix + 'form'):
             # TODO: How to handle an empty action?
@@ -465,7 +466,7 @@ class PageChecker(object):
                 disabled = 'disabled' in control.attrib
                 if disabled:
                     continue
-                print 'textarea "%s": %s' % (name, value)
+                print('textarea "%s": %s' % (name, value))
                 controls.append(TextArea(name, value))
 
             # Merge exclusive controls.

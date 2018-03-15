@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import print_function
 from request import Request
 
 class Referrer(object):
@@ -99,9 +100,9 @@ class Form(Referrer):
 
         self.combinations = combinations
 
-        print 'non-alternatives:', base_query
-        print 'alternatives:', all_alternatives
-        print 'combinations:', combinations
+        print('non-alternatives:', base_query)
+        print('alternatives:', all_alternatives)
+        print('combinations:', combinations)
 
     def has_request(self, request):
         # Check if page matches.

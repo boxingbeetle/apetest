@@ -6,7 +6,7 @@ from plugin import Plugin
 
 class DataChangeMonitor(Plugin):
 
-    allowedChanges = (
+    allowed_changes = (
         # Shadow DB has automatic cleanup.
         ('shadow', 'remove'),
         # These are singleton records that are created automatically.
@@ -19,32 +19,32 @@ class DataChangeMonitor(Plugin):
 
     def __init__(self, cclog):
         Plugin.__init__(self)
-        self.logFile = cclog
-        self.logFD = None
-        self.partialLine = ''
+        self._log_file = cclog
+        self._log_fd = None
+        self._partial_line = ''
 
-    def __processData(self):
-        if self.logFD is None:
-            self.logFD = os.open(self.logFile, os.O_RDONLY | os.O_NONBLOCK)
+    def __process_data(self):
+        if self._log_fd is None:
+            self._log_fd = os.open(self._log_file, os.O_RDONLY | os.O_NONBLOCK)
         while True:
-            newData = os.read(self.logFD, 200)
-            if newData:
-                buf = self.partialLine + newData
+            new_data = os.read(self._log_fd, 200)
+            if new_data:
+                buf = self._partial_line + new_data
                 lines = buf.split('\n')
                 for line in lines[ : -1]:
                     index = line.find('> datachange/')
                     if index >= 0:
-                        marker_, dbName, change, recordId = \
+                        marker_, db_name, change, record_id = \
                             line[index + 2 : ].split('/')
-                        yield change, dbName, recordId
-                self.partialLine = lines[-1]
+                        yield change, db_name, record_id
+                self._partial_line = lines[-1]
             else:
                 break
 
-    def reportAdded(self, report):
-        for change, dbName, recordId in self.__processData():
-            if (dbName, change) not in self.allowedChanges:
-                report.addPluginWarning(
+    def report_added(self, report):
+        for change, db_name, record_id in self.__process_data():
+            if (db_name, change) not in self.allowed_changes:
+                report.add_plugin_warning(
                     'Unexpected %s in database "%s" on record "%s"'
-                    % (change, dbName, recordId)
+                    % (change, db_name, record_id)
                     )

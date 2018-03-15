@@ -8,12 +8,12 @@ class Request(object):
     '''
 
     @staticmethod
-    def fromURL(url):
-        scheme, host, path, queryStr, fragment_ = urlsplit(url)
-        pageURL = urlunsplit((scheme, host, path, '', ''))
+    def from_url(url):
+        scheme, host, path, query_str, fragment_ = urlsplit(url)
+        page_url = urlunsplit((scheme, host, path, '', ''))
         query = []
-        if queryStr:
-            for elem in queryStr.split('&'):
+        if query_str:
+            for elem in query_str.split('&'):
                 if '=' in elem:
                     key, value = elem.split('=', 1)
                     query.append((unquote_plus(key), unquote_plus(value)))
@@ -26,35 +26,35 @@ class Request(object):
                         'Query of URL "%s" contains invalid part "%s"'
                         % (url, elem)
                         )
-        return Request(pageURL, query)
+        return Request(page_url, query)
 
-    def __init__(self, pageURL, query, maybeBad=False):
+    def __init__(self, page_url, query, maybe_bad=False):
         '''For constructed requests that are not guaranteed to be correct,
-        set "maybeBad" to True. For requests that originate from the user
-        or the web app under test, leave "maybeBad" as False.
+        set "maybe_bad" to True. For requests that originate from the user
+        or the web app under test, leave "maybe_bad" as False.
         '''
-        self.pageURL = pageURL
+        self.page_url = page_url
         self.query = tuple(sorted(query))
-        self.maybeBad = maybeBad
+        self.maybe_bad = bool(maybe_bad)
 
     def __cmp__(self, other):
-        if hasattr(other, 'pageURL'):
-            urlCompare = cmp(self.pageURL, other.pageURL)
-            if urlCompare:
-                return urlCompare
+        if hasattr(other, 'page_url'):
+            url_compare = cmp(self.page_url, other.page_url)
+            if url_compare:
+                return url_compare
             if hasattr(other, 'query'):
                 return cmp(self.query, other.query)
         # Uncomparable, return any non-equal.
         return -1
 
     def __hash__(self):
-        return hash(self.pageURL) ^ hash(self.query)
+        return hash(self.page_url) ^ hash(self.query)
 
     def __str__(self):
         if self.query:
-            return self.pageURL + '?' + '&'.join(
+            return self.page_url + '?' + '&'.join(
                 '%s=%s' % (quote_plus(key), quote_plus(value))
                 for key, value in self.query
                 )
         else:
-            return self.pageURL
+            return self.page_url

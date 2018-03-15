@@ -4,23 +4,23 @@ from plugin import Plugin
 
 class PropertiesPlugin(Plugin):
 
-    def __init__(self, propertiesDir='.'):
+    def __init__(self, properties_dir='.'):
         Plugin.__init__(self)
-        self.propertiesDir = propertiesDir
+        self.properties_dir = properties_dir
 
-    def postProcess(self, scribe):
+    def postprocess(self, scribe):
         total = len(scribe.pages)
-        numFailedPages = len(scribe.getFailedPages())
+        num_failed_pages = len(scribe.get_failed_pages())
         data = {
-            'result': 'ok' if numFailedPages == 0 else 'warning',
-            'summary': scribe.getSummary(),
+            'result': 'ok' if num_failed_pages == 0 else 'warning',
+            'summary': scribe.get_summary(),
             'data.pages_total': total,
-            'data.pages_pass': total - numFailedPages,
-            'data.pages_fail': numFailedPages,
+            'data.pages_pass': total - num_failed_pages,
+            'data.pages_fail': num_failed_pages,
             }
-        fullFileName = self.propertiesDir + '/results.properties'
-        print 'Writing metadata to "%s"...' % fullFileName
-        out = file(fullFileName, 'w')
+        path = self.properties_dir + '/results.properties'
+        print 'Writing metadata to "%s"...' % path
+        out = file(path, 'w')
         for key in sorted(data.iterkeys()):
             print >> out, '%s=%s' % (key, data[key])
         out.close()

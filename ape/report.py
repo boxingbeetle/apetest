@@ -7,7 +7,7 @@ from urlparse import urlsplit
 from request import Request
 from xmlgen import xml
 
-styleSheet = '''
+_STYLE_SHEET = '''
 body {
     margin: 0;
     padding: 0;
@@ -47,24 +47,24 @@ class Report(object):
 
     def __init__(self, url):
         self.url = url
-        self.pluginWarnings = []
+        self._plugin_warnings = []
 
-    def addPluginWarning(self, message):
-        self.pluginWarnings.append(message)
-        self.ok = False
+    def add_plugin_warning(self, message):
+        self._plugin_warnings.append(message)
+        self.ok = False # pylint: disable=invalid-name
 
     def present(self, scribe):
-        if self.pluginWarnings:
+        if self._plugin_warnings:
             yield xml.p['Problems reported by plugins:']
             yield xml.ul[(
                 xml.li[warning]
-                for warning in self.pluginWarnings
+                for warning in self._plugin_warnings
                 )]
         if not self.ok:
             yield xml.p['Referenced by:']
             # TODO: Store Request object instead of recreating it.
-            request = Request.fromURL(self.url)
-            yield xml.ul[scribe.presentReferrers(request)]
+            request = Request.from_url(self.url)
+            yield xml.ul[scribe.present_referrers(request)]
 
 class FetchFailure(Report, Exception):
     ok = False
@@ -81,7 +81,7 @@ class FetchFailure(Report, Exception):
 class IncrementalReport(Report):
 
     @staticmethod
-    def __presentValidationFailure(failure):
+    def __present_validation_failure(failure):
         if hasattr(failure, 'line'):
             line = failure.line
         elif hasattr(failure, 'position'):
@@ -97,18 +97,18 @@ class IncrementalReport(Report):
     def __init__(self, url):
         Report.__init__(self, url)
         self.notes = []
-        self.validationFailures = []
-        self.queryWarnings = []
+        self._validation_failures = []
+        self._query_warnings = []
 
-    def addNote(self, message):
+    def add_note(self, message):
         self.notes.append(message)
 
-    def addValidationFailure(self, failure):
-        self.validationFailures.append(failure)
+    def add_validation_failure(self, failure):
+        self._validation_failures.append(failure)
         self.ok = False
 
-    def addQueryWarning(self, message):
-        self.queryWarnings.append(message)
+    def add_query_warning(self, message):
+        self._query_warnings.append(message)
         self.ok = False
 
     def present(self, scribe):
@@ -117,79 +117,75 @@ class IncrementalReport(Report):
                 'Note: ' + note
                 for note in self.notes
                 )]
-        if self.validationFailures:
+        if self._validation_failures:
             yield xml.dl[(
-                self.__presentValidationFailure(failure)
-                for failure in self.validationFailures
+                self.__present_validation_failure(failure)
+                for failure in self._validation_failures
                 )]
-        if self.queryWarnings:
+        if self._query_warnings:
             yield xml.p['Bad queries:']
             yield xml.ul[(
                 xml.li[warning]
-                for warning in self.queryWarnings
+                for warning in self._query_warnings
                 )]
         yield Report.present(self, scribe)
 
 class Page(object):
 
     def __init__(self):
-        self.queryToReport = {}
+        self.query_to_report = {}
         self.failures = 0
 
-    def addReport(self, report):
+    def add_report(self, report):
         scheme_, host_, path_, query, fragment_ = urlsplit(report.url)
-        assert query not in self.queryToReport
-        self.queryToReport[query] = report
+        assert query not in self.query_to_report
+        self.query_to_report[query] = report
         if not report.ok:
             self.failures += 1
 
     def present(self, scribe):
-        total = len(self.queryToReport)
+        total = len(self.query_to_report)
         yield xml.p[
             '%d queries checked, %d passed, %d failed'
             % (total, total - self.failures, self.failures)
             ]
-        for query in sorted(self.queryToReport.iterkeys()):
-            if query:
-                queryStrElem = []
-                for queryElem in query.split('&'):
-                    key, value = queryElem.split('=')
-                    key = unquote_plus(key)
-                    value = unquote_plus(value)
-                    queryStrElem.append('%s = %s' % (key, value))
-                queryStr = ' | '.join(queryStrElem)
-            else:
-                queryStr = '(no query)'
-            report = self.queryToReport[query]
+        for query, report in sorted(self.query_to_report.iteritems()):
             yield xml.h3(class_='pass' if report.ok else 'fail')[
-                xml.a(href=report.url)[queryStr]
+                xml.a(href=report.url)[
+                    ' | '.join(
+                        '%s = %s' % tuple(
+                            unquote_plus(s) for s in elem.split('=')
+                            )
+                        for elem in query.split('&')
+                        ) if query else '(no query)'
+                    ]
                 ]
             yield report.present(scribe)
 
 class Scribe(object):
 
-    def __init__(self, baseURL, spider, plugins):
-        self.baseURL = baseURL
+    def __init__(self, base_url, spider, plugins):
+        self.base_url = base_url
         self.spider = spider
-        scheme_, host_, basePath, query, fragment = urlsplit(baseURL)
+        scheme_, host_, base_path, query, fragment = urlsplit(base_url)
         assert query == ''
         assert fragment == ''
-        self.basePath = basePath = basePath[ : basePath.rindex('/') + 1]
+        self.base_path = base_path = base_path[ : base_path.rindex('/') + 1]
 
         self.plugins = plugins
 
         self.reports = {}
         self._pages = defaultdict(Page)
-        self.reportsByPage = {}
+        self.reports_by_page = {}
 
-    def __urlToName(self, url):
+    def __url_to_name(self, url):
         path = urlsplit(url).path
-        assert path.startswith(self.basePath)
-        return path[len(self.basePath) : ]
+        assert path.startswith(self.base_path)
+        return path[len(self.base_path) : ]
 
-    def addReport(self, report):
+    def add_report(self, report):
         for plugin in self.plugins:
-            plugin.reportAdded(report)
+            plugin.report_added(report)
 
         url = report.url
         # Note: Currently, each URL is only visited once.
@@ -198,60 +194,61 @@ class Scribe(object):
         assert url not in self.reports
         self.reports[url] = report
 
-        page = self._pages[self.__urlToName(url)]
-        page.addReport(report)
+        page = self._pages[self.__url_to_name(url)]
+        page.add_report(report)
 
-    def getFailedPages(self):
+    def get_failed_pages(self):
         return [
             page for page in self._pages.itervalues() if page.failures != 0
             ]
 
-    def getSummary(self):
+    def get_summary(self):
         total = len(self._pages)
-        numFailedPages = len(self.getFailedPages())
+        num_failed_pages = len(self.get_failed_pages())
         return '%d pages checked, %d passed, %d failed' % (
-            total, total - numFailedPages, numFailedPages
+            total, total - num_failed_pages, num_failed_pages
             )
 
-    def postProcess(self):
+    def postprocess(self):
         for plugin in self.plugins:
-            plugin.postProcess(self)
+            plugin.postprocess(self)
 
     def present(self):
         title = 'APE - Automated Page Exerciser'
         yield xml.html[
             xml.head[
                 xml.title[title],
-                xml.style(type='text/css')[styleSheet]
+                xml.style(type='text/css')[_STYLE_SHEET]
                 ],
             xml.body[
                 xml.h1[title],
-                xml.p[self.getSummary()],
-                self.presentFailedIndex(),
+                xml.p[self.get_summary()],
+                self.present_failed_index(),
                 ((xml.h2[xml.a(name=name or 'base')[name or '(base)']],
                   page.present(self))
                  for name, page in sorted(self._pages.iteritems()))
                 ]
             ]
 
-    def presentFailedIndex(self):
-        failedPageNames = [
+    def present_failed_index(self):
+        failed_page_names = [
             name for name, page in self._pages.iteritems() if page.failures != 0
             ]
-        if failedPageNames:
+        if failed_page_names:
             yield xml.p['Failed pages:']
             yield xml.ul[(
                 xml.li[
                     xml.a(href='#' + (name or 'base'))[name or '(base)']
                     ]
-                for name in sorted(failedPageNames)
+                for name in sorted(failed_page_names)
                 )]
 
-    def presentReferrers(self, request):
+    def present_referrers(self, req):
         # Note: Currently we only list the pages a request is referred from,
         #       but we know the exact requests.
-        pageNames = set()
-        for sourceRequest in self.spider.iterReferringRequests(request):
-            pageNames.add(self.__urlToName(sourceRequest.pageURL))
-        for pageName in sorted(pageNames):
-            yield xml.li[xml.a(href='#' + pageName)[pageName]]
+        page_names = set(
+            self.__url_to_name(source_req.page_url)
+            for source_req in self.spider.iter_referring_requests(req)
+            )
+        for name in sorted(page_names):
+            yield xml.li[xml.a(href='#' + name)[name]]

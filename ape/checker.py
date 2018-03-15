@@ -19,7 +19,7 @@ from referrer import Form, LinkSet, Redirect
 from report import FetchFailure, IncrementalReport
 from request import Request
 
-def normalizeURL(url):
+def normalize_url(url):
     '''Returns a unique string for the given URL.
     This is required in some places, since different libs have different
     opinions whether local URLs should start with "file:/" or "file:///".
@@ -37,63 +37,63 @@ class RedirectResult(object):
 # Namespaces can be used for inlined content and that are not included in the
 # XHTML DTDs. Because DTDs are not namespace aware, anything from an unknown
 # namespace is flagged as an error; we must compensate for that.
-_unvalidatableNamespaces = {
+_UNVALIDATABLE_NAMESPACES = {
     'http://www.w3.org/2000/svg': 'SVG',
     }
 
 # Namespaces of which the elements and attributes are mosty likely included in
 # the XHTML DTDs.
-_validatableNamespaces = {
+_VALIDATABLE_NAMESPACES = {
     'http://www.w3.org/XML/1998/namespace': 'XML',
     }
 
-def _getForeignNamespaces(root):
-    mainNamespace = root.nsmap[None]
-    acceptedNSPrefixes = [
+def _get_foreign_namespaces(root):
+    main_ns = root.nsmap[None]
+    accepted_ns_prefixes = [
         '{%s}' % namespace
-        for namespace in [mainNamespace] + list(_validatableNamespaces)
+        for namespace in [main_ns] + list(_VALIDATABLE_NAMESPACES)
         ]
-    foreignElemNamespaces = set()
-    foreignAttrNamespaces = set()
+    foreign_elem_namespaces = set()
+    foreign_attr_namespaces = set()
     for elem in root.iter(etree.Element):
         tag = elem.tag
-        if not any(tag.startswith(prefix) for prefix in acceptedNSPrefixes):
+        if not any(tag.startswith(prefix) for prefix in accepted_ns_prefixes):
             if tag.startswith('{'):
                 index = tag.find('}')
                 if index != -1:
-                    foreignElemNamespaces.add(tag[1 : index])
+                    foreign_elem_namespaces.add(tag[1 : index])
         for name in elem.attrib.iterkeys():
             if name.startswith('{'):
                 if not any(name.startswith(prefix)
-                           for prefix in acceptedNSPrefixes):
+                           for prefix in accepted_ns_prefixes):
                     index = name.find('}')
                     if index != -1:
-                        foreignAttrNamespaces.add(name[1 : index])
-    return foreignElemNamespaces, foreignAttrNamespaces
+                        foreign_attr_namespaces.add(name[1 : index])
+    return foreign_elem_namespaces, foreign_attr_namespaces
 
-def fetchPage(request):
+def fetch_page(request):
     url = str(request)
-    fetchURL = url
-    removeIndex = False
+    fetch_url = url
+    remove_index = False
     if url.startswith('file:'):
         # Emulate the way a web server handles directories.
         path = unquote(urlsplit(url).path)
         if not path.endswith('/') and isdir(path):
             return RedirectResult(url + '/')
         elif path.endswith('/'):
-            removeIndex = True
-            fetchURL = url + 'index.html'
+            remove_index = True
+            fetch_url = url + 'index.html'
     # TODO: Figure out how to do authentication, "user:password@" in
     #       the URL does not work.
-    urlRequest = URLRequest(fetchURL)
-    urlRequest.add_header(
+    url_req = URLRequest(fetch_url)
+    url_req.add_header(
         'Accept',
         'text/html; q=0.8, application/xhtml+xml; q=1.0'
         )
     while True:
         try:
-            result = urlopen(urlRequest)
-            if removeIndex:
+            result = urlopen(url_req)
+            if remove_index:
                 result.url = url
             return result
         except HTTPError, ex:
@@ -115,7 +115,7 @@ def fetchPage(request):
                 # Generic client error, could be because we submitted an
                 # invalid form value.
                 print 'Bad request (HTTP error 400):', ex.msg
-                if request.maybeBad:
+                if request.maybe_bad:
                     # Validate the error page body.
                     return ex
                 else:
@@ -131,9 +131,9 @@ def fetchPage(request):
         except OSError, ex:
             raise FetchFailure(url, ex.strerror)
 
-def parseDocument(content, report):
+def parse_document(content, report):
     root = None
-    validationErrors = None
+    validation_errors = None
     xmlnsdef = 'xmlns='
     xmldoc = False
 
@@ -144,20 +144,20 @@ def parseDocument(content, report):
         xmldoc = True
 
     if xmldoc:
-        report.addNote('Page content is XML')
+        report.add_note('Page content is XML')
         parser = etree.XMLParser(dtd_validation=True, no_network=True)
     else:
-        report.addNote('Page content is HTML')
+        report.add_note('Page content is HTML')
         parser = etree.HTMLParser()
     try:
         root = etree.fromstring(content, parser)
     except etree.XMLSyntaxError, ex:
-        report.addNote('Failed to parse with DTD validation.')
-        validationErrors = [ex]
+        report.add_note('Failed to parse with DTD validation.')
+        validation_errors = [ex]
     else:
         if parser.error_log:
             # Parsing succeeded with errors; errors will be reported later.
-            validationErrors = parser.error_log
+            validation_errors = parser.error_log
         else:
             # Parsing succeeded with no errors, so we are done.
             return root
@@ -175,56 +175,56 @@ def parseDocument(content, report):
                 root = etree.fromstring(content, parser)
             except etree.XMLSyntaxError, ex:
                 if recover:
-                    report.addNote('Failed to parse in recovery.')
+                    report.add_note('Failed to parse in recovery.')
                 else:
-                    report.addNote(
+                    report.add_note(
                         'Failed to parse without DTD validation.'
                         )
-                report.addValidationFailure(ex)
+                report.add_validation_failure(ex)
     if root is None:
-        report.addValidationFailure(
+        report.add_validation_failure(
             'Unable to parse: page output does not look like XML or HTML.'
             )
         return None
 
-    mainNamespace = root.nsmap.get(None, None)
-    if mainNamespace:
-        foreignElemNamespaces, foreignAttrNamespaces = \
-            _getForeignNamespaces(root)
+    main_ns = root.nsmap.get(None, None)
+    if main_ns:
+        foreign_elem_namespaces, foreign_attr_namespaces = \
+            _get_foreign_namespaces(root)
         # Remove inline content we cannot validate, for example SVG.
-        namespacesToRemove = \
-            foreignElemNamespaces & set(_unvalidatableNamespaces)
+        namespaces_to_remove = \
+            foreign_elem_namespaces & set(_UNVALIDATABLE_NAMESPACES)
 
-        if namespacesToRemove:
-            prunedRoot = deepcopy(root.getroottree()).getroot()
-            for namespace in sorted(namespacesToRemove):
+        if namespaces_to_remove:
+            pruned_root = deepcopy(root.getroottree()).getroot()
+            for namespace in sorted(namespaces_to_remove):
                 print 'Removing inline content from namespace', namespace
-                report.addNote(
+                report.add_note(
                     'Page contains inline %s content; '
                     'this will not be validated.'
-                    % _unvalidatableNamespaces[namespace]
+                    % _UNVALIDATABLE_NAMESPACES[namespace]
                     )
-                nodesToRemove = list(prunedRoot.iter('{%s}*' % namespace))
-                for elem in nodesToRemove:
-                    #report.addNote('Remove inline element: %s' % elem)
+                nodes_to_remove = list(pruned_root.iter('{%s}*' % namespace))
+                for elem in nodes_to_remove:
+                    #report.add_note('Remove inline element: %s' % elem)
                     elem.getparent().remove(elem)
             # Recompute remaining foreign namespaces.
-            foreignElemNamespaces, foreignAttrNamespaces = \
-                _getForeignNamespaces(prunedRoot)
+            foreign_elem_namespaces, foreign_attr_namespaces = \
+                _get_foreign_namespaces(pruned_root)
         else:
-            prunedRoot = None
+            pruned_root = None
 
-        for namespace in sorted(foreignElemNamespaces
-                                | foreignAttrNamespaces):
-            report.addNote(
+        for namespace in sorted(foreign_elem_namespaces
+                                | foreign_attr_namespaces):
+            report.add_note(
                 'Page contains %s from XML namespace "%s"; '
                 'these might be wrongly reported as invalid'
                 % (
                     ' and '.join(
                         description
                         for description, category in (
-                            ('elements', foreignElemNamespaces),
-                            ('attributes', foreignAttrNamespaces),
+                            ('elements', foreign_elem_namespaces),
+                            ('attributes', foreign_attr_namespaces),
                             )
                         if namespace in category
                         ),
@@ -232,7 +232,7 @@ def parseDocument(content, report):
                     )
                 )
 
-        if prunedRoot is not None:
+        if pruned_root is not None:
             # Try to parse pruned tree with a validating parser.
             # We do this only for the error list: the tree we return is
             # the full tree, since following links from for example SVG
@@ -240,41 +240,41 @@ def parseDocument(content, report):
             # queries.
             parser = etree.XMLParser(dtd_validation=True, no_network=True)
             docinfo = root.getroottree().docinfo
-            prunedContent = (
+            pruned_content = (
                 "<?xml version='%s' encoding='%s'?>\n" % (
                     docinfo.xml_version.encode('ASCII'),
                     docinfo.encoding.encode('ASCII'),
                     ) +
                 etree.tostring(
-                    prunedRoot.getroottree(),
+                    pruned_root.getroottree(),
                     encoding=docinfo.encoding,
                     xml_declaration=False,
                     )
                 )
-            #print prunedContent
-            report.addNote(
+            #print pruned_content
+            report.add_note(
                 'Try to parse the pruned tree with a validated parser...'
                 )
             try:
-                dummyRoot_ = etree.fromstring(prunedContent, parser)
+                dummy_root_ = etree.fromstring(pruned_content, parser)
             except etree.XMLSyntaxError, ex:
-                report.addNote(
+                report.add_note(
                     'Failed to parse pruned tree with validation.'
                     )
-                report.addValidationFailure(ex)
+                report.add_validation_failure(ex)
             else:
                 # Error list from pruned tree will contain less false
                 # positives, so replace original error list.
-                validationErrors = parser.error_log
-                if validationErrors:
-                    report.addNote('Line numbers are inexact.')
+                validation_errors = parser.error_log
+                if validation_errors:
+                    report.add_note('Line numbers are inexact.')
 
-    if validationErrors:
-        for error in validationErrors:
-            report.addValidationFailure(error)
+    if validation_errors:
+        for error in validation_errors:
+            report.add_validation_failure(error)
     return root
 
-def parseInputControl(attrib):
+def parse_input_control(attrib):
     print 'input:', attrib
     disabled = 'disabled' in attrib
     if disabled:
@@ -307,39 +307,39 @@ class PageChecker(object):
     references to other pages.
     '''
 
-    def __init__(self, baseURL, scribe):
-        self.baseURL = normalizeURL(baseURL)
+    def __init__(self, base_url, scribe):
+        self.base_url = normalize_url(base_url)
         self.scribe = scribe
 
-    def shortURL(self, pageURL):
-        assert pageURL.startswith(self.baseURL), pageURL
-        return pageURL[self.baseURL.rindex('/') + 1 : ]
+    def short_url(self, page_url):
+        assert page_url.startswith(self.base_url), page_url
+        return page_url[self.base_url.rindex('/') + 1 : ]
 
-    def check(self, checkRequest):
-        pageURL = str(checkRequest)
-        print 'Checking page:', self.shortURL(pageURL)
+    def check(self, req):
+        page_url = str(req)
+        print 'Checking page:', self.short_url(page_url)
 
         try:
-            inp = fetchPage(checkRequest)
+            inp = fetch_page(req)
         except FetchFailure, report:
             print 'Failed to open page'
-            self.scribe.addReport(report)
+            self.scribe.add_report(report)
             return []
 
-        contentURL = normalizeURL(inp.url)
-        if contentURL != pageURL:
-            report = IncrementalReport(pageURL)
+        content_url = normalize_url(inp.url)
+        if content_url != page_url:
+            report = IncrementalReport(page_url)
             referrers = []
-            if contentURL.startswith(self.baseURL):
-                print 'Redirected to:', self.shortURL(contentURL)
+            if content_url.startswith(self.base_url):
+                print 'Redirected to:', self.short_url(content_url)
                 try:
-                    referrers = [Redirect(Request.fromURL(contentURL))]
+                    referrers = [Redirect(Request.from_url(content_url))]
                 except ValueError, ex:
-                    report.addQueryWarning(str(ex))
+                    report.add_query_warning(str(ex))
             else:
-                print 'Redirected outside:', contentURL
-            if not contentURL.startswith('file:'):
-                self.scribe.addReport(report)
+                print 'Redirected outside:', content_url
+            if not content_url.startswith('file:'):
+                self.scribe.add_report(report)
                 inp.close()
             return referrers
 
@@ -352,39 +352,39 @@ class PageChecker(object):
             content = inp.read()
         except IOError, ex:
             print 'Failed to fetch'
-            self.scribe.addReport(FetchFailure(pageURL, str(ex)))
+            self.scribe.add_report(FetchFailure(page_url, str(ex)))
             return []
         finally:
             inp.close()
 
-        report = IncrementalReport(pageURL)
-        root = parseDocument(content, report)
+        report = IncrementalReport(page_url)
+        root = parse_document(content, report)
         if root is None:
-            self.scribe.addReport(report)
+            self.scribe.add_report(report)
             return []
 
-        nsPrefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''
+        ns_prefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''
 
         links = defaultdict(LinkSet)
-        for anchor in root.iter(nsPrefix + 'a'):
+        for anchor in root.iter(ns_prefix + 'a'):
             try:
                 href = anchor.attrib['href']
             except KeyError:
                 # Not a hyperlink anchor.
                 continue
             if href.startswith('?'):
-                href = urlsplit(pageURL).path + href
-            url = urljoin(pageURL, href)
-            if url.startswith(self.baseURL):
+                href = urlsplit(page_url).path + href
+            url = urljoin(page_url, href)
+            if url.startswith(self.base_url):
                 try:
-                    request = Request.fromURL(url)
+                    request = Request.from_url(url)
                 except ValueError, ex:
-                    report.addQueryWarning(str(ex))
+                    report.add_query_warning(str(ex))
                 else:
-                    links[request.pageURL].add(request)
+                    links[request.page_url].add(request)
         referrers = list(links.itervalues())
 
-        for link in root.iter(nsPrefix + 'link'):
+        for link in root.iter(ns_prefix + 'link'):
             try:
                 linkhref = link.attrib['href']
             except KeyError:
@@ -392,7 +392,7 @@ class PageChecker(object):
                 continue
             print ' Found link href: ', linkhref
 
-        for image in root.iter(nsPrefix + 'img'):
+        for image in root.iter(ns_prefix + 'img'):
             try:
                 imgsrc = image.attrib['src']
             except KeyError:
@@ -400,7 +400,7 @@ class PageChecker(object):
                 continue
             print ' Found image src: ', imgsrc
 
-        for script in root.iter(nsPrefix + 'script'):
+        for script in root.iter(ns_prefix + 'script'):
             try:
                 scriptsrc = script.attrib['src']
             except KeyError:
@@ -408,15 +408,15 @@ class PageChecker(object):
                 continue
             print ' Found script src: ', scriptsrc
 
-        for formNode in root.getiterator(nsPrefix + 'form'):
+        for form_node in root.getiterator(ns_prefix + 'form'):
             # TODO: How to handle an empty action?
             #       1. take current path, erase query (current impl)
             #       2. take current path, merge query
             #       3. flag as error (not clearly specced)
             #       I think either flag as error, or mimic the browsers.
             try:
-                action = formNode.attrib['action'] or urlsplit(pageURL).path
-                method = formNode.attrib['method'].lower()
+                action = form_node.attrib['action'] or urlsplit(page_url).path
+                method = form_node.attrib['method'].lower()
             except KeyError:
                 continue
             if method == 'post':
@@ -425,26 +425,26 @@ class PageChecker(object):
             if method != 'get':
                 # The DTD will already have flagged this as a violation.
                 continue
-            submitURL = urljoin(pageURL, action)
-            if not submitURL.startswith(self.baseURL):
+            submit_url = urljoin(page_url, action)
+            if not submit_url.startswith(self.base_url):
                 continue
 
             # Note: Disabled controls should not be submitted, so we pretend
             #       they do not even exist.
             controls = []
-            radioButtons = defaultdict(list)
-            submitButtons = []
-            for inp in formNode.getiterator(nsPrefix + 'input'):
-                control = parseInputControl(inp.attrib)
+            radio_buttons = defaultdict(list)
+            submit_buttons = []
+            for inp in form_node.getiterator(ns_prefix + 'input'):
+                control = parse_input_control(inp.attrib)
                 if control is None:
                     pass
                 elif isinstance(control, RadioButton):
-                    radioButtons[control.name].append(control)
+                    radio_buttons[control.name].append(control)
                 elif isinstance(control, SubmitButton):
-                    submitButtons.append(control)
+                    submit_buttons.append(control)
                 else:
                     controls.append(control)
-            for control in formNode.getiterator(nsPrefix + 'select'):
+            for control in form_node.getiterator(ns_prefix + 'select'):
                 name = control.attrib.get('name')
                 multiple = control.attrib.get('multiple')
                 disabled = 'disabled' in control.attrib
@@ -452,14 +452,14 @@ class PageChecker(object):
                     continue
                 options = [
                     option.attrib.get('value', option.text)
-                    for option in control.getiterator(nsPrefix + 'option')
+                    for option in control.getiterator(ns_prefix + 'option')
                     ]
                 if multiple:
                     for option in options:
                         controls.append(SelectMultiple(name, option))
                 else:
                     controls.append(SelectSingle(name, options))
-            for control in formNode.getiterator(nsPrefix + 'textarea'):
+            for control in form_node.getiterator(ns_prefix + 'textarea'):
                 name = control.attrib.get('name')
                 value = control.text
                 disabled = 'disabled' in control.attrib
@@ -469,15 +469,15 @@ class PageChecker(object):
                 controls.append(TextArea(name, value))
 
             # Merge exclusive controls.
-            for buttons in radioButtons.itervalues():
+            for buttons in radio_buttons.itervalues():
                 controls.append(RadioButtonGroup(buttons))
-            if submitButtons:
-                controls.append(SubmitButtons(submitButtons))
+            if submit_buttons:
+                controls.append(SubmitButtons(submit_buttons))
             # If the form contains no submit buttons, assume it can be
             # submitted using JavaScript, so continue.
 
-            form = Form(submitURL, method, controls)
+            form = Form(submit_url, method, controls)
             referrers.append(form)
 
-        self.scribe.addReport(report)
+        self.scribe.add_report(report)
         return referrers

@@ -5,45 +5,45 @@
 import sys
 
 from checker import PageChecker
-from plugin import PluginError, loadPlugins
+from plugin import PluginError, load_plugins
 from report import Scribe
 from request import Request
 from spider import Spider
 
-def run(url, reportFileName, *pluginSpecs):
+def run(url, report_file_name, *plugin_specs):
     try:
-        firstRequest = Request.fromURL(url)
+        first_req = Request.from_url(url)
     except ValueError, ex:
         print 'Bad URL:', ex
         return 1
     plugins = []
-    for spec in pluginSpecs:
+    for spec in plugin_specs:
         try:
-            for plugin in loadPlugins(spec):
+            for plugin in load_plugins(spec):
                 plugins.append(plugin)
         except PluginError, ex:
             print ex
             return 1
 
-    spider = Spider(firstRequest)
-    baseURL = firstRequest.pageURL
-    scribe = Scribe(baseURL, spider, plugins)
-    checker = PageChecker(baseURL, scribe)
+    spider = Spider(first_req)
+    base_url = first_req.page_url
+    scribe = Scribe(base_url, spider, plugins)
+    checker = PageChecker(base_url, scribe)
 
-    print 'Checking "%s" and below...' % baseURL
+    print 'Checking "%s" and below...' % base_url
     for request in spider:
         referrers = checker.check(request)
-        spider.addRequests(request, referrers)
+        spider.add_requests(request, referrers)
     print 'Done checking'
 
-    print 'Writing report to "%s"...' % reportFileName
-    out = file(reportFileName, 'w')
+    print 'Writing report to "%s"...' % report_file_name
+    out = file(report_file_name, 'w')
     for node in scribe.present():
         out.write(node.flatten())
     out.close()
     print 'Done reporting'
 
-    scribe.postProcess()
+    scribe.postprocess()
     print 'Done post processing'
 
     return 0

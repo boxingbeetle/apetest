@@ -40,28 +40,24 @@ If you are creating a long sequence, concat() will perform better than addition.
 
 from codecs import getencoder
 
-_asciiencode = getencoder('ASCII')
-_translation = ''.join(
+_ASCII_ENCODER = getencoder('ASCII')
+_TRANSLATION = ''.join(
     chr(c) if c > 32 and c < 127 or c in (9, 10, 13) else ' '
     for c in xrange(256)
     )
-def _escapeXML(text):
+def _escape_xml(text):
     '''Converts special characters to XML entities.
     '''
-    return _asciiencode(
+    return _ASCII_ENCODER(
         text
         .replace('&', '&amp;')
         .replace('<', '&lt;')
         .replace('>', '&gt;')
         .replace('"', '&quot;'),
         'xmlcharrefreplace'
-        )[0].translate(_translation)
+        )[0].translate(_TRANSLATION)
 
-def _checkType(value, types):
-    if not isinstance(value, types):
-        raise TypeError(type(value))
-
-def _normalizeValue(value):
+def _stringify(value):
     return value if isinstance(value, basestring) else str(value)
 
 class _XMLSerializable(object):
@@ -71,7 +67,7 @@ class _XMLSerializable(object):
     def __str__(self):
         return self.flatten()
 
-    def _toFragments(self):
+    def _to_fragments(self):
         '''Iterates through the fragments (strings) forming the XML
         serialization of this object: the XML serialization is the
         concatenation of all the fragments.
@@ -79,7 +75,7 @@ class _XMLSerializable(object):
         raise NotImplementedError
 
     def flatten(self):
-        return ''.join(self._toFragments())
+        return ''.join(self._to_fragments())
 
     def join(self, siblings):
         '''Creates an XML sequence with the given siblings as children,
@@ -90,23 +86,23 @@ class _XMLSerializable(object):
         first = True
         for sibling in siblings:
             if not first:
-                sequence._addChild(self) # pylint: disable=protected-access
-            sequence._addChild(sibling) # pylint: disable=protected-access
+                sequence._add_child(self) # pylint: disable=protected-access
+            sequence._add_child(sibling) # pylint: disable=protected-access
             first = False
         return sequence
 
-class Text(_XMLSerializable):
+class _Text(_XMLSerializable):
 
     def __init__(self, text):
         _XMLSerializable.__init__(self)
-        self.__text = _escapeXML(text)
+        self.__text = _escape_xml(text)
 
     def __cmp__(self, other):
         # pylint: disable=protected-access
-        return not isinstance(other, Text) \
+        return not isinstance(other, _Text) \
             or cmp(self.__text, other.__text)
 
-    def _toFragments(self):
+    def _to_fragments(self):
         yield self.__text
 
 class _XMLSequence(_XMLSerializable):
@@ -114,7 +110,7 @@ class _XMLSequence(_XMLSerializable):
     def __init__(self, children=None):
         '''Creates an XML sequence.
         The given children, if any, must all be _XMLSerializable instances;
-        if that is not guaranteed, use _addChild() to add and convert.
+        if that is not guaranteed, use _add_child() to add and convert.
         '''
         _XMLSerializable.__init__(self)
         self.__children = [] if children is None else list(children)
@@ -136,19 +132,19 @@ class _XMLSequence(_XMLSerializable):
         return ret
 
     def __iadd__(self, other):
-        self._addChild(other)
+        self._add_child(other)
         return self
 
-    def _addChild(self, child):
+    def _add_child(self, child):
         if isinstance(child, _XMLSerializable):
             self.__children.append(child)
         elif hasattr(child, 'toXML'):
             self.__children.append(child.toXML())
         elif isinstance(child, basestring):
-            self.__children.append(Text(child))
+            self.__children.append(_Text(child))
         elif hasattr(child, '__iter__'):
-            for grandChild in child:
-                self._addChild(grandChild)
+            for grand_child in child:
+                self._add_child(grand_child)
         elif child is None:
             pass
         else:
@@ -156,15 +152,15 @@ class _XMLSequence(_XMLSerializable):
                 'cannot handle child of type %s' % type(child)
                 )
 
-    def _toFragments(self):
+    def _to_fragments(self):
         for content in self.__children:
             # pylint: disable=protected-access
             # "content" is an instance of _XMLSerializable, so we are
             # allowed to access protected methods.
-            for fragment in content._toFragments():
+            for fragment in content._to_fragments():
                 yield fragment
 
-class XMLNode(_XMLSerializable):
+class _XMLNode(_XMLSerializable):
 
     __emptySequence = _XMLSequence()
 
@@ -177,7 +173,7 @@ class XMLNode(_XMLSerializable):
     def __call__(self, **attributes):
         assert self.__attributes is None
         self.__attributes = dict(
-            (key.rstrip('_'), _escapeXML(_normalizeValue(value)))
+            (key.rstrip('_'), _escape_xml(_stringify(value)))
             for key, value in attributes.iteritems()
             if value is not None
             )
@@ -185,18 +181,18 @@ class XMLNode(_XMLSerializable):
 
     def __getitem__(self, index):
         # TODO: Consider returning a new object instead of self.
-        #       Then we could make XMLNodes immutable, which enables certain
+        #       Then we could make _XMLNodes immutable, which enables certain
         #       optimizations, such as precalculating the flattening.
         assert self.__children is None
         self.__children = children = _XMLSequence()
-        children._addChild(index) # pylint: disable=protected-access
+        children._add_child(index) # pylint: disable=protected-access
         return self
 
     def __cmp__(self, other):
         # Note: None for attributes or children should be considered
         #       equivalent to empty.
         # pylint: disable=protected-access
-        return not isinstance(other, XMLNode) \
+        return not isinstance(other, _XMLNode) \
             or cmp(self.__name, other.__name) \
             or cmp(self.__attributes or {}, other.__attributes or {}) \
             or cmp(self.__children or self.__emptySequence,
@@ -212,33 +208,33 @@ class XMLNode(_XMLSerializable):
         # Like strings, we consider a single element as a sequence of one.
         return concat(self, other)
 
-    def _toFragments(self):
+    def _to_fragments(self):
         attribs = self.__attributes
-        attribStr = '' if attribs is None else ''.join(
+        attrib_str = '' if attribs is None else ''.join(
             ' %s="%s"' % item for item in attribs.iteritems()
             )
         children = self.__children
         if children is None:
-            yield '<%s%s />' % (self.__name, attribStr)
+            yield '<%s%s />' % (self.__name, attrib_str)
         else:
-            yield '<%s%s>' % (self.__name, attribStr)
-            for fragment in children._toFragments(): # pylint: disable=protected-access
+            yield '<%s%s>' % (self.__name, attrib_str)
+            for fragment in children._to_fragments(): # pylint: disable=protected-access
                 yield fragment
             yield '</%s>' % self.__name
 
-class XMLNodeFactory(object):
-    '''Automatically creates XMLNode instances for any tag that is requested:
-    if an attribute with a certain name is requested, a new XMLNode with that
+class _XMLNodeFactory(object):
+    '''Automatically creates _XMLNode instances for any tag that is requested:
+    if an attribute with a certain name is requested, a new _XMLNode with that
     same name is returned.
     '''
 
     def __getattribute__(self, key):
-        return XMLNode(key)
+        return _XMLNode(key)
 
     def __getitem__(self, key):
-        return XMLNode(key)
+        return _XMLNode(key)
 
-class NamedEntity(_XMLSerializable):
+class _NamedEntity(_XMLSerializable):
 
     def __init__(self, name):
         _XMLSerializable.__init__(self)
@@ -246,13 +242,13 @@ class NamedEntity(_XMLSerializable):
 
     def __cmp__(self, other):
         # pylint: disable=protected-access
-        return not isinstance(other, NamedEntity) \
+        return not isinstance(other, _NamedEntity) \
             or cmp(self.__name, other.__name)
 
-    def _toFragments(self):
+    def _to_fragments(self):
         return '&%s;' % self.__name,
 
-class NumericEntity(_XMLSerializable):
+class _NumericEntity(_XMLSerializable):
 
     def __init__(self, number):
         _XMLSerializable.__init__(self)
@@ -260,13 +256,13 @@ class NumericEntity(_XMLSerializable):
 
     def __cmp__(self, other):
         # pylint: disable=protected-access
-        return not isinstance(other, NumericEntity) \
+        return not isinstance(other, _NumericEntity) \
             or cmp(self.__number, other.__number)
 
-    def _toFragments(self):
+    def _to_fragments(self):
         return '&#0x%X;' % self.__number,
 
-class EntityFactory(object):
+class _EntityFactory(object):
     '''Automatically creates Entity instances for any entity that is requested:
     if an attribute with a certain name is requested, a new Entity with that
     same name is returned.
@@ -274,31 +270,33 @@ class EntityFactory(object):
     '''
 
     def __getattribute__(self, key):
-        return NamedEntity(key)
+        return _NamedEntity(key)
 
     def __getitem__(self, key):
-        return NumericEntity(key)
+        return _NumericEntity(key)
 
-class CData(_XMLSerializable):
+class _CData(_XMLSerializable):
     '''Defines a CDATA section: XML character data that is not parsed to look
     for entities or elements.
     This can be used to embed JavaScript or CSS in pages.
     '''
 
     def __init__(self, text, comment=False):
-        _checkType(text, basestring)
-        _checkType(comment, bool)
+        if not isinstance(text, basestring):
+            raise TypeError(
+                'text should be a string, got %s' % type(text).__name__
+                )
         _XMLSerializable.__init__(self)
         self.__text = text
-        self.__comment = comment
+        self.__comment = bool(comment)
 
     def __cmp__(self, other):
         # pylint: disable=protected-access
-        return not isinstance(other, CData) \
+        return not isinstance(other, _CData) \
             or cmp(self.__text, other.__text) \
             or cmp(self.__comment, other.__comment)
 
-    def _toFragments(self):
+    def _to_fragments(self):
         comment = self.__comment
         yield '/*<![CDATA[*/' if comment else '<![CDATA['
         yield self.__text
@@ -308,10 +306,11 @@ def concat(*siblings):
     '''Creates an XML sequence containing the given siblings.
     '''
     sequence = _XMLSequence()
-    sequence._addChild(siblings) # pylint: disable=protected-access
+    sequence._add_child(siblings) # pylint: disable=protected-access
     return sequence
 
-xml = XMLNodeFactory()
-ent = EntityFactory()
-txt = Text
-cdata = CData
+# pylint: disable=invalid-name
+xml = _XMLNodeFactory()
+ent = _EntityFactory()
+txt = _Text
+cdata = _CData

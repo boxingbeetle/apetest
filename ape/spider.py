@@ -5,53 +5,51 @@ from collections import defaultdict
 class Spider(object):
     # TODO: Now just the first 100 are checked, it would be better to try
     #       variations of all query arguments.
-    maxQueriesPerPage = 100
+    max_queries_per_page = 100
 
-    def __init__(self, firstRequest):
-        self.requestsToCheck = set([firstRequest])
-        self.requestsChecked = set()
-        self.queriesPerPage = defaultdict(int)
+    def __init__(self, first_req):
+        self._requests_to_check = set([first_req])
+        self._requests_checked = set()
+        self._queries_per_page = defaultdict(int)
         # Maps source request to referrers (destination).
-        self.siteGraph = {}
+        self._site_graph = {}
         # Maps destination page to source requests.
-        self.pageReferredFrom = defaultdict(set)
+        self._page_referred_from = defaultdict(set)
 
     def __iter__(self):
-        while self.requestsToCheck:
-            print 'checked: %d, to check: %d' % (
-                len(self.requestsChecked), len(self.requestsToCheck)
-                )
-            request = min(self.requestsToCheck)
-            self.requestsToCheck.remove(request)
-            self.requestsChecked.add(request)
+        checked = self._requests_checked
+        to_check = self._requests_to_check
+        while to_check:
+            print 'checked: %d, to check: %d' % (len(checked), len(to_check))
+            request = min(to_check)
+            to_check.remove(request)
+            checked.add(request)
             yield request
 
-    def addRequests(self, sourceRequest, referrers):
+    def add_requests(self, source_req, referrers):
         # Currently each request is only visited once, so we do not have to
         # merge data, but that might change once we start doing POSTs.
-        assert sourceRequest not in self.siteGraph
-        self.siteGraph[sourceRequest] = referrers
+        assert source_req not in self._site_graph
+        self._site_graph[source_req] = referrers
 
         for referrer in referrers:
-            pageURL = referrer.pageURL
-            self.pageReferredFrom[pageURL].add(sourceRequest)
+            url = referrer.page_url
+            self._page_referred_from[url].add(source_req)
 
-            for request in referrer.iterRequests():
-                if request in self.requestsChecked \
-                or request in self.requestsToCheck:
+            for request in referrer.iter_requests():
+                if request in self._requests_checked \
+                or request in self._requests_to_check:
                     continue
-                if self.queriesPerPage[pageURL] >= self.maxQueriesPerPage:
-                    print 'maximum number of queries reached for "%s"' % (
-                        pageURL
-                        )
+                if self._queries_per_page[url] >= self.max_queries_per_page:
+                    print 'maximum number of queries reached for "%s"' % url
                     break
-                self.queriesPerPage[pageURL] += 1
-                self.requestsToCheck.add(request)
+                self._queries_per_page[url] += 1
+                self._requests_to_check.add(request)
 
-    def iterReferringRequests(self, destRequest):
+    def iter_referring_requests(self, dest_req):
         '''Iterate through the requests that refer to the given request.
         '''
-        for sourceRequest in self.pageReferredFrom[destRequest]:
-            for referrer in self.siteGraph[sourceRequest]:
-                if referrer.hasRequest(destRequest):
-                    yield sourceRequest
+        for source_req in self._page_referred_from[dest_req]:
+            for referrer in self._site_graph[source_req]:
+                if referrer.has_request(dest_req):
+                    yield source_req

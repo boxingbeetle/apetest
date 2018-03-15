@@ -8,10 +8,10 @@ class Plugin(object):
     def __init__(self):
         pass
 
-    def reportAdded(self, report):
+    def report_added(self, report):
         pass
 
-    def postProcess(self, scribe):
+    def postprocess(self, scribe):
         pass
 
 class PluginError(Exception):
@@ -19,15 +19,15 @@ class PluginError(Exception):
     '''
     pass
 
-def loadPlugins(pluginSpec):
+def load_plugins(spec):
     '''Load and initialise plugins according to the given spec string.
     The spec string has the format <module>(#<name>=<value>)*.
     Generates instances of the plugin classes.
     Raises PluginError if a plugin could not be loaded and initialised.
     '''
     # Parse spec string.
-    parts = pluginSpec.split('#')
-    pluginName = parts[0]
+    parts = spec.split('#')
+    module_name = parts[0]
     args = {}
     for part in parts[1 : ]:
         try:
@@ -36,80 +36,80 @@ def loadPlugins(pluginSpec):
             raise PluginError(
                 'Invalid argument for plugin "%s": '
                 'expected "<name>=<value>", got "%s"'
-                % (pluginName, part)
+                % (module_name, part)
                 )
         args[name] = value
 
     # Load plugin module.
     try:
-        pluginModule = __import__(pluginName)
+        module = __import__(module_name)
     except ImportError, ex:
         raise PluginError(
             'Could not load plugin module: "%s".\n'
             '  %s'
-            % (pluginName, ex)
+            % (module_name, ex)
             )
 
     # Search module for plugin classes.
-    newPlugins = []
-    for attrName in dir(pluginModule):
-        attr = getattr(pluginModule, attrName)
+    new_plugins = []
+    for name in dir(module):
+        attr = getattr(module, name)
         try:
             if issubclass(attr, Plugin) and attr is not Plugin:
-                newPlugins.append(attr)
+                new_plugins.append(attr)
         except TypeError:
             pass
-    if not newPlugins:
+    if not new_plugins:
         raise PluginError(
-            'No subclasses of "Plugin" found in module "%s"' % pluginName
+            'No subclasses of "Plugin" found in module "%s"' % module_name
             )
 
     # Build a list of all arguments accepted by plugin constructors.
-    acceptedArgs = set()
-    for plugin in newPlugins:
+    accepted_args = set()
+    for plugin in new_plugins:
         ctor = plugin.__init__
-        ctorArgs = ctor.func_code.co_varnames[ : ctor.func_code.co_argcount]
-        if ctorArgs[0] != 'self':
+        ctor_args = ctor.func_code.co_varnames[ : ctor.func_code.co_argcount]
+        if ctor_args[0] != 'self':
             raise PluginError(
                 'First argument to constructor of "%s.%s" '
                 'is "%s" instead of "self"'
-                % (pluginName, plugin.__name__, ctorArgs[0])
+                % (module_name, plugin.__name__, ctor_args[0])
                 )
-        acceptedArgs |= set(ctorArgs[1 : ])
+        accepted_args |= set(ctor_args[1 : ])
 
     # Check for arguments that are not accepted by any constructor.
     for name in sorted(args.iterkeys()):
-        if name not in acceptedArgs:
+        if name not in accepted_args:
             raise PluginError(
                 'No plugin constructor in "%s" accepts argument "%s"'
-                % (pluginName, name)
+                % (module_name, name)
                 )
 
     # Instantiate plugin classes.
-    for plugin in newPlugins:
+    for plugin in new_plugins:
         ctor = plugin.__init__
-        nrCtorArgs = ctor.func_code.co_argcount
-        nrMandatoryCtorArgs = nrCtorArgs - len(ctor.func_defaults or ())
-        ctorArgs = ctor.func_code.co_varnames[ : nrCtorArgs]
-        missingArgs = set(
+        num_ctor_args = ctor.func_code.co_argcount
+        num_mandatory_ctor_args = num_ctor_args - len(ctor.func_defaults or ())
+        ctor_args = ctor.func_code.co_varnames[:num_ctor_args]
+        missing_args = set(
             arg
-            for arg in ctorArgs[1 : nrMandatoryCtorArgs]
+            for arg in ctor_args[1:num_mandatory_ctor_args]
             if arg not in args
             )
-        if missingArgs:
+        if missing_args:
             raise PluginError(
                 'Missing mandatory argument%s '
                 'for plugin constructor "%s.%s": %s'
                 % (
-                    '' if len(missingArgs) == 1 else 's',
-                    pluginName, plugin.__name__,
-                    ', '.join('"%s"' % arg for arg in sorted(missingArgs))
+                    '' if len(missing_args) == 1 else 's',
+                    module_name, plugin.__name__,
+                    ', '.join('"%s"' % arg for arg in sorted(missing_args))
                     )
                 )
-        filteredArgs = dict(
+        filtered_args = dict(
             (name, value)
             for name, value in args.iteritems()
-            if name in ctorArgs[1 : ]
+            if name in ctor_args[1 : ]
             )
-        instance = plugin(**filteredArgs)
+        instance = plugin(**filtered_args)
         yield instance

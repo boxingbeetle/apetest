@@ -6,7 +6,7 @@ class Control(object):
     part of the submission, for example an unchecked checkbox.
     '''
 
-    def hasAlternative(self, name, value):
+    def has_alternative(self, name, value):
         '''Returns True iff the given name-value combination could be submitted
         by this control.
         Note that for free input controls, it is possible this method returns
@@ -31,7 +31,7 @@ class SingleValueControl(Control):
         self.name = name
         self.value = value
 
-    def hasAlternative(self, name, value):
+    def has_alternative(self, name, value):
         return name == self.name and value == self.value
 
     def alternatives(self):
@@ -41,7 +41,7 @@ class FileInput(SingleValueControl):
     '''A control for selecting and uploading files.
     '''
 
-    def hasAlternative(self, name, value):
+    def has_alternative(self, name, value):
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
@@ -57,7 +57,7 @@ class HiddenInput(SingleValueControl):
 
 class TextField(SingleValueControl):
 
-    def hasAlternative(self, name, value):
+    def has_alternative(self, name, value):
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
@@ -68,7 +68,7 @@ class TextField(SingleValueControl):
 
 class TextArea(SingleValueControl):
 
-    def hasAlternative(self, name, value):
+    def has_alternative(self, name, value):
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
@@ -79,7 +79,7 @@ class TextArea(SingleValueControl):
 
 class Checkbox(SingleValueControl):
 
-    def hasAlternative(self, name, value):
+    def has_alternative(self, name, value):
         return (
             (name is None and value is None) or
             (name == self.name and value == self.value)
@@ -91,7 +91,7 @@ class Checkbox(SingleValueControl):
 
 class RadioButton(SingleValueControl):
 
-    def hasAlternative(self, name, value):
+    def has_alternative(self, name, value):
         assert False, 'radio button "%s" was not merged' % self.name
 
     def alternatives(self):
@@ -122,7 +122,7 @@ class RadioButtonGroup(Control):
         self.name = name
         self.values = values
 
-    def hasAlternative(self, name, value):
+    def has_alternative(self, name, value):
         return name == self.name and value in self.values
 
     def alternatives(self):
@@ -135,7 +135,7 @@ class SubmitButtons(Control):
         Control.__init__(self)
         self.buttons = tuple((button.name, button.value) for button in buttons)
 
-    def hasAlternative(self, name, value):
+    def has_alternative(self, name, value):
         return (name, value) in self.buttons
 
     def alternatives(self):
@@ -146,7 +146,7 @@ class SelectMultiple(SingleValueControl):
     multiple options can be active at the same time.
     '''
 
-    def hasAlternative(self, name, value):
+    def has_alternative(self, name, value):
         return (
             (name is None and value is None) or
             (name == self.name and value == self.value)
@@ -165,7 +165,7 @@ class SelectSingle(Control):
         self.name = name
         self.options = options
 
-    def hasAlternative(self, name, value):
+    def has_alternative(self, name, value):
         return (
             (name is None and value is None) or
             (name == self.name and value in self.options)

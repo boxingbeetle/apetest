@@ -43,7 +43,7 @@ def load_plugins(spec):
     # Load plugin module.
     try:
         module = __import__(module_name)
-    except ImportError, ex:
+    except ImportError as ex:
         raise PluginError(
             'Could not load plugin module: "%s".\n'
             '  %s'

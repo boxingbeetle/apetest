@@ -96,7 +96,7 @@ def fetch_page(request):
             if remove_index:
                 result.url = url
             return result
-        except HTTPError, ex:
+        except HTTPError as ex:
             if ex.code == 503:
                 if 'retry-after' in ex.headers:
                     try:
@@ -126,9 +126,9 @@ def fetch_page(request):
                 raise FetchFailure(
                     url, 'HTTP error %d: %s' % (ex.code, ex.msg)
                     )
-        except URLError, ex:
+        except URLError as ex:
             raise FetchFailure(url, str(ex.reason))
-        except OSError, ex:
+        except OSError as ex:
             raise FetchFailure(url, ex.strerror)
 
 def parse_document(content, report):
@@ -151,7 +151,7 @@ def parse_document(content, report):
         parser = etree.HTMLParser()
     try:
         root = etree.fromstring(content, parser)
-    except etree.XMLSyntaxError, ex:
+    except etree.XMLSyntaxError as ex:
         report.add_note('Failed to parse with DTD validation.')
         validation_errors = [ex]
     else:
@@ -173,7 +173,7 @@ def parse_document(content, report):
                 )
             try:
                 root = etree.fromstring(content, parser)
-            except etree.XMLSyntaxError, ex:
+            except etree.XMLSyntaxError as ex:
                 if recover:
                     report.add_note('Failed to parse in recovery.')
                 else:
@@ -257,7 +257,7 @@ def parse_document(content, report):
                 )
             try:
                 dummy_root_ = etree.fromstring(pruned_content, parser)
-            except etree.XMLSyntaxError, ex:
+            except etree.XMLSyntaxError as ex:
                 report.add_note(
                     'Failed to parse pruned tree with validation.'
                     )
@@ -321,7 +321,7 @@ class PageChecker(object):
 
         try:
             inp = fetch_page(req)
-        except FetchFailure, report:
+        except FetchFailure as report:
             print 'Failed to open page'
             self.scribe.add_report(report)
             return []
@@ -334,7 +334,7 @@ class PageChecker(object):
                 print 'Redirected to:', self.short_url(content_url)
                 try:
                     referrers = [Redirect(Request.from_url(content_url))]
-                except ValueError, ex:
+                except ValueError as ex:
                     report.add_query_warning(str(ex))
             else:
                 print 'Redirected outside:', content_url
@@ -350,7 +350,7 @@ class PageChecker(object):
 
         try:
             content = inp.read()
-        except IOError, ex:
+        except IOError as ex:
             print 'Failed to fetch'
             self.scribe.add_report(FetchFailure(page_url, str(ex)))
             return []
@@ -378,7 +378,7 @@ class PageChecker(object):
             if url.startswith(self.base_url):
                 try:
                     request = Request.from_url(url)
-                except ValueError, ex:
+                except ValueError as ex:
                     report.add_query_warning(str(ex))
                 else:
                     links[request.page_url].add(request)

@@ -13,7 +13,7 @@ from spider import Spider
 def run(url, report_file_name, *plugin_specs):
     try:
         first_req = Request.from_url(url)
-    except ValueError, ex:
+    except ValueError as ex:
         print 'Bad URL:', ex
         return 1
     plugins = []
@@ -21,7 +21,7 @@ def run(url, report_file_name, *plugin_specs):
         try:
             for plugin in load_plugins(spec):
                 plugins.append(plugin)
-        except PluginError, ex:
+        except PluginError as ex:
             print ex
             return 1
 

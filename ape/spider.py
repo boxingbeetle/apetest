@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import print_function
 from collections import defaultdict
 
 class Spider(object):

@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import print_function
-
 from ape.checker import PageChecker
 from ape.plugin import PluginError, load_plugins
 from ape.report import Scribe

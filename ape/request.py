@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-from urllib import quote_plus, unquote_plus
-from urlparse import urlsplit, urlunsplit
+from urllib.parse import quote_plus, unquote_plus, urlsplit, urlunsplit
 
 class Request(object):
     '''A page and arguments combination.

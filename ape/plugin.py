@@ -78,7 +78,7 @@ def load_plugins(spec):
         accepted_args |= set(ctor_args[1 : ])
 
     # Check for arguments that are not accepted by any constructor.
-    for name in sorted(args.iterkeys()):
+    for name in sorted(args.keys()):
         if name not in accepted_args:
             raise PluginError(
                 'No plugin constructor in "%s" accepts argument "%s"'
@@ -108,7 +108,7 @@ def load_plugins(spec):
                 )
         filtered_args = dict(
             (name, value)
-            for name, value in args.iteritems()
+            for name, value in args.items()
             if name in ctor_args[1 : ]
             )
         instance = plugin(**filtered_args)

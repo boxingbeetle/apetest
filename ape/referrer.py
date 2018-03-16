@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import print_function
 from ape.request import Request
 
 class Referrer(object):
@@ -148,7 +147,7 @@ class Form(Referrer):
                 for produced in produces_pairs:
                     del produced[pair_index]
                 self._changed = True
-            def next(self):
+            def __next__(self):
                 index = self._index
                 if index == 0:
                     raise StopIteration
@@ -237,7 +236,7 @@ class Form(Referrer):
 
         # Recursively try to find a solution.
         # We don't have to know the solution, only check its existence.
-        remaining_pairs = range(len(produces_pairs[0]))
+        remaining_pairs = list(range(len(produces_pairs[0])))
         def solve_recursive(control_index):
             if control_index == len(produces_pairs):
                 return True

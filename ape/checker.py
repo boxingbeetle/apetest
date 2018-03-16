@@ -1,13 +1,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import print_function
 from collections import defaultdict
 from copy import deepcopy
 from os.path import isdir
 from time import sleep
-from urllib import unquote
-from urllib2 import HTTPError, URLError, Request as URLRequest, urlopen
-from urlparse import urljoin, urlsplit, urlunsplit
+from urllib.error import HTTPError, URLError
+from urllib.parse import unquote, urljoin, urlsplit, urlunsplit
+from urllib.request import Request as URLRequest, urlopen
 
 from lxml import etree
 
@@ -63,7 +62,7 @@ def _get_foreign_namespaces(root):
                 index = tag.find('}')
                 if index != -1:
                     foreign_elem_namespaces.add(tag[1 : index])
-        for name in elem.attrib.iterkeys():
+        for name in elem.attrib.keys():
             if name.startswith('{'):
                 if not any(name.startswith(prefix)
                            for prefix in accepted_ns_prefixes):
@@ -383,7 +382,7 @@ class PageChecker(object):
                     report.add_query_warning(str(ex))
                 else:
                     links[request.page_url].add(request)
-        referrers = list(links.itervalues())
+        referrers = list(links.values())
 
         for link in root.iter(ns_prefix + 'link'):
             try:
@@ -470,7 +469,7 @@ class PageChecker(object):
                 controls.append(TextArea(name, value))
 
             # Merge exclusive controls.
-            for buttons in radio_buttons.itervalues():
+            for buttons in radio_buttons.values():
                 controls.append(RadioButtonGroup(buttons))
             if submit_buttons:
                 controls.append(SubmitButtons(submit_buttons))

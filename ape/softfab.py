@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import print_function
 from ape.plugin import Plugin
 
 class PropertiesPlugin(Plugin):
@@ -22,5 +21,5 @@ class PropertiesPlugin(Plugin):
         path = self.properties_dir + '/results.properties'
         print('Writing metadata to "%s"...' % path)
         with open(path, 'w') as out:
-            for key in sorted(data.iterkeys()):
+            for key in sorted(data.keys()):
                 print('%s=%s' % (key, data[key]), file=out)

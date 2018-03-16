@@ -43,7 +43,7 @@ from codecs import getencoder
 _ASCII_ENCODER = getencoder('ASCII')
 _TRANSLATION = ''.join(
     chr(c) if c > 32 and c < 127 or c in (9, 10, 13) else ' '
-    for c in xrange(256)
+    for c in range(256)
     )
 def _escape_xml(text):
     '''Converts special characters to XML entities.
@@ -58,7 +58,7 @@ def _escape_xml(text):
         )[0].translate(_TRANSLATION)
 
 def _stringify(value):
-    return value if isinstance(value, basestring) else str(value)
+    return value if isinstance(value, str) else str(value)
 
 class _XMLSerializable(object):
     '''Base class for objects that can be serialized to XML.
@@ -140,7 +140,7 @@ class _XMLSequence(_XMLSerializable):
             self.__children.append(child)
         elif hasattr(child, 'toXML'):
             self.__children.append(child.toXML())
-        elif isinstance(child, basestring):
+        elif isinstance(child, str):
             self.__children.append(_Text(child))
         elif hasattr(child, '__iter__'):
             for grand_child in child:
@@ -174,7 +174,7 @@ class _XMLNode(_XMLSerializable):
         assert self.__attributes is None
         self.__attributes = dict(
             (key.rstrip('_'), _escape_xml(_stringify(value)))
-            for key, value in attributes.iteritems()
+            for key, value in attributes.items()
             if value is not None
             )
         return self
@@ -211,7 +211,7 @@ class _XMLNode(_XMLSerializable):
     def _to_fragments(self):
         attribs = self.__attributes
         attrib_str = '' if attribs is None else ''.join(
-            ' %s="%s"' % item for item in attribs.iteritems()
+            ' %s="%s"' % item for item in attribs.items()
             )
         children = self.__children
         if children is None:
@@ -282,7 +282,7 @@ class _CData(_XMLSerializable):
     '''
 
     def __init__(self, text, comment=False):
-        if not isinstance(text, basestring):
+        if not isinstance(text, str):
             raise TypeError(
                 'text should be a string, got %s' % type(text).__name__
                 )

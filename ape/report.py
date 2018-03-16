@@ -1,8 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections import defaultdict
-from urllib import unquote_plus
-from urlparse import urlsplit
+from urllib.parse import unquote_plus, urlsplit
 
 from ape.request import Request
 from ape.xmlgen import xml
@@ -149,7 +148,7 @@ class Page(object):
             '%d queries checked, %d passed, %d failed'
             % (total, total - self.failures, self.failures)
             ]
-        for query, report in sorted(self.query_to_report.iteritems()):
+        for query, report in sorted(self.query_to_report.items()):
             yield xml.h3(class_='pass' if report.ok else 'fail')[
                 xml.a(href=report.url)[
                     ' | '.join(
@@ -199,7 +198,7 @@ class Scribe(object):
 
     def get_failed_pages(self):
         return [
-            page for page in self._pages.itervalues() if page.failures != 0
+            page for page in self._pages.values() if page.failures != 0
             ]
 
     def get_summary(self):
@@ -226,13 +225,13 @@ class Scribe(object):
                 self.present_failed_index(),
                 ((xml.h2[xml.a(name=name or 'base')[name or '(base)']],
                   page.present(self))
-                 for name, page in sorted(self._pages.iteritems()))
+                 for name, page in sorted(self._pages.items()))
                 ]
             ]
 
     def present_failed_index(self):
         failed_page_names = [
-            name for name, page in self._pages.iteritems() if page.failures != 0
+            name for name, page in self._pages.items() if page.failures != 0
             ]
         if failed_page_names:
             yield xml.p['Failed pages:']

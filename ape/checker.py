@@ -343,8 +343,12 @@ class PageChecker(object):
                 inp.close()
             return referrers
 
-        if inp.info().type not in ('text/html', 'application/xhtml+xml'):
-            print('Skipping. Document type is not HTML or XHTML, but [%s].' % inp.info().type)
+        content_type = inp.info().get_content_type()
+        if content_type not in ('text/html', 'application/xhtml+xml'):
+            print(
+                'Skipping. Document type is not HTML or XHTML, but [%s].'
+                % content_type
+                )
             inp.close()
             return []
 

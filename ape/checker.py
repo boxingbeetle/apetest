@@ -1,8 +1,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from codecs import (
+    BOM_UTF8, BOM_UTF16_BE, BOM_UTF16_LE, BOM_UTF32_BE, BOM_UTF32_LE,
+    getdecoder
+    )
 from collections import defaultdict
 from copy import deepcopy
 from os.path import isdir
+import re
 from time import sleep
 from urllib.error import HTTPError, URLError
 from urllib.parse import unquote, urljoin, urlsplit, urlunsplit
@@ -18,6 +23,67 @@ from ape.control import (
 from ape.referrer import Form, LinkSet, Redirect
 from ape.report import FetchFailure, IncrementalReport
 from ape.request import Request
+
+def encoding_from_bom(data):
+    '''Looks for a byte-order-marker at the start of the given bytes.
+    If found, return the encoding matching that BOM, otherwise return None.
+    '''
+    if data.startswith(BOM_UTF8):
+        return 'utf-8'
+    elif data.startswith(BOM_UTF16_LE) or data.startswith(BOM_UTF16_BE):
+        return 'utf-16'
+    elif data.startswith(BOM_UTF32_LE) or data.startswith(BOM_UTF32_BE):
+        return 'utf-32'
+    else:
+        return None
+
+def strict_decode(data, encoding):
+    '''Attempts to decode the given bytes using the given encoding name.
+    Returns the decoded string if it decoded flawlessly, None otherwise.
+    '''
+    try:
+        decoder = getdecoder(encoding)
+    except LookupError:
+        return None
+    try:
+        text, consumed = decoder(data, 'strict')
+    except UnicodeDecodeError:
+        return None
+    if consumed == len(data):
+        return text
+    else:
+        return None
+
+_RE_XML_DECL = re.compile(
+    r'<\?xml([ \t\r\n\'"\w.\-=]*).*\?>'
+    )
+_RE_XML_DECL_ATTR = re.compile(
+    r'[ \t\r\n]+([a-z]+)[ \t\r\n]*=[ \t\r\n]*'
+    r'(?P<quote>[\'"])([\w.\-]*)(?P=quote)'
+    )
+
+def strip_xml_decl(text):
+    '''Strips the XML declaration from the start of the given text.
+    Returns the given text without XML declaration, or the unmodified text if
+    no XML declaration was found.
+    '''
+    match = _RE_XML_DECL.match(text)
+    return text if match is None else text[match.end():]
+
+def encoding_from_xml_decl(text):
+    '''Looks for an XML declaration with an "encoding" attribute at the start
+    of the given text.
+    If found, the attribute value is converted to lower case and then returned,
+    otherwise None is returned.
+    '''
+    match = _RE_XML_DECL.match(text)
+    if match is not None:
+        decl = match.group(1)
+        for match in _RE_XML_DECL_ATTR.finditer(decl):
+            name, quote_, value = match.groups()
+            if name == 'encoding':
+                return value.lower()
+    return None
 
 def normalize_url(url):
     '''Returns a unique string for the given URL.
@@ -353,7 +419,7 @@ class PageChecker(object):
             return []
 
         try:
-            content = inp.read()
+            content_bytes = inp.read()
         except IOError as ex:
             print('Failed to fetch')
             self.scribe.add_report(FetchFailure(page_url, str(ex)))
@@ -362,6 +428,80 @@ class PageChecker(object):
             inp.close()
 
         report = IncrementalReport(page_url)
+
+        # Build a list of possible encodings.
+        # W3C recommends giving the BOM, if present, precedence over HTTP.
+        #   http://www.w3.org/International/questions/qa-byte-order-mark
+        bom_encoding = encoding_from_bom(content_bytes)
+        http_encoding = inp.info().get_content_charset()
+        encodings = []
+        if bom_encoding is not None:
+            encodings.append(bom_encoding)
+        if http_encoding is not None and http_encoding != bom_encoding:
+            encodings.append(http_encoding)
+        if 'utf-8' not in encodings:
+            encodings.append('utf-8')
+
+        # Try to decode the document.
+        for encoding in encodings:
+            content = strict_decode(content_bytes, encoding)
+            if content is not None:
+                used_encoding = encoding
+                break
+        else:
+            # All likely encodings failed; ignore all non-ASCII bytes so
+            # we can look inside the document for clues.
+            content = content_bytes.decode('ascii', 'ignore')
+            used_encoding = None
+
+        # Look for encoding in XML declaration.
+        if content_type.endswith('xml'):
+            decl_encoding = encoding_from_xml_decl(content)
+            if used_encoding is None and decl_encoding is not None:
+                new_content = strict_decode(content_bytes, decl_encoding)
+                if new_content is not None:
+                    content = new_content
+                    used_encoding = decl_encoding
+        else:
+            decl_encoding = None
+
+        # TODO: Also look at HTML <meta> tags.
+
+        if used_encoding is None:
+            # TODO: Do the decoding again to capture the error messages.
+            #       Actually, also try non-strict decoding with the first
+            #       encoding from the list.
+            self.scribe.add_report(FetchFailure(
+                page_url, 'Unable to determine document encoding'
+                ))
+            return []
+
+        # Report differences between suggested encodings and the one we
+        # settled on.
+        if bom_encoding not in (None, used_encoding):
+            report.add_note(
+                'Byte order marker suggests encoding "%s", '
+                'while actual encoding seems to be "%s"'
+                % (bom_encoding, used_encoding)
+                )
+        if http_encoding not in (None, used_encoding):
+            report.add_note(
+                'HTTP header specifies encoding "%s", '
+                'while actual encoding seems to be "%s"'
+                % (http_encoding, used_encoding)
+                )
+        if decl_encoding not in (None, used_encoding):
+            report.add_note(
+                'XML declaration specifies encoding "%s", '
+                'while actual encoding seems to be "%s"'
+                % (decl_encoding, used_encoding)
+                )
+
+        if content_type.endswith('xml'):
+            # The lxml parser does not accept encoding in XML declarations
+            # when parsing strings.
+            content = strip_xml_decl(content)
+
         root = parse_document(content, report)
         if root is None:
             self.scribe.add_report(report)

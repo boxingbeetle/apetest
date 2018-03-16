@@ -23,9 +23,17 @@ class DataChangeMonitor(Plugin):
         self._log_fd = None
         self._partial_line = ''
 
-    def __process_data(self):
+    def __process_data(self, report):
         if self._log_fd is None:
-            self._log_fd = os.open(self._log_file, os.O_RDONLY | os.O_NONBLOCK)
+            try:
+                self._log_fd = os.open(
+                    self._log_file, os.O_RDONLY | os.O_NONBLOCK
+                    )
+            except OSError as ex:
+                report.add_plugin_warning(
+                    'Could not open log file for reading: %s' % ex
+                    )
+                return
         while True:
             new_data = os.read(self._log_fd, 200)
             if new_data:
@@ -42,7 +50,7 @@ class DataChangeMonitor(Plugin):
                 break
 
     def report_added(self, report):
-        for change, db_name, record_id in self.__process_data():
+        for change, db_name, record_id in self.__process_data(report):
             if (db_name, change) not in self.allowed_changes:
                 report.add_plugin_warning(
                     'Unexpected %s in database "%s" on record "%s"'

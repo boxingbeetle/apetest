@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import print_function
-from plugin import Plugin
+from ape.plugin import Plugin
 
 class PropertiesPlugin(Plugin):
 

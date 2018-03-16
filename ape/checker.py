@@ -11,14 +11,14 @@ from urlparse import urljoin, urlsplit, urlunsplit
 
 from lxml import etree
 
-from control import (
+from ape.control import (
     Checkbox, FileInput, HiddenInput, RadioButton, RadioButtonGroup,
     SelectSingle, SelectMultiple, SubmitButton, SubmitButtons,
     TextArea, TextField
     )
-from referrer import Form, LinkSet, Redirect
-from report import FetchFailure, IncrementalReport
-from request import Request
+from ape.referrer import Form, LinkSet, Redirect
+from ape.report import FetchFailure, IncrementalReport
+from ape.request import Request
 
 def normalize_url(url):
     '''Returns a unique string for the given URL.

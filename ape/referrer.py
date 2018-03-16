@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import print_function
-from request import Request
+from ape.request import Request
 
 class Referrer(object):
     '''Represents an entity that can generate requests.

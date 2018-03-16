@@ -4,8 +4,8 @@ from collections import defaultdict
 from urllib import unquote_plus
 from urlparse import urlsplit
 
-from request import Request
-from xmlgen import xml
+from ape.request import Request
+from ape.xmlgen import xml
 
 _STYLE_SHEET = '''
 body {

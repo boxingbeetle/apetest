@@ -2,7 +2,7 @@
 
 import os
 
-from plugin import Plugin
+from ape.plugin import Plugin
 
 class DataChangeMonitor(Plugin):
 

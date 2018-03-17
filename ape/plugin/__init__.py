@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from importlib import import_module
+
 class Plugin(object):
     '''Abstract plugin: your plugin class should inherit this and override
     one or more methods.
@@ -27,7 +29,7 @@ def load_plugins(spec):
     '''
     # Parse spec string.
     parts = spec.split('#')
-    module_name = parts[0]
+    module_name = 'ape.plugin.%s' % parts[0]
     args = {}
     for part in parts[1 : ]:
         try:
@@ -36,13 +38,13 @@ def load_plugins(spec):
             raise PluginError(
                 'Invalid argument for plugin "%s": '
                 'expected "<name>=<value>", got "%s"'
-                % (module_name, part)
+                % (parts[0], part)
                 )
         args[name] = value
 
     # Load plugin module.
     try:
-        module = __import__(module_name)
+        module = import_module(module_name)
     except ImportError as ex:
         raise PluginError(
             'Could not load plugin module: "%s".\n'

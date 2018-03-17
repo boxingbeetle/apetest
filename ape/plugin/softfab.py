@@ -9,7 +9,7 @@ class PropertiesPlugin(Plugin):
         self.properties_dir = properties_dir
 
     def postprocess(self, scribe):
-        total = len(scribe.pages)
+        total = len(scribe.get_pages())
         num_failed_pages = len(scribe.get_failed_pages())
         data = {
             'result': 'ok' if num_failed_pages == 0 else 'warning',

@@ -196,6 +196,9 @@ class Scribe(object):
         page = self._pages[self.__url_to_name(url)]
         page.add_report(report)
 
+    def get_pages(self):
+        return self._pages.values()
+
     def get_failed_pages(self):
         return [
             page for page in self._pages.values() if page.failures != 0

@@ -306,16 +306,10 @@ def parse_document(content, report):
             # queries.
             parser = etree.XMLParser(dtd_validation=True, no_network=True)
             docinfo = root.getroottree().docinfo
-            pruned_content = (
-                "<?xml version='%s' encoding='%s'?>\n" % (
-                    docinfo.xml_version.encode('ASCII'),
-                    docinfo.encoding.encode('ASCII'),
-                    ) +
-                etree.tostring(
-                    pruned_root.getroottree(),
-                    encoding=docinfo.encoding,
-                    xml_declaration=False,
-                    )
+            pruned_content = etree.tostring(
+                pruned_root.getroottree(),
+                encoding=docinfo.encoding,
+                xml_declaration=False,
                 )
             #print pruned_content
             report.add_note(

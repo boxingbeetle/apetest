@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from functools import total_ordering
+
 from urllib.parse import quote_plus, unquote_plus, urlsplit, urlunsplit
 
+@total_ordering
 class Request(object):
     '''A page and arguments combination.
     '''
@@ -36,15 +39,17 @@ class Request(object):
         self.query = tuple(sorted(query))
         self.maybe_bad = bool(maybe_bad)
 
-    def __cmp__(self, other):
-        if hasattr(other, 'page_url'):
-            url_compare = cmp(self.page_url, other.page_url)
-            if url_compare:
-                return url_compare
-            if hasattr(other, 'query'):
-                return cmp(self.query, other.query)
-        # Uncomparable, return any non-equal.
-        return -1
+    def __eq__(self, other):
+        if isinstance(other, Request):
+            return self.page_url == other.page_url and self.query == other.query
+        else:
+            return NotImplemented
+
+    def __lt__(self, other):
+        if isinstance(other, Request):
+            return (self.page_url, self.query) < (other.page_url, other.query)
+        else:
+            return NotImplemented
 
     def __hash__(self):
         return hash(self.page_url) ^ hash(self.query)

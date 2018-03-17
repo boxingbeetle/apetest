@@ -97,11 +97,6 @@ class _Text(_XMLSerializable):
         _XMLSerializable.__init__(self)
         self.__text = _escape_xml(text)
 
-    def __cmp__(self, other):
-        # pylint: disable=protected-access
-        return not isinstance(other, _Text) \
-            or cmp(self.__text, other.__text)
-
     def _to_fragments(self):
         yield self.__text
 
@@ -114,11 +109,6 @@ class _XMLSequence(_XMLSerializable):
         '''
         _XMLSerializable.__init__(self)
         self.__children = [] if children is None else list(children)
-
-    def __cmp__(self, other):
-        # pylint: disable=protected-access
-        return not isinstance(other, _XMLSequence) \
-            or cmp(self.__children, other.__children)
 
     def __add__(self, other):
         ret = _XMLSequence(self.__children)
@@ -188,16 +178,6 @@ class _XMLNode(_XMLSerializable):
         children._add_child(index) # pylint: disable=protected-access
         return self
 
-    def __cmp__(self, other):
-        # Note: None for attributes or children should be considered
-        #       equivalent to empty.
-        # pylint: disable=protected-access
-        return not isinstance(other, _XMLNode) \
-            or cmp(self.__name, other.__name) \
-            or cmp(self.__attributes or {}, other.__attributes or {}) \
-            or cmp(self.__children or self.__emptySequence,
-                   other.__children or self.__emptySequence)
-
     def __add__(self, other):
         return concat(self, other)
 
@@ -240,11 +220,6 @@ class _NamedEntity(_XMLSerializable):
         _XMLSerializable.__init__(self)
         self.__name = name
 
-    def __cmp__(self, other):
-        # pylint: disable=protected-access
-        return not isinstance(other, _NamedEntity) \
-            or cmp(self.__name, other.__name)
-
     def _to_fragments(self):
         return '&%s;' % self.__name,
 
@@ -253,11 +228,6 @@ class _NumericEntity(_XMLSerializable):
     def __init__(self, number):
         _XMLSerializable.__init__(self)
         self.__number = number
-
-    def __cmp__(self, other):
-        # pylint: disable=protected-access
-        return not isinstance(other, _NumericEntity) \
-            or cmp(self.__number, other.__number)
 
     def _to_fragments(self):
         return '&#0x%X;' % self.__number,
@@ -289,12 +259,6 @@ class _CData(_XMLSerializable):
         _XMLSerializable.__init__(self)
         self.__text = text
         self.__comment = bool(comment)
-
-    def __cmp__(self, other):
-        # pylint: disable=protected-access
-        return not isinstance(other, _CData) \
-            or cmp(self.__text, other.__text) \
-            or cmp(self.__comment, other.__comment)
 
     def _to_fragments(self):
         comment = self.__comment

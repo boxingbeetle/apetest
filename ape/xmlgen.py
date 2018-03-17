@@ -38,24 +38,7 @@ Sequences of XML trees are also possible:
 If you are creating a long sequence, concat() will perform better than addition.
 '''
 
-from codecs import getencoder
-
-_ASCII_ENCODER = getencoder('ASCII')
-_TRANSLATION = ''.join(
-    chr(c) if c > 32 and c < 127 or c in (9, 10, 13) else ' '
-    for c in range(256)
-    )
-def _escape_xml(text):
-    '''Converts special characters to XML entities.
-    '''
-    return _ASCII_ENCODER(
-        text
-        .replace('&', '&amp;')
-        .replace('<', '&lt;')
-        .replace('>', '&gt;')
-        .replace('"', '&quot;'),
-        'xmlcharrefreplace'
-        )[0].translate(_TRANSLATION)
+from html import escape
 
 def _stringify(value):
     return value if isinstance(value, str) else str(value)
@@ -95,7 +78,7 @@ class _Text(_XMLSerializable):
 
     def __init__(self, text):
         _XMLSerializable.__init__(self)
-        self.__text = _escape_xml(text)
+        self.__text = escape(text, quote=False)
 
     def _to_fragments(self):
         yield self.__text
@@ -163,7 +146,7 @@ class _XMLNode(_XMLSerializable):
     def __call__(self, **attributes):
         assert self.__attributes is None
         self.__attributes = dict(
-            (key.rstrip('_'), _escape_xml(_stringify(value)))
+            (key.rstrip('_'), escape(_stringify(value)))
             for key, value in attributes.items()
             if value is not None
             )

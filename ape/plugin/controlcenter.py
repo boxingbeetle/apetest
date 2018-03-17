@@ -21,7 +21,7 @@ class DataChangeMonitor(Plugin):
         Plugin.__init__(self)
         self._log_file = cclog
         self._log_fd = None
-        self._partial_line = ''
+        self._partial_line = b''
 
     def __process_data(self, report):
         if self._log_fd is None:
@@ -38,8 +38,9 @@ class DataChangeMonitor(Plugin):
             new_data = os.read(self._log_fd, 200)
             if new_data:
                 buf = self._partial_line + new_data
-                lines = buf.split('\n')
+                lines = buf.split(b'\n')
                 for line in lines[ : -1]:
+                    line = line.decode('ascii')
                     index = line.find('> datachange/')
                     if index >= 0:
                         marker_, db_name, change, record_id = \

@@ -87,13 +87,13 @@ class _Text(_XMLSerializable):
 
 class _XMLSequence(_XMLSerializable):
 
-    def __init__(self, children=None):
+    def __init__(self, children):
         '''Creates an XML sequence.
-        The given children, if any, must all be _XMLSerializable instances;
+        The given children, must all be _XMLSerializable instances;
         if that is not guaranteed, use _adapt() to convert.
         '''
         _XMLSerializable.__init__(self)
-        self.__children = [] if children is None else list(children)
+        self.__children = list(children)
 
     def __add__(self, other):
         ret = _XMLSequence(self.__children)
@@ -101,8 +101,7 @@ class _XMLSequence(_XMLSerializable):
         return ret
 
     def __radd__(self, other):
-        ret = _XMLSequence()
-        ret += other
+        ret = _XMLSequence(_adapt(other))
         ret.__children += self.__children # pylint: disable=protected-access
         return ret
 
@@ -119,8 +118,6 @@ class _XMLSequence(_XMLSerializable):
                 yield fragment
 
 class _XMLNode(_XMLSerializable):
-
-    __emptySequence = _XMLSequence()
 
     def __init__(self, name):
         _XMLSerializable.__init__(self)

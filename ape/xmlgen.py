@@ -42,6 +42,16 @@ from html import escape
 def _stringify(value):
     return value if isinstance(value, str) else str(value)
 
+def _join(separator, nodes):
+    iterator = iter(nodes)
+    try:
+        yield next(iterator)
+    except StopIteration:
+        return
+    for node in iterator:
+        yield separator
+        yield node
+
 class _XMLSerializable(object):
     '''Base class for objects that can be serialized to XML.
     '''
@@ -60,18 +70,11 @@ class _XMLSerializable(object):
         return ''.join(self._to_fragments())
 
     def join(self, siblings):
-        '''Creates an XML sequence with the given siblings as children,
+        '''Creates an XML sequence with the given XML nodes as children,
         with itself inserted between each sibling.
         This method is similar to str.join().
         '''
-        sequence = _XMLSequence()
-        first = True
-        for sibling in siblings:
-            if not first:
-                sequence._add_child(self) # pylint: disable=protected-access
-            sequence._add_child(sibling) # pylint: disable=protected-access
-            first = False
-        return sequence
+        return _XMLSequence(_join(self, _adapt(siblings)))
 
 class _Text(_XMLSerializable):
 
@@ -87,7 +90,7 @@ class _XMLSequence(_XMLSerializable):
     def __init__(self, children=None):
         '''Creates an XML sequence.
         The given children, if any, must all be _XMLSerializable instances;
-        if that is not guaranteed, use _add_child() to add and convert.
+        if that is not guaranteed, use _adapt() to convert.
         '''
         _XMLSerializable.__init__(self)
         self.__children = [] if children is None else list(children)
@@ -104,23 +107,8 @@ class _XMLSequence(_XMLSerializable):
         return ret
 
     def __iadd__(self, other):
-        self._add_child(other)
+        self.__children.extend(_adapt(other))
         return self
-
-    def _add_child(self, child):
-        if isinstance(child, _XMLSerializable):
-            self.__children.append(child)
-        elif isinstance(child, str):
-            self.__children.append(_Text(child))
-        elif hasattr(child, '__iter__'):
-            for grand_child in child:
-                self._add_child(grand_child)
-        elif child is None:
-            pass
-        else:
-            raise TypeError(
-                'cannot handle child of type %s' % type(child)
-                )
 
     def _to_fragments(self):
         for content in self.__children:
@@ -154,8 +142,7 @@ class _XMLNode(_XMLSerializable):
         #       Then we could make _XMLNodes immutable, which enables certain
         #       optimizations, such as precalculating the flattening.
         assert self.__children is None
-        self.__children = children = _XMLSequence()
-        children._add_child(index) # pylint: disable=protected-access
+        self.__children = _XMLSequence(_adapt(index))
         return self
 
     def __add__(self, other):
@@ -246,12 +233,23 @@ class _CData(_XMLSerializable):
         yield self.__text
         yield '/*]]>*/' if comment else ']]>'
 
+def _adapt(node):
+    if isinstance(node, _XMLSerializable):
+        yield node
+    elif isinstance(node, str):
+        yield _Text(node)
+    elif hasattr(node, '__iter__'):
+        for child in node:
+            yield from _adapt(child)
+    elif node is None:
+        pass
+    else:
+        raise TypeError('cannot handle node of type %s' % type(node))
+
 def concat(*siblings):
-    '''Creates an XML sequence containing the given siblings.
+    '''Creates an XML sequence containing the given XML nodes.
     '''
-    sequence = _XMLSequence()
-    sequence._add_child(siblings) # pylint: disable=protected-access
-    return sequence
+    return _XMLSequence(_adapt(siblings))
 
 # pylint: disable=invalid-name
 xml = _XMLNodeFactory()

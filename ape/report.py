@@ -41,7 +41,7 @@ h3.fail {
 }
 '''
 
-class Report(object):
+class Report:
     ok = True # ...until proven otherwise
 
     def __init__(self, url):
@@ -129,7 +129,7 @@ class IncrementalReport(Report):
                 )]
         yield Report.present(self, scribe)
 
-class Page(object):
+class Page:
 
     def __init__(self):
         self.query_to_report = {}
@@ -161,7 +161,7 @@ class Page(object):
                 ]
             yield report.present(scribe)
 
-class Scribe(object):
+class Scribe:
 
     def __init__(self, base_url, spider, plugins):
         self.base_url = base_url

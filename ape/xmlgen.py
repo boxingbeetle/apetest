@@ -52,7 +52,7 @@ def _join(separator, nodes):
         yield separator
         yield node
 
-class _XMLSerializable(object):
+class _XMLSerializable:
     '''Base class for objects that can be serialized to XML.
     '''
 
@@ -144,7 +144,7 @@ class _XMLNode(_XMLSerializable):
                 yield fragment
             yield '</%s>' % self.__name
 
-class _XMLNodeFactory(object):
+class _XMLNodeFactory:
     '''Automatically creates _XMLNode instances for any tag that is requested:
     if an attribute with a certain name is requested, a new _XMLNode with that
     same name is returned.
@@ -174,7 +174,7 @@ class _NumericEntity(_XMLSerializable):
     def _to_fragments(self):
         return '&#0x%X;' % self.__number,
 
-class _EntityFactory(object):
+class _EntityFactory:
     '''Automatically creates Entity instances for any entity that is requested:
     if an attribute with a certain name is requested, a new Entity with that
     same name is returned.

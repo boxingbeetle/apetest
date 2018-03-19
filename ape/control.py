@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-class Control(object):
+class Control:
     '''A submittable element in a form.
     The alternative name = None, value = None represents a control not being
     part of the submission, for example an unchecked checkbox.

@@ -2,7 +2,7 @@
 
 from ape.request import Request
 
-class Referrer(object):
+class Referrer:
     '''Represents an entity that can generate requests.
     Examples of Referrers are hyperlinks, which generate one fixed request, and
     forms, which generate many requests.
@@ -125,7 +125,7 @@ class Form(Referrer):
             for control in self.controls
             ]
 
-        class MatrixIterator(object):
+        class MatrixIterator:
             '''Base class for ControlIterator and PairIterator.
             '''
             def __init__(self):

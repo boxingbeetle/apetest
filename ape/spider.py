@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 
-class Spider(object):
+class Spider:
     # TODO: Now just the first 100 are checked, it would be better to try
     #       variations of all query arguments.
     max_queries_per_page = 100

@@ -92,7 +92,7 @@ def normalize_url(url):
     '''
     return urlunsplit(urlsplit(url))
 
-class RedirectResult(object):
+class RedirectResult:
     '''Fake HTTP result object that represents a redirection.
     Only the members we use are implemented.
     '''
@@ -362,7 +362,7 @@ def parse_input_control(attrib):
         # Invalid control type, will already be flagged by the DTD.
         return None
 
-class PageChecker(object):
+class PageChecker:
     '''Retrieves a page, validates the XML and parses the contents to find
     references to other pages.
     '''

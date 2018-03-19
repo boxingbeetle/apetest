@@ -24,7 +24,6 @@ alternative syntax "xml['tag-name']".
 The empty XML tree is represented by None.
 The nested elements are one or more elements of the following types:
 - other XML trees
-- an object that implements "toXML()"; that method should return an XML tree
 - a string (unicode or ASCII)
 - an iterable object (list, tuple, generator etc)
   the items from the iterable can be of the same types as the nested elements:
@@ -111,8 +110,6 @@ class _XMLSequence(_XMLSerializable):
     def _add_child(self, child):
         if isinstance(child, _XMLSerializable):
             self.__children.append(child)
-        elif hasattr(child, 'toXML'):
-            self.__children.append(child.toXML())
         elif isinstance(child, str):
             self.__children.append(_Text(child))
         elif hasattr(child, '__iter__'):

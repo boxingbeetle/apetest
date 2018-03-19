@@ -93,21 +93,13 @@ class _XMLSequence(_XMLSerializable):
         if that is not guaranteed, use _adapt() to convert.
         '''
         _XMLSerializable.__init__(self)
-        self.__children = list(children)
+        self.__children = tuple(children)
 
     def __add__(self, other):
-        ret = _XMLSequence(self.__children)
-        ret += other
-        return ret
+        return concat(self, other)
 
     def __radd__(self, other):
-        ret = _XMLSequence(_adapt(other))
-        ret.__children += self.__children # pylint: disable=protected-access
-        return ret
-
-    def __iadd__(self, other):
-        self.__children.extend(_adapt(other))
-        return self
+        return concat(other, self)
 
     def _to_fragments(self):
         for content in self.__children:

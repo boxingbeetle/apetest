@@ -111,32 +111,24 @@ class _XMLSequence(_XMLSerializable):
 
 class _XMLNode(_XMLSerializable):
 
-    def __init__(self, name):
+    def __init__(self, name, attrs, children):
         _XMLSerializable.__init__(self)
         self.__name = name
-        self.__attributes = None
-        self.__children = None
+        self.__attributes = attrs
+        self.__children = children
 
     def __call__(self, **attributes):
-        assert self.__attributes is None
-        self.__attributes = dict(
+        attrs = dict(self.__attributes)
+        attrs.update(
             (key.rstrip('_'), escape(_stringify(value)))
             for key, value in attributes.items()
             if value is not None
             )
-        return self
+        return _XMLNode(self.__name, attrs, self.__children)
 
     def __getitem__(self, index):
-        # TODO: Consider returning a new object instead of self.
-        #       Then we could make _XMLNodes immutable, which enables certain
-        #       optimizations, such as precalculating the flattening.
-        assert self.__children is None
-        self.__children = _XMLSequence(_adapt(index))
-        return self
-
-    def __iadd__(self, other):
-        # Like strings, we consider a single element as a sequence of one.
-        return concat(self, other)
+        children = concat(self.__children, index)
+        return _XMLNode(self.__name, self.__attributes, children)
 
     def _to_fragments(self):
         attribs = self.__attributes
@@ -159,10 +151,10 @@ class _XMLNodeFactory(object):
     '''
 
     def __getattribute__(self, key):
-        return _XMLNode(key)
+        return _XMLNode(key, {}, None)
 
     def __getitem__(self, key):
-        return _XMLNode(key)
+        return _XMLNode(key, {}, None)
 
 class _NamedEntity(_XMLSerializable):
 

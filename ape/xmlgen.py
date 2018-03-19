@@ -106,8 +106,7 @@ class _XMLSequence(_XMLSerializable):
             # pylint: disable=protected-access
             # "content" is an instance of _XMLSerializable, so we are
             # allowed to access protected methods.
-            for fragment in content._to_fragments():
-                yield fragment
+            yield from content._to_fragments()
 
 class _XMLNode(_XMLSerializable):
 
@@ -140,8 +139,7 @@ class _XMLNode(_XMLSerializable):
             yield '<%s%s />' % (self.__name, attrib_str)
         else:
             yield '<%s%s>' % (self.__name, attrib_str)
-            for fragment in children._to_fragments(): # pylint: disable=protected-access
-                yield fragment
+            yield from children._to_fragments() # pylint: disable=protected-access
             yield '</%s>' % self.__name
 
 class _XMLNodeFactory:

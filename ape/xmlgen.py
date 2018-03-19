@@ -59,6 +59,12 @@ class _XMLSerializable(object):
     def __str__(self):
         return self.flatten()
 
+    def __add__(self, other):
+        return concat(self, other)
+
+    def __radd__(self, other):
+        return concat(other, self)
+
     def _to_fragments(self):
         '''Iterates through the fragments (strings) forming the XML
         serialization of this object: the XML serialization is the
@@ -95,12 +101,6 @@ class _XMLSequence(_XMLSerializable):
         _XMLSerializable.__init__(self)
         self.__children = tuple(children)
 
-    def __add__(self, other):
-        return concat(self, other)
-
-    def __radd__(self, other):
-        return concat(other, self)
-
     def _to_fragments(self):
         for content in self.__children:
             # pylint: disable=protected-access
@@ -133,12 +133,6 @@ class _XMLNode(_XMLSerializable):
         assert self.__children is None
         self.__children = _XMLSequence(_adapt(index))
         return self
-
-    def __add__(self, other):
-        return concat(self, other)
-
-    def __radd__(self, other):
-        return concat(other, self)
 
     def __iadd__(self, other):
         # Like strings, we consider a single element as a sequence of one.

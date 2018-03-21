@@ -154,37 +154,6 @@ class _XMLNodeFactory:
     def __getitem__(self, key):
         return _XMLNode(key, {}, None)
 
-class _NamedEntity(_XMLSerializable):
-
-    def __init__(self, name):
-        _XMLSerializable.__init__(self)
-        self.__name = name
-
-    def _to_fragments(self):
-        return '&%s;' % self.__name,
-
-class _NumericEntity(_XMLSerializable):
-
-    def __init__(self, number):
-        _XMLSerializable.__init__(self)
-        self.__number = number
-
-    def _to_fragments(self):
-        return '&#0x%X;' % self.__number,
-
-class _EntityFactory:
-    '''Automatically creates Entity instances for any entity that is requested:
-    if an attribute with a certain name is requested, a new Entity with that
-    same name is returned.
-    For numerical entities, you can use "ent[number]" instead.
-    '''
-
-    def __getattribute__(self, key):
-        return _NamedEntity(key)
-
-    def __getitem__(self, key):
-        return _NumericEntity(key)
-
 class _CData(_XMLSerializable):
     '''Defines a CDATA section: XML character data that is not parsed to look
     for entities or elements.
@@ -226,6 +195,5 @@ def concat(*siblings):
 
 # pylint: disable=invalid-name
 xml = _XMLNodeFactory()
-ent = _EntityFactory()
 txt = _Text
 cdata = _CData

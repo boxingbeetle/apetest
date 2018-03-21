@@ -1,41 +1,79 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-'''XML generation library: a friendly syntax to create XML in Python.
+"""A friendly syntax to create XML in Python.
 
-The syntax is very similar to Nevow's Stan, but the goals and the design are
-different:
-- Python 2.4 is required
-- XML trees are not templates: they are expanded upon initialisation
-- more types are accepted as children, including nested sequences,
-  and generators
-- there are no predefined tag names, so you can define any XML you like,
-  not just XHTML
-- trailing underscores in attribute names are stripped off, so you can create
-  for example a "class" attribute by passing "class_"
-TODO: Look again at today's Stan, I think it has changed and there are less
-      differences now. The main difference remains though: no templating.
+This is a system to generate strings in XML format. It does not provide
+an editable document model or a templates. Instead, you create a tree
+of XML objects and serialize it to a string.
 
-To create an XML tree (data structure consisting of nested XMLNodes):
-  from xmlgen import xml
-  xml.<tagname>(<attributes>)[<nested elements>]
-where attributes are keyword arguments.
-If the tag name contains a minus or is not a constant, you can use the
-alternative syntax "xml['tag-name']".
-The empty XML tree is represented by None.
-The nested elements are one or more elements of the following types:
-- other XML trees
-- a string (unicode or ASCII)
-- an iterable object (list, tuple, generator etc)
-  the items from the iterable can be of the same types as the nested elements:
-  they are added recursively
+An XML element can be created using the following syntax:
 
-Sequences of XML trees are also possible:
-- separator.join(trees)
-- concat(*trees)
-- concat(tree1, tree2)
-- tree1 + tree2
-If you are creating a long sequence, concat() will perform better than addition.
-'''
+    xml.dish(style='recommended', id=123)[
+        xml.spam['wonderful'],
+        xml.egg(class_='large')
+        ]
+
+``xml``.*name* creates an XML element with the given name.
+If the name is not a constant or contains for example a dash,
+you can use the alternative syntax ``xml['tricky-name']``.
+
+Attributes are added to an element using keyword arguments. If an
+argument's value is `None`, that attribute will be omitted.
+Argument values will be converted to strings if necessary.
+Trailing underscores in names will be stripped off, which is
+useful for names such as ``class`` that are reserved in Python.
+
+Nested content is added to an element using brackets. The following
+types of content are supported:
+
+- XML objects: elements, character data and sequences
+- strings, which will be treated as character data
+- iterables (list, tuple, generator etc.) containing objects of the
+  supported types; nested iterables are allowed
+- ``None``, which will be ignored
+
+It is possible to derive an XML element from an existing one by
+applying the attribute or nested content syntax to it. This will
+produce a new XML element with updated attributes or added content;
+the original element object will not be modified.
+
+You can construct sequences of XML objects using the ``+`` operator
+or the `concat()` function. If you are creating a sequence of many
+objects, `concat()` will perform better. The same conversion rules
+for nested content are applied when creating sequences.
+
+You can also create a sequence of XML objects using the `join()` method
+of any XML object, similar to Python's `str.join()`. If you want the
+separator to be character data, you can create a character data object
+using the `txt()` function. For example:
+
+    xml.br.join(lines)
+
+    txt(', ').join(
+        xml.a(href=url)[description]
+        for url, description in links
+        )
+
+To output the generated XML, you convert an XML object to a string
+by calling its ``flatten()`` method.
+
+When an element is flattened, the generated XML will be well-formed,
+assuming you used only allowed characters in element and attribute
+names. Characters in attribute values and character data that have
+a special meaning in XML will be automatically escaped.
+
+The XML string will retain any Unicode characters that were put into
+the XML tree. Therefore, if you want to write the generated XML as
+bytes, you should either encode the string in a Unicode encoding such
+as UTF-8, or escape Unicode characters that don't exist in the selected
+encoding. For example:
+
+    with open(name, 'w',
+              encoding='ascii',
+              errors='xmlcharrefreplace'
+              ) as out:
+        out.write(tree.flatten())
+"""
 
 from html import escape
 
@@ -53,8 +91,7 @@ def _join(separator, nodes):
         yield node
 
 class _XMLSerializable:
-    '''Base class for objects that can be serialized to XML.
-    '''
+    """Base class for objects that can be serialized to XML."""
 
     def __str__(self):
         return self.flatten()
@@ -66,20 +103,21 @@ class _XMLSerializable:
         return concat(other, self)
 
     def _to_fragments(self):
-        '''Iterates through the fragments (strings) forming the XML
+        """Iterates through the fragments (strings) forming the XML
         serialization of this object: the XML serialization is the
         concatenation of all the fragments.
-        '''
+        """
         raise NotImplementedError
 
     def flatten(self):
+        """Creates the XML string for this object."""
         return ''.join(self._to_fragments())
 
     def join(self, siblings):
-        '''Creates an XML sequence with the given XML nodes as children,
-        with itself inserted between each sibling.
-        This method is similar to str.join().
-        '''
+        """Creates an XML sequence containing the given XML objects,
+        with itself inserted between each sibling, similar to
+        `str.join()`.
+        """
         return _XMLSequence(_join(self, _adapt(siblings)))
 
 class _Text(_XMLSerializable):
@@ -91,13 +129,17 @@ class _Text(_XMLSerializable):
     def _to_fragments(self):
         yield self.__text
 
+def txt(text):
+    """Creates an XML character data object containing `text`."""
+    return _Text(text)
+
 class _XMLSequence(_XMLSerializable):
 
     def __init__(self, children):
-        '''Creates an XML sequence.
+        """Creates an XML sequence.
         The given children, must all be _XMLSerializable instances;
         if that is not guaranteed, use _adapt() to convert.
-        '''
+        """
         _XMLSerializable.__init__(self)
         self.__children = tuple(children)
 
@@ -143,16 +185,21 @@ class _XMLNode(_XMLSerializable):
             yield '</%s>' % self.__name
 
 class _XMLNodeFactory:
-    '''Automatically creates _XMLNode instances for any tag that is requested:
+    """Automatically creates _XMLNode instances for any tag that is requested:
     if an attribute with a certain name is requested, a new _XMLNode with that
     same name is returned.
-    '''
+    """
 
     def __getattribute__(self, key):
         return _XMLNode(key, {}, None)
 
     def __getitem__(self, key):
         return _XMLNode(key, {}, None)
+
+xml = _XMLNodeFactory() # pylint: disable=invalid-name
+"""Factory for XML elements. See the module level documentation for usage
+instructions.
+"""
 
 def _adapt(node):
     if isinstance(node, _XMLSerializable):
@@ -168,10 +215,10 @@ def _adapt(node):
         raise TypeError('cannot handle node of type %s' % type(node))
 
 def concat(*siblings):
-    '''Creates an XML sequence containing the given XML nodes.
-    '''
+    """Creates an XML sequence by concatenating `siblings`.
+    Siblings must be XML objects or convertible to XML objects,
+    otherwise `TypeError` will be raised.
+    """
     return _XMLSequence(_adapt(siblings))
 
-# pylint: disable=invalid-name
-xml = _XMLNodeFactory()
-txt = _Text
+__all__ = ('xml', 'txt', 'concat')

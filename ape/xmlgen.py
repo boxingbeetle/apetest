@@ -154,27 +154,6 @@ class _XMLNodeFactory:
     def __getitem__(self, key):
         return _XMLNode(key, {}, None)
 
-class _CData(_XMLSerializable):
-    '''Defines a CDATA section: XML character data that is not parsed to look
-    for entities or elements.
-    This can be used to embed JavaScript or CSS in pages.
-    '''
-
-    def __init__(self, text, comment=False):
-        if not isinstance(text, str):
-            raise TypeError(
-                'text should be a string, got %s' % type(text).__name__
-                )
-        _XMLSerializable.__init__(self)
-        self.__text = text
-        self.__comment = bool(comment)
-
-    def _to_fragments(self):
-        comment = self.__comment
-        yield '/*<![CDATA[*/' if comment else '<![CDATA['
-        yield self.__text
-        yield '/*]]>*/' if comment else ']]>'
-
 def _adapt(node):
     if isinstance(node, _XMLSerializable):
         yield node
@@ -196,4 +175,3 @@ def concat(*siblings):
 # pylint: disable=invalid-name
 xml = _XMLNodeFactory()
 txt = _Text
-cdata = _CData

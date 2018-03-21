@@ -150,7 +150,7 @@ class _XMLSequence(_XMLSerializable):
             # allowed to access protected methods.
             yield from content._to_fragments()
 
-class _XMLNode(_XMLSerializable):
+class _XMLElement(_XMLSerializable):
 
     def __init__(self, name, attrs, children):
         _XMLSerializable.__init__(self)
@@ -165,11 +165,11 @@ class _XMLNode(_XMLSerializable):
             for key, value in attributes.items()
             if value is not None
             )
-        return _XMLNode(self.__name, attrs, self.__children)
+        return _XMLElement(self.__name, attrs, self.__children)
 
     def __getitem__(self, index):
         children = concat(self.__children, index)
-        return _XMLNode(self.__name, self.__attributes, children)
+        return _XMLElement(self.__name, self.__attributes, children)
 
     def _to_fragments(self):
         attribs = self.__attributes
@@ -184,19 +184,19 @@ class _XMLNode(_XMLSerializable):
             yield from children._to_fragments() # pylint: disable=protected-access
             yield '</%s>' % self.__name
 
-class _XMLNodeFactory:
-    """Automatically creates _XMLNode instances for any tag that is requested:
-    if an attribute with a certain name is requested, a new _XMLNode with that
-    same name is returned.
+class _XMLElementFactory:
+    """Automatically creates _XMLElement instances for any tag that is
+    requested: if an attribute with a certain name is requested, a new
+    _XMLElement with that same name is returned.
     """
 
     def __getattribute__(self, key):
-        return _XMLNode(key, {}, None)
+        return _XMLElement(key, {}, None)
 
     def __getitem__(self, key):
-        return _XMLNode(key, {}, None)
+        return _XMLElement(key, {}, None)
 
-xml = _XMLNodeFactory() # pylint: disable=invalid-name
+xml = _XMLElementFactory() # pylint: disable=invalid-name
 """Factory for XML elements. See the module level documentation for usage
 instructions.
 """

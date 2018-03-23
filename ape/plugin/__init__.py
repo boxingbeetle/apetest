@@ -1,117 +1,111 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""APE's plugin infrastructure.
+
+Each plugin is a separate module in the "ape.plugin" package.
+Plugins can register command line options by defining the following
+function:
+
+    def plugin_arguments(parser):
+        parser.add_argument('--cow', help='fetchez la vache')
+
+The ``parser`` argument is an instance of `argparse.ArgumentParser`.
+See the `argparse` documentation for a detailed description of what
+kind of argument parsing it supports.
+
+It is not mandatory to implement ``plugin_arguments()``, but in general
+plugins should not activate automatically, so there should at least
+be a command line argument to enable them.
+
+To instantiate plugins, the plugin module must define the following
+function:
+
+    def plugin_create(args):
+        if args.cow is not None:
+            yield CatapultPlugin(args.cow)
+
+`args` is an `argparse.Namespace` that contains the result of the
+command line parsing.
+Each yielded object must implement the `Plugin` interface.
+"""
+
 from importlib import import_module
+from logging import getLogger
+from pkgutil import iter_modules
 
-class Plugin(object):
-    '''Abstract plugin: your plugin class should inherit this and override
+_LOG = getLogger(__name__)
+
+class Plugin:
+    """Plugin interface: your plugin class should inherit this and override
     one or more methods.
-    '''
-
-    def __init__(self):
-        pass
+    """
 
     def report_added(self, report):
+        """Called when the APE core has finished a `Report`.
+        Plugins can override this method to act on the report data.
+        The default implementation does nothing.
+        """
         pass
 
     def postprocess(self, scribe):
+        """Called when the APE core has finished a test run.
+        Plugins can override this method to process the results.
+        The default implementation does nothing.
+        """
         pass
 
-class PluginError(Exception):
-    '''Raised when plugin loading or initialisation fails.
-    '''
-    pass
-
-def load_plugins(spec):
-    '''Load and initialise plugins according to the given spec string.
-    The spec string has the format <module>(#<name>=<value>)*.
-    Generates instances of the plugin classes.
-    Raises PluginError if a plugin could not be loaded and initialised.
-    '''
-    # Parse spec string.
-    parts = spec.split('#')
-    module_name = 'ape.plugin.%s' % parts[0]
-    args = {}
-    for part in parts[1 : ]:
+def load_plugins():
+    """Finds and imports plugin modules, then yields the modules.
+    Errors will be logged.
+    """
+    for finder_, name, ispkg_ in iter_modules(__path__, 'ape.plugin.'):
         try:
-            name, value = part.split('=')
-        except ValueError:
-            raise PluginError(
-                'Invalid argument for plugin "%s": '
-                'expected "<name>=<value>", got "%s"'
-                % (parts[0], part)
-                )
-        args[name] = value
+            yield import_module(name)
+        except Exception: # pylint: disable=broad-except
+            _LOG.exception('Error importing plugin module "%s":', name)
 
-    # Load plugin module.
+def add_plugin_arguments(module, parser):
+    """Asks plugin `module` to register the plugin's command line arguments
+    on `parser`, which is an instance of `argparse.ArgumentParser`.
+    Errors will be logged.
+    """
     try:
-        module = import_module(module_name)
-    except ImportError as ex:
-        raise PluginError(
-            'Could not load plugin module: "%s".\n'
-            '  %s'
-            % (module_name, ex)
-            )
-
-    # Search module for plugin classes.
-    new_plugins = []
-    for name in dir(module):
-        attr = getattr(module, name)
+        func = getattr(module, 'plugin_arguments')
+    except AttributeError:
+        _LOG.info('Plugin module "%s" does not implement plugin_arguments()',
+                  module.__name__)
+    else:
         try:
-            if issubclass(attr, Plugin) and attr is not Plugin:
-                new_plugins.append(attr)
-        except TypeError:
-            pass
-    if not new_plugins:
-        raise PluginError(
-            'No subclasses of "Plugin" found in module "%s"' % module_name
-            )
+            func(parser)
+        except Exception: # pylint: disable=broad-except
+            _LOG.exception('Error registering command line arguments for '
+                           'plugin module "%s":', module.__name__)
 
-    # Build a list of all arguments accepted by plugin constructors.
-    accepted_args = set()
-    for plugin in new_plugins:
-        ctor = plugin.__init__
-        ctor_args = ctor.__code__.co_varnames[ : ctor.__code__.co_argcount]
-        if ctor_args[0] != 'self':
-            raise PluginError(
-                'First argument to constructor of "%s.%s" '
-                'is "%s" instead of "self"'
-                % (module_name, plugin.__name__, ctor_args[0])
-                )
-        accepted_args |= set(ctor_args[1 : ])
+def create_plugins(module, args):
+    """Asks plugin `module` to create `Plugin` objects for the given
+    command line arguments in `args` (`argparse.Namespace`).
+    Errors will be logged and propagated.
+    """
+    try:
+        func = getattr(module, 'plugin_create')
+    except AttributeError:
+        _LOG.error('Plugin module "%s" does not implement plugin_create()',
+                   module.__name__)
+        raise
 
-    # Check for arguments that are not accepted by any constructor.
-    for name in sorted(args.keys()):
-        if name not in accepted_args:
-            raise PluginError(
-                'No plugin constructor in "%s" accepts argument "%s"'
-                % (module_name, name)
-                )
+    def _log_yield():
+        try:
+            yield from func(args)
+        except Exception: # pylint: disable=broad-except
+            _LOG.exception('Error instantiating plugin module "%s":',
+                           module.__name__)
+            raise
 
-    # Instantiate plugin classes.
-    for plugin in new_plugins:
-        ctor = plugin.__init__
-        num_ctor_args = ctor.__code__.co_argcount
-        num_mandatory_ctor_args = num_ctor_args - len(ctor.__defaults__ or ())
-        ctor_args = ctor.__code__.co_varnames[:num_ctor_args]
-        missing_args = set(
-            arg
-            for arg in ctor_args[1:num_mandatory_ctor_args]
-            if arg not in args
-            )
-        if missing_args:
-            raise PluginError(
-                'Missing mandatory argument%s '
-                'for plugin constructor "%s.%s": %s'
-                % (
-                    '' if len(missing_args) == 1 else 's',
-                    module_name, plugin.__name__,
-                    ', '.join('"%s"' % arg for arg in sorted(missing_args))
-                    )
-                )
-        filtered_args = dict(
-            (name, value)
-            for name, value in args.items()
-            if name in ctor_args[1 : ]
-            )
-        instance = plugin(**filtered_args)
-        yield instance
+    for plugin in _log_yield():
+        if isinstance(plugin, Plugin):
+            yield plugin
+        else:
+            _LOG.error('Module "%s" created a plugin of type "%s", '
+                       'which does not inherit from the Plugin class.',
+                       module.__name__, plugin.__class__.__name__)
+            raise TypeError(plugin.__class__)

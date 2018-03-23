@@ -4,6 +4,16 @@ import os
 
 from ape.plugin import Plugin
 
+def plugin_arguments(parser):
+    parser.add_argument(
+        '--cclog',
+        help='log file to monitor for Control Center database changes'
+        )
+
+def plugin_create(args):
+    if args.cclog is not None:
+        yield DataChangeMonitor(args.cclog)
+
 class DataChangeMonitor(Plugin):
 
     allowed_changes = (
@@ -18,7 +28,6 @@ class DataChangeMonitor(Plugin):
         )
 
     def __init__(self, cclog):
-        Plugin.__init__(self)
         self._log_file = cclog
         self._log_fd = None
         self._partial_line = b''

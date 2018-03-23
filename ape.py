@@ -6,8 +6,10 @@ from argparse import ArgumentParser
 import sys
 
 from ape.cmdline import run
+from ape.plugin import add_plugin_arguments, create_plugins, load_plugins
 
 def main():
+    # Register core arguments.
     parser = ArgumentParser(
         description='Automated Page Exerciser: '
                     'smarter-than-monkey testing for web apps',
@@ -21,12 +23,23 @@ def main():
         'report',
         help='file to write the HTML report to'
         )
-    parser.add_argument(
-        'plugin', nargs='*',
-        help='name(#arg=value)*'
-        )
+
+    # Let plugins register their arguments.
+    plugin_modules = tuple(load_plugins())
+    for module in plugin_modules:
+        add_plugin_arguments(module, parser)
+
     args = parser.parse_args()
-    sys.exit(run(args.url, args.report, *args.plugin))
+
+    # Instantiate plugins.
+    plugins = []
+    for module in plugin_modules:
+        try:
+            plugins += create_plugins(module, args)
+        except Exception: # pylint: disable=broad-except
+            sys.exit(1)
+
+    sys.exit(run(args.url, args.report, plugins))
 
 if __name__ == '__main__':
     main()

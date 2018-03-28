@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from argparse import ArgumentParser
+import logging
 import sys
 
 from ape.cmdline import run
@@ -23,6 +24,10 @@ def main():
         'report',
         help='file to write the HTML report to'
         )
+    parser.add_argument(
+        '-v', '--verbose', action='count', default=0,
+        help='increase amount of logging, can be passed multiple times'
+        )
 
     # Let plugins register their arguments.
     plugin_modules = tuple(load_plugins())
@@ -30,6 +35,10 @@ def main():
         add_plugin_arguments(module, parser)
 
     args = parser.parse_args()
+
+    level_map = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+    level = level_map.get(args.verbose, logging.DEBUG)
+    logging.basicConfig(level=level, format='%(levelname)s: %(message)s')
 
     # Instantiate plugins.
     plugins = []

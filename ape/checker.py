@@ -208,10 +208,10 @@ def parse_document(content, is_xml, report):
     # TODO: The content can be XML but also HTML
     #        If the content is HTML, than we use the wrong parser (XML) now.
     if is_xml:
-        report.add_note('Page content is XML')
+        _LOG.debug('Page content is XML')
         parser = etree.XMLParser(dtd_validation=True, no_network=True)
     else:
-        report.add_note('Page content is HTML')
+        _LOG.debug('Page content is HTML')
         parser = etree.HTMLParser()
     try:
         root = etree.fromstring(content, parser)

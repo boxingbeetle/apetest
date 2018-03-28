@@ -203,47 +203,39 @@ def fetch_page(request):
 def parse_document(content, is_xml, report):
     root = None
     validation_errors = None
-
-    # Try to parse XML with a DTD validating parser.
-    # TODO: The content can be XML but also HTML
-    #        If the content is HTML, than we use the wrong parser (XML) now.
     if is_xml:
         _LOG.debug('Page content is XML')
+        # Try to parse XML with a DTD validating parser.
         parser = etree.XMLParser(dtd_validation=True, no_network=True)
+        try:
+            root = etree.fromstring(content, parser)
+        except etree.XMLSyntaxError as ex:
+            report.add_note('Failed to parse with DTD validation.')
+            validation_errors = [ex]
+        else:
+            if parser.error_log:
+                # Parsing succeeded with errors; errors will be reported later.
+                validation_errors = parser.error_log
+            else:
+                # Parsing succeeded with no errors, so we are done.
+                return root
+        parser_factory = etree.XMLParser
     else:
         _LOG.debug('Page content is HTML')
-        parser = etree.HTMLParser()
-    try:
-        root = etree.fromstring(content, parser)
-    except etree.XMLSyntaxError as ex:
-        report.add_note('Failed to parse with DTD validation.')
-        validation_errors = [ex]
-    else:
-        if parser.error_log:
-            # Parsing succeeded with errors; errors will be reported later.
-            validation_errors = parser.error_log
-        else:
-            # Parsing succeeded with no errors, so we are done.
-            return root
+        # The lxml library doesn't support DTD validation for HTML.
+        parser_factory = etree.HTMLParser
 
     # Try to get a parsed version by being less strict.
     for recover in (False, True):
         if root is None:
-            parser = etree.XMLParser(
-                recover=recover,
-                dtd_validation=False,
-                load_dtd=True,
-                no_network=True,
-                )
+            parser = parser_factory(recover=recover)
             try:
                 root = etree.fromstring(content, parser)
             except etree.XMLSyntaxError as ex:
                 if recover:
-                    report.add_note('Failed to parse in recovery.')
+                    report.add_note('Failed to parse with lenient parser.')
                 else:
-                    report.add_note(
-                        'Failed to parse without DTD validation.'
-                        )
+                    report.add_note('Failed to parse with strict parser.')
                 report.add_validation_failure(ex)
     if root is None:
         report.add_validation_failure(

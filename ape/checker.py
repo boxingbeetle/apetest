@@ -197,19 +197,14 @@ def fetch_page(request):
         except OSError as ex:
             raise FetchFailure(url, ex.strerror)
 
-def parse_document(content, report):
+def parse_document(content, is_xml, report):
     root = None
     validation_errors = None
-    xmlnsdef = 'xmlns='
-    xmldoc = False
 
     # Try to parse XML with a DTD validating parser.
     # TODO: The content can be XML but also HTML
     #        If the content is HTML, than we use the wrong parser (XML) now.
-    if xmlnsdef in content:
-        xmldoc = True
-
-    if xmldoc:
+    if is_xml:
         report.add_note('Page content is XML')
         parser = etree.XMLParser(dtd_validation=True, no_network=True)
     else:
@@ -404,7 +399,12 @@ class PageChecker:
             return referrers
 
         content_type = inp.info().get_content_type()
-        if content_type not in ('text/html', 'application/xhtml+xml'):
+        try:
+            is_xml = {
+                'text/html': False,
+                'application/xhtml+xml': True,
+                }[content_type]
+        except KeyError:
             print(
                 'Skipping. Document type is not HTML or XHTML, but [%s].'
                 % content_type
@@ -449,7 +449,7 @@ class PageChecker:
             used_encoding = None
 
         # Look for encoding in XML declaration.
-        if content_type.endswith('xml'):
+        if is_xml:
             decl_encoding = encoding_from_xml_decl(content)
             if used_encoding is None and decl_encoding is not None:
                 new_content = strict_decode(content_bytes, decl_encoding)
@@ -491,12 +491,12 @@ class PageChecker:
                 % (decl_encoding, used_encoding)
                 )
 
-        if content_type.endswith('xml'):
+        if is_xml:
             # The lxml parser does not accept encoding in XML declarations
             # when parsing strings.
             content = strip_xml_decl(content)
 
-        root = parse_document(content, report)
+        root = parse_document(content, is_xml, report)
         if root is None:
             self.scribe.add_report(report)
             return []

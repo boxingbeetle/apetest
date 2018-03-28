@@ -6,6 +6,7 @@ from codecs import (
     )
 from collections import defaultdict
 from copy import deepcopy
+from logging import getLogger
 from os.path import isdir
 import re
 from time import sleep
@@ -23,6 +24,8 @@ from ape.control import (
 from ape.referrer import Form, LinkSet, Redirect
 from ape.report import FetchFailure, IncrementalReport
 from ape.request import Request
+
+_LOG = getLogger(__name__)
 
 def encoding_from_bom(data):
     '''Looks for a byte-order-marker at the start of the given bytes.
@@ -169,18 +172,18 @@ def fetch_page(request):
                         seconds = int(ex.headers['retry-after'])
                     except ValueError:
                         # TODO: HTTP spec allows a date string here.
-                        print('Parsing of "Retry-After" dates '
-                              'is not yet implemented')
+                        _LOG.warning('Parsing of "Retry-After" dates '
+                                     'is not yet implemented')
                         seconds = 5
                 else:
                     seconds = 5
-                print('Server not ready yet, trying again '
-                      'in %d seconds' % seconds)
+                _LOG.info('Server not ready yet, trying again '
+                          'in %d seconds', seconds)
                 sleep(seconds)
             elif ex.code == 400:
                 # Generic client error, could be because we submitted an
                 # invalid form value.
-                print('Bad request (HTTP error 400):', ex.msg)
+                _LOG.info('Bad request (HTTP error 400): %s', ex.msg)
                 if request.maybe_bad:
                     # Validate the error page body.
                     return ex
@@ -259,7 +262,8 @@ def parse_document(content, is_xml, report):
         if namespaces_to_remove:
             pruned_root = deepcopy(root.getroottree()).getroot()
             for namespace in sorted(namespaces_to_remove):
-                print('Removing inline content from namespace', namespace)
+                _LOG.info('Removing inline content from namespace "%s"',
+                          namespace)
                 report.add_note(
                     'Page contains inline %s content; '
                     'this will not be validated.'
@@ -306,7 +310,6 @@ def parse_document(content, is_xml, report):
                 encoding=docinfo.encoding,
                 xml_declaration=False,
                 )
-            #print pruned_content
             report.add_note(
                 'Try to parse the pruned tree with a validated parser...'
                 )
@@ -330,7 +333,7 @@ def parse_document(content, is_xml, report):
     return root
 
 def parse_input_control(attrib):
-    print('input:', attrib)
+    _LOG.debug('input: %s', attrib)
     disabled = 'disabled' in attrib
     if disabled:
         return None
@@ -372,12 +375,12 @@ class PageChecker:
 
     def check(self, req):
         page_url = str(req)
-        print('Checking page:', self.short_url(page_url))
+        _LOG.info('Checking page: %s', self.short_url(page_url))
 
         try:
             inp = fetch_page(req)
         except FetchFailure as report:
-            print('Failed to open page')
+            _LOG.info('Failed to open page')
             self.scribe.add_report(report)
             return []
 
@@ -386,13 +389,13 @@ class PageChecker:
             report = IncrementalReport(page_url)
             referrers = []
             if content_url.startswith(self.base_url):
-                print('Redirected to:', self.short_url(content_url))
+                _LOG.info('Redirected to: %s', self.short_url(content_url))
                 try:
                     referrers = [Redirect(Request.from_url(content_url))]
                 except ValueError as ex:
                     report.add_query_warning(str(ex))
             else:
-                print('Redirected outside:', content_url)
+                _LOG.info('Redirected outside: %s', content_url)
             if not content_url.startswith('file:'):
                 self.scribe.add_report(report)
                 inp.close()
@@ -405,9 +408,9 @@ class PageChecker:
                 'application/xhtml+xml': True,
                 }[content_type]
         except KeyError:
-            print(
-                'Skipping. Document type is not HTML or XHTML, but [%s].'
-                % content_type
+            _LOG.info(
+                'Skipping. Document type is not HTML or XHTML, but [%s].',
+                content_type
                 )
             inp.close()
             return []
@@ -415,7 +418,7 @@ class PageChecker:
         try:
             content_bytes = inp.read()
         except IOError as ex:
-            print('Failed to fetch')
+            _LOG.info('Failed to fetch: %s', ex)
             self.scribe.add_report(FetchFailure(page_url, str(ex)))
             return []
         finally:
@@ -528,7 +531,7 @@ class PageChecker:
             except KeyError:
                 # Not containing a hyperlink link
                 continue
-            print(' Found link href: ', linkhref)
+            _LOG.debug(' Found link href: %s', linkhref)
 
         for image in root.iter(ns_prefix + 'img'):
             try:
@@ -536,7 +539,7 @@ class PageChecker:
             except KeyError:
                 # Not containing a src attribute
                 continue
-            print(' Found image src: ', imgsrc)
+            _LOG.debug(' Found image src: %s', imgsrc)
 
         for script in root.iter(ns_prefix + 'script'):
             try:
@@ -544,7 +547,7 @@ class PageChecker:
             except KeyError:
                 # Not containing a src attribute
                 continue
-            print(' Found script src: ', scriptsrc)
+            _LOG.debug(' Found script src: %s', scriptsrc)
 
         for form_node in root.getiterator(ns_prefix + 'form'):
             # TODO: How to handle an empty action?
@@ -603,7 +606,7 @@ class PageChecker:
                 disabled = 'disabled' in control.attrib
                 if disabled:
                     continue
-                print('textarea "%s": %s' % (name, value))
+                _LOG.debug('textarea "%s": %s', name, value)
                 controls.append(TextArea(name, value))
 
             # Merge exclusive controls.

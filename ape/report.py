@@ -91,7 +91,11 @@ class IncrementalReport(Report):
             description = 'Problem:'
         else:
             description = 'Problem found on line %d:' % line
-        return xml.dt[description], xml.dd[str(failure)]
+        if hasattr(failure, 'message'):
+            message = failure.message
+        else:
+            message = str(failure)
+        return xml.dt[description], xml.dd[message]
 
     def __init__(self, url):
         Report.__init__(self, url)

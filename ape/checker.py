@@ -201,58 +201,82 @@ def fetch_page(request):
             raise FetchFailure(url, ex.strerror)
 
 def parse_document(content, is_xml, report):
-    root = None
-    validation_errors = None
-    if is_xml:
-        _LOG.debug('Page content is XML')
-        # Try to parse XML with a DTD validating parser.
-        parser = etree.XMLParser(dtd_validation=True, no_network=True)
-        try:
-            root = etree.fromstring(content, parser)
-        except etree.XMLSyntaxError as ex:
-            report.add_note('Failed to parse with DTD validation.')
-            validation_errors = [ex]
-        else:
-            if parser.error_log:
-                # Parsing succeeded with errors; errors will be reported later.
-                validation_errors = parser.error_log
-            else:
-                # Parsing succeeded with no errors, so we are done.
-                return root
-        parser_factory = etree.XMLParser
-    else:
-        _LOG.debug('Page content is HTML')
-        # The lxml library doesn't support DTD validation for HTML.
-        parser_factory = etree.HTMLParser
+    '''Parse `content` as XML (if `is_xlm` is true) or HTML (otherwise).
+    Parse errors are added to `report`.
+    Return a document etree, or None if the document is too broken
+    to be parsed at all.
+    '''
+    parser_factory = etree.XMLParser if is_xml else etree.HTMLParser
+    parser = parser_factory(recover=True)
+    root = etree.fromstring(content, parser)
+    for error in parser.error_log:
+        # TODO: Using the term "validation" here is misleading.
+        report.add_validation_failure(error)
+    return None if root is None else root.getroottree()
 
-    # Try to get a parsed version by being less strict.
-    for recover in (False, True):
-        if root is None:
-            parser = parser_factory(recover=recover)
-            try:
-                root = etree.fromstring(content, parser)
-            except etree.XMLSyntaxError as ex:
-                if recover:
-                    report.add_note('Failed to parse with lenient parser.')
-                else:
-                    report.add_note('Failed to parse with strict parser.')
-                report.add_validation_failure(ex)
-    if root is None:
+_RE_PUBLIC_ID = re.compile(r'([ \n\ra-zA-z0-9\-\'\(\)+,./:=?;!*#@$_%])*')
+_DTD_CACHE = {}
+
+def get_dtd(public_id):
+    '''Returns a DTD for `public_id`.
+    DTD instances will be cached.
+    Raises ValueError if the ID string contains invalid characters.
+    Raises lxml.etree.DTDParseError if the DTD failed to parse.
+    '''
+    try:
+        return _DTD_CACHE[public_id]
+    except KeyError:
+        match = _RE_PUBLIC_ID.match(public_id)
+        if match.end() != len(public_id):
+            raise ValueError(
+                'Invalid character in public ID "%s": "%s" (position %d)'
+                % (public_id, public_id[match.end()], match.end() + 1)
+                )
+        # lxml wants ID as bytes, for some reason. All valid characters are
+        # in ASCII, so that's a safe conversion.
+        dtd = etree.DTD(external_id=public_id.encode('ascii'))
+        _DTD_CACHE[public_id] = dtd
+        return dtd
+
+def validate_document(tree, report):
+    '''Perform validation on the document `tree`.
+    Any problems found are added to `report`.
+    '''
+
+    public_id = tree.docinfo.public_id
+    if public_id is None:
         report.add_validation_failure(
-            'Unable to parse: page output does not look like XML or HTML.'
+            'Cannot validate document because public ID is unknown'
             )
-        return None
+        return
 
-    main_ns = root.nsmap.get(None, None)
-    if main_ns:
+    try:
+        dtd = get_dtd(public_id)
+    except ValueError as ex:
+        report.add_validation_failure(str(ex))
+        return
+    except etree.DTDParseError as ex:
+        # TODO: Report DTD parse failures at a global level and don't try to
+        #       parse them over and over.
+        #       Do report the inability to verify.
+        report.add_validation_failure(
+            'Failed to parse DTD for public ID "%s"' % public_id
+            )
+        return
+
+    # Remove inline content we cannot validate, for example SVG.
+    # TODO: Can't we validate SVG using a separate DTD?
+    pruned_tree = None
+    root = tree.getroot()
+    if None in root.nsmap:
         foreign_elem_namespaces, foreign_attr_namespaces = \
             _get_foreign_namespaces(root)
-        # Remove inline content we cannot validate, for example SVG.
         namespaces_to_remove = \
             foreign_elem_namespaces & set(_UNVALIDATABLE_NAMESPACES)
 
         if namespaces_to_remove:
-            pruned_root = deepcopy(root.getroottree()).getroot()
+            pruned_tree = deepcopy(tree)
+            pruned_root = pruned_tree.getroot()
             for namespace in sorted(namespaces_to_remove):
                 _LOG.info('Removing inline content from namespace "%s"',
                           namespace)
@@ -268,14 +292,12 @@ def parse_document(content, is_xml, report):
             # Recompute remaining foreign namespaces.
             foreign_elem_namespaces, foreign_attr_namespaces = \
                 _get_foreign_namespaces(pruned_root)
-        else:
-            pruned_root = None
 
         for namespace in sorted(foreign_elem_namespaces
                                 | foreign_attr_namespaces):
             report.add_note(
                 'Page contains %s from XML namespace "%s"; '
-                'these might be wrongly reported as invalid'
+                'these might be wrongly reported as invalid.'
                 % (
                     ' and '.join(
                         description
@@ -289,40 +311,16 @@ def parse_document(content, is_xml, report):
                     )
                 )
 
-        if pruned_root is not None:
-            # Try to parse pruned tree with a validating parser.
-            # We do this only for the error list: the tree we return is
-            # the full tree, since following links from for example SVG
-            # content will improve our ability to discover pages and
-            # queries.
-            parser = etree.XMLParser(dtd_validation=True, no_network=True)
-            docinfo = root.getroottree().docinfo
-            pruned_content = etree.tostring(
-                pruned_root.getroottree(),
-                encoding=docinfo.encoding,
-                xml_declaration=False,
-                )
-            report.add_note(
-                'Try to parse the pruned tree with a validated parser...'
-                )
-            try:
-                dummy_root_ = etree.fromstring(pruned_content, parser)
-            except etree.XMLSyntaxError as ex:
-                report.add_note(
-                    'Failed to parse pruned tree with validation.'
-                    )
-                report.add_validation_failure(ex)
-            else:
-                # Error list from pruned tree will contain less false
-                # positives, so replace original error list.
-                validation_errors = parser.error_log
-                if validation_errors:
-                    report.add_note('Line numbers are inexact.')
+    if pruned_tree is None:
+        dtd.validate(tree)
+    else:
+        dtd.validate(pruned_tree)
+        if dtd.error_log:
+            report.add_note('Line numbers may be inexact because '
+                            'unvalidatable content was pruned.')
 
-    if validation_errors:
-        for error in validation_errors:
-            report.add_validation_failure(error)
-    return root
+    for error in dtd.error_log:
+        report.add_validation_failure(error)
 
 def parse_input_control(attrib):
     _LOG.debug('input: %s', attrib)
@@ -491,11 +489,13 @@ class PageChecker:
             # when parsing strings.
             content = strip_xml_decl(content)
 
-        root = parse_document(content, is_xml, report)
-        if root is None:
+        tree = parse_document(content, is_xml, report)
+        if tree is None:
             self.scribe.add_report(report)
             return []
+        validate_document(tree, report)
 
+        root = tree.getroot()
         ns_prefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''
 
         links = defaultdict(LinkSet)

@@ -77,9 +77,6 @@ encoding. For example:
 
 from html import escape
 
-def _stringify(value):
-    return value if isinstance(value, str) else str(value)
-
 def _join(separator, nodes):
     iterator = iter(nodes)
     try:
@@ -161,7 +158,7 @@ class _XMLElement(_XMLSerializable):
     def __call__(self, **attributes):
         attrs = dict(self.__attributes)
         attrs.update(
-            (key.rstrip('_'), escape(_stringify(value)))
+            (key.rstrip('_'), escape(str(value)))
             for key, value in attributes.items()
             if value is not None
             )

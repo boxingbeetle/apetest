@@ -173,6 +173,9 @@ class Scribe:
         scheme_, host_, base_path, query, fragment = urlsplit(base_url)
         assert query == ''
         assert fragment == ''
+        # HTTP requires empty URL path to be mapped to "/".
+        #   https://tools.ietf.org/html/rfc7230#section-5.3.1
+        base_path = base_path or '/'
         self.base_path = base_path = base_path[ : base_path.rindex('/') + 1]
 
         self.plugins = plugins
@@ -182,7 +185,7 @@ class Scribe:
         self.reports_by_page = {}
 
     def __url_to_name(self, url):
-        path = urlsplit(url).path
+        path = urlsplit(url).path or '/'
         assert path.startswith(self.base_path)
         return path[len(self.base_path) : ]
 

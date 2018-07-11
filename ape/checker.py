@@ -210,8 +210,7 @@ def parse_document(content, is_xml, report):
     parser = parser_factory(recover=True)
     root = etree.fromstring(content, parser)
     for error in parser.error_log:
-        # TODO: Using the term "validation" here is misleading.
-        report.add_validation_failure(error)
+        report.add_error(error)
     return None if root is None else root.getroottree()
 
 _RE_PUBLIC_ID = re.compile(r'([ \n\ra-zA-z0-9\-\'\(\)+,./:=?;!*#@$_%])*')
@@ -245,7 +244,7 @@ def validate_document(tree, report):
 
     public_id = tree.docinfo.public_id
     if public_id is None:
-        report.add_validation_failure(
+        report.add_error(
             'Cannot validate document because public ID is unknown'
             )
         return
@@ -253,15 +252,13 @@ def validate_document(tree, report):
     try:
         dtd = get_dtd(public_id)
     except ValueError as ex:
-        report.add_validation_failure(str(ex))
+        report.add_error(str(ex))
         return
     except etree.DTDParseError as ex:
         # TODO: Report DTD parse failures at a global level and don't try to
         #       parse them over and over.
         #       Do report the inability to verify.
-        report.add_validation_failure(
-            'Failed to parse DTD for public ID "%s"' % public_id
-            )
+        report.add_error('Failed to parse DTD for public ID "%s"' % public_id)
         return
 
     # Remove inline content we cannot validate, for example SVG.
@@ -280,14 +277,14 @@ def validate_document(tree, report):
             for namespace in sorted(namespaces_to_remove):
                 _LOG.info('Removing inline content from namespace "%s"',
                           namespace)
-                report.add_note(
+                report.add_info(
                     'Page contains inline %s content; '
                     'this will not be validated.'
                     % _UNVALIDATABLE_NAMESPACES[namespace]
                     )
                 nodes_to_remove = list(pruned_root.iter('{%s}*' % namespace))
                 for elem in nodes_to_remove:
-                    #report.add_note('Remove inline element: %s' % elem)
+                    #report.add_info('Remove inline element: %s' % elem)
                     elem.getparent().remove(elem)
             # Recompute remaining foreign namespaces.
             foreign_elem_namespaces, foreign_attr_namespaces = \
@@ -295,7 +292,7 @@ def validate_document(tree, report):
 
         for namespace in sorted(foreign_elem_namespaces
                                 | foreign_attr_namespaces):
-            report.add_note(
+            report.add_info(
                 'Page contains %s from XML namespace "%s"; '
                 'these might be wrongly reported as invalid.'
                 % (
@@ -316,11 +313,11 @@ def validate_document(tree, report):
     else:
         dtd.validate(pruned_tree)
         if dtd.error_log:
-            report.add_note('Line numbers may be inexact because '
+            report.add_info('Line numbers may be inexact because '
                             'unvalidatable content was pruned.')
 
     for error in dtd.error_log:
-        report.add_validation_failure(error)
+        report.add_error(error)
 
 def parse_input_control(attrib):
     _LOG.debug('input: %s', attrib)
@@ -383,7 +380,7 @@ class PageChecker:
                 try:
                     referrers = [Redirect(Request.from_url(content_url))]
                 except ValueError as ex:
-                    report.add_query_warning(str(ex))
+                    report.add_warning(str(ex))
             else:
                 _LOG.info('Redirected outside: %s', content_url)
             if not content_url.startswith('file:'):
@@ -466,19 +463,19 @@ class PageChecker:
         # Report differences between suggested encodings and the one we
         # settled on.
         if bom_encoding not in (None, used_encoding):
-            report.add_note(
+            report.add_warning(
                 'Byte order marker suggests encoding "%s", '
                 'while actual encoding seems to be "%s"'
                 % (bom_encoding, used_encoding)
                 )
         if http_encoding not in (None, used_encoding):
-            report.add_note(
+            report.add_warning(
                 'HTTP header specifies encoding "%s", '
                 'while actual encoding seems to be "%s"'
                 % (http_encoding, used_encoding)
                 )
         if decl_encoding not in (None, used_encoding):
-            report.add_note(
+            report.add_warning(
                 'XML declaration specifies encoding "%s", '
                 'while actual encoding seems to be "%s"'
                 % (decl_encoding, used_encoding)
@@ -512,7 +509,7 @@ class PageChecker:
                 try:
                     request = Request.from_url(url)
                 except ValueError as ex:
-                    report.add_query_warning(str(ex))
+                    report.add_warning(str(ex))
                 else:
                     links[request.page_url].add(request)
         referrers = list(links.values())

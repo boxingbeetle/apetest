@@ -4,7 +4,7 @@ from collections import defaultdict
 from urllib.parse import unquote_plus, urlsplit
 
 from ape.request import Request
-from ape.xmlgen import xml
+from ape.xmlgen import concat, xml
 
 _STYLE_SHEET = '''
 body {
@@ -38,6 +38,22 @@ h3.pass {
 }
 h3.fail {
     background-color: #FF9090;
+}
+li.error {
+    color: #C00000;
+}
+li.warning {
+    color: #006680;
+}
+li.info {
+    color: #202020;
+}
+span.extract {
+    background: #FFFFB0;
+}
+code {
+    background: #F0F0F0;
+    color: #000000;
 }
 '''
 
@@ -80,57 +96,51 @@ class FetchFailure(Report, Exception):
 class IncrementalReport(Report):
 
     @staticmethod
-    def __present_validation_failure(failure):
-        if hasattr(failure, 'line'):
-            line = failure.line
-        elif hasattr(failure, 'position'):
-            line = failure.position[0]
+    def __present_message(data):
+        if isinstance(data, str):
+            return data
+
+        if hasattr(data, 'message'):
+            message = data.message
+        else:
+            message = concat(data)
+
+        if hasattr(data, 'line'):
+            line = data.line
+        elif hasattr(data, 'position'):
+            line = data.position[0]
         else:
             line = None
-        if line is None:
-            description = 'Problem:'
-        else:
-            description = 'Problem found on line %d:' % line
-        if hasattr(failure, 'message'):
-            message = failure.message
-        else:
-            message = str(failure)
-        return xml.dt[description], xml.dd[message]
+        if line is not None:
+            message += ' (line %d)' % line
+
+        return message
 
     def __init__(self, url):
         Report.__init__(self, url)
-        self.notes = []
-        self._validation_failures = []
-        self._query_warnings = []
+        self._messages = []
 
-    def add_note(self, message):
-        self.notes.append(message)
+    def add_message(self, level, message):
+        self._messages.append((level, message))
+        if level != 'info':
+            self.ok = False
 
-    def add_validation_failure(self, failure):
-        self._validation_failures.append(failure)
-        self.ok = False
+    def add_info(self, message):
+        self.add_message('info', message)
 
-    def add_query_warning(self, message):
-        self._query_warnings.append(message)
-        self.ok = False
+    def add_warning(self, message):
+        self.add_message('warning', message)
+
+    def add_error(self, message):
+        self.add_message('error', message)
 
     def present(self, scribe):
-        if self.notes:
-            yield xml.p[xml.br.join(
-                'Note: ' + note
-                for note in self.notes
-                )]
-        if self._validation_failures:
-            yield xml.dl[(
-                self.__present_validation_failure(failure)
-                for failure in self._validation_failures
-                )]
-        if self._query_warnings:
-            yield xml.p['Bad queries:']
-            yield xml.ul[(
-                xml.li[warning]
-                for warning in self._query_warnings
-                )]
+        yield xml.ul[(
+            xml.li(class_=level)[
+                level + ': ', self.__present_message(data)
+                ]
+            for level, data in self._messages
+            )]
         yield Report.present(self, scribe)
 
 class Page:

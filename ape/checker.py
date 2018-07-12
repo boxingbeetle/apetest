@@ -212,10 +212,10 @@ class PageChecker:
     references to other pages.
     '''
 
-    def __init__(self, base_url, scribe, validator):
+    def __init__(self, base_url, scribe, plugins):
         self.base_url = normalize_url(base_url)
         self.scribe = scribe
-        self.validator = validator
+        self.plugins = plugins
 
     def short_url(self, page_url):
         assert page_url.startswith(self.base_url), page_url
@@ -266,7 +266,8 @@ class PageChecker:
             _LOG.error(message)
             self.scribe.add_report(FetchFailure(page_url, message))
             return []
-        self.validator.validate(content_bytes, content_type_header, report)
+        for plugin in self.plugins:
+            plugin.resource_loaded(content_bytes, content_type_header, report)
 
         content_type = inp.info().get_content_type()
         try:

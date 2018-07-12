@@ -1,20 +1,31 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from ape.plugin import Plugin
 from ape.vnuclient import VNUClient
 from ape.xmlgen import concat, xml
 
-class HTMLValidator:
-    '''Runs the Nu Html Checker on a document and adds the results to
-     an `IncrementalReport`.
+def plugin_arguments(parser):
+    parser.add_argument(
+        '--check', nargs='?', metavar='URL', const='http://localhost:8888',
+        help='check HTML using v.Nu web service at URL'
+        )
+
+def plugin_create(args):
+    if args.check is not None:
+        yield HTMLValidator(args.check)
+
+class HTMLValidator(Plugin):
+    '''Runs the Nu Html Checker (v.Nu) on loaded documents.
+    Download the checker from: https://github.com/validator/validator
     '''
 
-    def __init__(self):
-        self.client = VNUClient('http://localhost:8888')
+    def __init__(self, service_url):
+        '''Creates a validator that uses the checker web service
+        at `service_url`.
+        '''
+        self.client = VNUClient(service_url)
 
-    def close(self):
-        self.client.close()
-
-    def validate(self, data, content_type_header, report):
+    def resource_loaded(self, data, content_type_header, report):
         for message in self.client.request(data, content_type_header):
             msg_type = message.get('type')
             subtype = message.get('subtype')
@@ -53,3 +64,6 @@ class HTMLValidator:
                 text = concat(text, xml.br, extract)
 
             report.add_message(level, text)
+
+    def postprocess(self, scribe):
+        self.client.close()

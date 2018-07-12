@@ -4,7 +4,6 @@ from ape.checker import PageChecker
 from ape.report import Scribe
 from ape.request import Request
 from ape.spider import Spider
-from ape.validator import HTMLValidator
 
 def run(url, report_file_name, plugins=()):
     try:
@@ -13,12 +12,10 @@ def run(url, report_file_name, plugins=()):
         print('Bad URL:', ex)
         return 1
 
-    htmlValidator = HTMLValidator()
-
     spider = Spider(first_req)
     base_url = first_req.page_url
     scribe = Scribe(base_url, spider, plugins)
-    checker = PageChecker(base_url, scribe, htmlValidator)
+    checker = PageChecker(base_url, scribe, plugins)
 
     print('Checking "%s" and below...' % base_url)
     for request in spider:

@@ -40,6 +40,17 @@ class Plugin:
     one or more methods.
     """
 
+    def resource_loaded(self, data, content_type_header, report):
+        """Called when a resource has been loaded.
+        The resource contents are passed in `data` as `bytes`,
+        while `content_type_header` is a `str` containing the full
+        Content-Type header (including charset, if the server sent it).
+        Plugins can override this method to perform checks on the raw
+        resource data.
+        The default implementation does nothing.
+        """
+        pass
+
     def report_added(self, report):
         """Called when the APE core has finished a `Report`.
         Plugins can override this method to act on the report data.

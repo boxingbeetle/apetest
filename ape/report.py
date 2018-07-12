@@ -39,6 +39,9 @@ h3.pass {
 h3.fail {
     background-color: #FF9090;
 }
+li {
+    line-height: 125%;
+}
 li.error {
     color: #C00000;
 }

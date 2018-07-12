@@ -5,7 +5,6 @@ from codecs import (
     getdecoder
     )
 from collections import defaultdict
-from copy import deepcopy
 from logging import getLogger
 from os.path import isdir
 import re
@@ -103,43 +102,6 @@ class RedirectResult:
     def __init__(self, url):
         self.url = url
 
-# Namespaces can be used for inlined content and that are not included in the
-# XHTML DTDs. Because DTDs are not namespace aware, anything from an unknown
-# namespace is flagged as an error; we must compensate for that.
-_UNVALIDATABLE_NAMESPACES = {
-    'http://www.w3.org/2000/svg': 'SVG',
-    }
-
-# Namespaces of which the elements and attributes are mosty likely included in
-# the XHTML DTDs.
-_VALIDATABLE_NAMESPACES = {
-    'http://www.w3.org/XML/1998/namespace': 'XML',
-    }
-
-def _get_foreign_namespaces(root):
-    main_ns = root.nsmap[None]
-    accepted_ns_prefixes = [
-        '{%s}' % namespace
-        for namespace in [main_ns] + list(_VALIDATABLE_NAMESPACES)
-        ]
-    foreign_elem_namespaces = set()
-    foreign_attr_namespaces = set()
-    for elem in root.iter(etree.Element):
-        tag = elem.tag
-        if not any(tag.startswith(prefix) for prefix in accepted_ns_prefixes):
-            if tag.startswith('{'):
-                index = tag.find('}')
-                if index != -1:
-                    foreign_elem_namespaces.add(tag[1 : index])
-        for name in elem.attrib.keys():
-            if name.startswith('{'):
-                if not any(name.startswith(prefix)
-                           for prefix in accepted_ns_prefixes):
-                    index = name.find('}')
-                    if index != -1:
-                        foreign_attr_namespaces.add(name[1 : index])
-    return foreign_elem_namespaces, foreign_attr_namespaces
-
 def fetch_page(request):
     url = str(request)
     fetch_url = url
@@ -208,116 +170,14 @@ def parse_document(content, is_xml, report):
     '''
     parser_factory = etree.XMLParser if is_xml else etree.HTMLParser
     parser = parser_factory(recover=True)
+    if is_xml:
+        # The lxml parser does not accept encoding in XML declarations
+        # when parsing strings.
+        content = strip_xml_decl(content)
     root = etree.fromstring(content, parser)
     for error in parser.error_log:
         report.add_error(error)
     return None if root is None else root.getroottree()
-
-_RE_PUBLIC_ID = re.compile(r'([ \n\ra-zA-z0-9\-\'\(\)+,./:=?;!*#@$_%])*')
-_DTD_CACHE = {}
-
-def get_dtd(public_id):
-    '''Returns a DTD for `public_id`.
-    DTD instances will be cached.
-    Raises ValueError if the ID string contains invalid characters.
-    Raises lxml.etree.DTDParseError if the DTD failed to parse.
-    '''
-    try:
-        return _DTD_CACHE[public_id]
-    except KeyError:
-        match = _RE_PUBLIC_ID.match(public_id)
-        if match.end() != len(public_id):
-            raise ValueError(
-                'Invalid character in public ID "%s": "%s" (position %d)'
-                % (public_id, public_id[match.end()], match.end() + 1)
-                )
-        # lxml wants ID as bytes, for some reason. All valid characters are
-        # in ASCII, so that's a safe conversion.
-        dtd = etree.DTD(external_id=public_id.encode('ascii'))
-        _DTD_CACHE[public_id] = dtd
-        return dtd
-
-def validate_document(tree, report):
-    '''Perform validation on the document `tree`.
-    Any problems found are added to `report`.
-    '''
-
-    public_id = tree.docinfo.public_id
-    if public_id is None:
-        report.add_error(
-            'Cannot validate document because public ID is unknown'
-            )
-        return
-
-    try:
-        dtd = get_dtd(public_id)
-    except ValueError as ex:
-        report.add_error(str(ex))
-        return
-    except etree.DTDParseError as ex:
-        # TODO: Report DTD parse failures at a global level and don't try to
-        #       parse them over and over.
-        #       Do report the inability to verify.
-        report.add_error('Failed to parse DTD for public ID "%s"' % public_id)
-        return
-
-    # Remove inline content we cannot validate, for example SVG.
-    # TODO: Can't we validate SVG using a separate DTD?
-    pruned_tree = None
-    root = tree.getroot()
-    if None in root.nsmap:
-        foreign_elem_namespaces, foreign_attr_namespaces = \
-            _get_foreign_namespaces(root)
-        namespaces_to_remove = \
-            foreign_elem_namespaces & set(_UNVALIDATABLE_NAMESPACES)
-
-        if namespaces_to_remove:
-            pruned_tree = deepcopy(tree)
-            pruned_root = pruned_tree.getroot()
-            for namespace in sorted(namespaces_to_remove):
-                _LOG.info('Removing inline content from namespace "%s"',
-                          namespace)
-                report.add_info(
-                    'Page contains inline %s content; '
-                    'this will not be validated.'
-                    % _UNVALIDATABLE_NAMESPACES[namespace]
-                    )
-                nodes_to_remove = list(pruned_root.iter('{%s}*' % namespace))
-                for elem in nodes_to_remove:
-                    #report.add_info('Remove inline element: %s' % elem)
-                    elem.getparent().remove(elem)
-            # Recompute remaining foreign namespaces.
-            foreign_elem_namespaces, foreign_attr_namespaces = \
-                _get_foreign_namespaces(pruned_root)
-
-        for namespace in sorted(foreign_elem_namespaces
-                                | foreign_attr_namespaces):
-            report.add_info(
-                'Page contains %s from XML namespace "%s"; '
-                'these might be wrongly reported as invalid.'
-                % (
-                    ' and '.join(
-                        description
-                        for description, category in (
-                            ('elements', foreign_elem_namespaces),
-                            ('attributes', foreign_attr_namespaces),
-                            )
-                        if namespace in category
-                        ),
-                    namespace,
-                    )
-                )
-
-    if pruned_tree is None:
-        dtd.validate(tree)
-    else:
-        dtd.validate(pruned_tree)
-        if dtd.error_log:
-            report.add_info('Line numbers may be inexact because '
-                            'unvalidatable content was pruned.')
-
-    for error in dtd.error_log:
-        report.add_error(error)
 
 def parse_input_control(attrib):
     _LOG.debug('input: %s', attrib)
@@ -352,9 +212,10 @@ class PageChecker:
     references to other pages.
     '''
 
-    def __init__(self, base_url, scribe):
+    def __init__(self, base_url, scribe, validator):
         self.base_url = normalize_url(base_url)
         self.scribe = scribe
+        self.validator = validator
 
     def short_url(self, page_url):
         assert page_url.startswith(self.base_url), page_url
@@ -388,6 +249,25 @@ class PageChecker:
                 inp.close()
             return referrers
 
+        try:
+            content_bytes = inp.read()
+        except IOError as ex:
+            _LOG.info('Failed to fetch: %s', ex)
+            self.scribe.add_report(FetchFailure(page_url, str(ex)))
+            return []
+        finally:
+            inp.close()
+
+        report = IncrementalReport(page_url)
+
+        content_type_header = inp.info()['Content-Type']
+        if content_type_header is None:
+            message = 'Missing Content-Type header'
+            _LOG.error(message)
+            self.scribe.add_report(FetchFailure(page_url, message))
+            return []
+        self.validator.validate(content_bytes, content_type_header, report)
+
         content_type = inp.info().get_content_type()
         try:
             is_xml = {
@@ -401,17 +281,6 @@ class PageChecker:
                 )
             inp.close()
             return []
-
-        try:
-            content_bytes = inp.read()
-        except IOError as ex:
-            _LOG.info('Failed to fetch: %s', ex)
-            self.scribe.add_report(FetchFailure(page_url, str(ex)))
-            return []
-        finally:
-            inp.close()
-
-        report = IncrementalReport(page_url)
 
         # Build a list of possible encodings.
         # W3C recommends giving the BOM, if present, precedence over HTTP.
@@ -481,16 +350,10 @@ class PageChecker:
                 % (decl_encoding, used_encoding)
                 )
 
-        if is_xml:
-            # The lxml parser does not accept encoding in XML declarations
-            # when parsing strings.
-            content = strip_xml_decl(content)
-
         tree = parse_document(content, is_xml, report)
         if tree is None:
             self.scribe.add_report(report)
             return []
-        validate_document(tree, report)
 
         root = tree.getroot()
         ns_prefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''

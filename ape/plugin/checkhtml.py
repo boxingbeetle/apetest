@@ -55,13 +55,13 @@ class HTMLValidator(Plugin):
                 length = message.get('hiliteLength')
                 if isinstance(start, int) and isinstance(length, int):
                     end = start + length
-                    if 0 <= start < end < len(extract):
-                        extract = xml.code[
+                    if 0 <= start < end <= len(extract):
+                        extract = (
                             extract[:start],
                             xml.span(class_='extract')[extract[start:end]],
                             extract[end:]
-                            ]
-                text = concat(text, xml.br, extract)
+                            )
+                text = concat(text, xml.br, xml.code[extract])
 
             report.add_message(level, text)
 

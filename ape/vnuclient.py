@@ -7,9 +7,13 @@ try:
 except ImportError:
     HTTPSConnection = None
 from io import BytesIO
+from logging import getLogger
+from time import sleep
 from urllib.parse import urlsplit
 
 import json
+
+_LOG = getLogger(__name__)
 
 class RedirectError(HTTPException):
     '''Raised when a redirect status from the server cannot be handled.
@@ -124,6 +128,7 @@ class VNUClient:
             headers['Accept-Encoding'] = 'identity, gzip;q=0.5'
             body = data
 
+        refused_count = 0
         retry_count = 0
         while True:
             try:
@@ -144,6 +149,18 @@ class VNUClient:
 
                 response.close()
                 return response, response_body
+            except ConnectionRefusedError:
+                self.close()
+                refused_count += 1
+                if refused_count >= 20:
+                    # Service is unlikely to appear anymore; give up.
+                    raise
+                # Wait for service to start up.
+                _LOG.info(
+                    'v.Nu service refuses connection; '
+                    'trying again in 1 second'
+                    )
+                sleep(1)
             except (HTTPException, OSError):
                 self.close()
                 retry_count += 1

@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from cgi import parse_header
+
 from ape.plugin import Plugin
 from ape.vnuclient import VNUClient
 from ape.xmlgen import concat, xml
@@ -30,6 +32,12 @@ class HTMLValidator(Plugin):
         self.client = VNUClient(service_url)
 
     def resource_loaded(self, data, content_type_header, report):
+        # Only forward documents that the checker may be able to handle.
+        content_type, args_ = parse_header(content_type_header)
+        if content_type not in ('text/html', 'text/css') \
+                and not content_type.endswith('+xml'):
+            return
+
         for message in self.client.request(data, content_type_header):
             msg_type = message.get('type')
             subtype = message.get('subtype')

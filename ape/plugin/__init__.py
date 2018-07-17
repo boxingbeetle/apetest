@@ -27,6 +27,8 @@ function:
 `args` is an `argparse.Namespace` that contains the result of the
 command line parsing.
 Each yielded object must implement the `Plugin` interface.
+If one of the requested plugins cannot be created, `PluginError` should
+be raised with a message that is meaningful to the end user.
 """
 
 from importlib import import_module
@@ -34,6 +36,13 @@ from logging import getLogger
 from pkgutil import iter_modules
 
 _LOG = getLogger(__name__)
+
+class PluginError(Exception):
+    """A plugin module can raise this in `plugin_create` when it fails
+    to create the `Plugin` instances requested by the command line
+    arguments.
+    """
+    pass
 
 class Plugin:
     """Plugin interface: your plugin class should inherit this and override
@@ -107,6 +116,10 @@ def create_plugins(module, args):
     def _log_yield():
         try:
             yield from func(args)
+        except PluginError as ex:
+            _LOG.error('Could not instantiate plugin in module "%s": %s',
+                       module.__name__, ex)
+            raise
         except Exception: # pylint: disable=broad-except
             _LOG.exception('Error instantiating plugin module "%s":',
                            module.__name__)

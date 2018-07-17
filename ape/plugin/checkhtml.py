@@ -6,13 +6,17 @@ from ape.xmlgen import concat, xml
 
 def plugin_arguments(parser):
     parser.add_argument(
-        '--check', nargs='?', metavar='URL', const='http://localhost:8888',
-        help='check HTML using v.Nu web service at URL'
+        '--check', nargs='?', metavar='PORT | URL', const='8888',
+        help='check HTML using v.Nu web service at PORT (localhost) or '
+             'URL (remote)'
         )
 
 def plugin_create(args):
-    if args.check is not None:
-        yield HTMLValidator(args.check)
+    url = args.check
+    if url is not None:
+        if url.isdigit():
+            url = 'http://localhost:' + url
+        yield HTMLValidator(url)
 
 class HTMLValidator(Plugin):
     '''Runs the Nu Html Checker (v.Nu) on loaded documents.

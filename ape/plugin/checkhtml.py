@@ -33,13 +33,13 @@ def _find_vnujar():
         import vnujar
     except ImportError:
         raise PluginError(
-            'Please install the "vnujar" package, for example using '
-            '"pip3 install vnujar"'
+            'Please install the "vnujar" module, for example using '
+            '"pip3 install html5validator"'
             )
     jar_path = Path(vnujar.__file__).with_name('vnu.jar')
     if not jar_path.exists():
         raise PluginError(
-            'The "vnujar" package exists, but does not contain "vnu.jar"'
+            'The "vnujar" module exists, but does not contain "vnu.jar"'
             )
     return jar_path
 

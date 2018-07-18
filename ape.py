@@ -17,11 +17,11 @@ def main():
         epilog='This is a test tool; do not use on production sites.'
         )
     parser.add_argument(
-        'url',
+        'url', metavar='URL',
         help='web app/site to check'
         )
     parser.add_argument(
-        'report',
+        'report', metavar='REPORT',
         help='file to write the HTML report to'
         )
     parser.add_argument(

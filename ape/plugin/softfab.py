@@ -4,7 +4,7 @@ from ape.plugin import Plugin
 
 def plugin_arguments(parser):
     parser.add_argument(
-        '--result', nargs='?', const='results.properties',
+        '--result',
         help='properties file (SoftFab compatible) to write results to'
         )
 

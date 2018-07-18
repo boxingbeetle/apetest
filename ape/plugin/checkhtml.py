@@ -11,7 +11,7 @@ from ape.xmlgen import concat, xml
 
 def plugin_arguments(parser):
     parser.add_argument(
-        '--check', metavar='PORT | URL | launch',
+        '--check', metavar='PORT|URL|launch',
         help='check HTML using v.Nu web service at PORT (localhost) or '
              'URL (remote), or launch a new instance'
         )

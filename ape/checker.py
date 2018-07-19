@@ -269,6 +269,7 @@ class PageChecker:
         self.plugins.resource_loaded(content_bytes, content_type_header, report)
 
         content_type = inp.info().get_content_type()
+        http_encoding = inp.info().get_content_charset()
         try:
             is_xml = {
                 'text/html': False,
@@ -282,7 +283,14 @@ class PageChecker:
             inp.close()
             return []
 
-        if not is_xml and content_bytes.startswith(b'<?xml'):
+        # Speculatively decode the first 1024 bytes, so we can look inside
+        # the document for encoding clues.
+        bom_encoding = encoding_from_bom(content_bytes)
+        content_head = content_bytes[:1024].decode(
+            bom_encoding or 'ascii', 'replace'
+            )
+
+        if not is_xml and content_head.startswith('<?xml'):
             is_xml = True
             if page_url.startswith('file:'):
                 # Silently correct content-type detection for local files.
@@ -297,15 +305,20 @@ class PageChecker:
                     % content_type
                     )
 
+        # Look for encoding in XML declaration.
+        decl_encoding = encoding_from_xml_decl(content_head)
+
+        # TODO: Also look at HTML <meta> tags.
+
         # Build a list of possible encodings.
-        # W3C recommends giving the BOM, if present, precedence over HTTP.
-        #   http://www.w3.org/International/questions/qa-byte-order-mark
-        bom_encoding = encoding_from_bom(content_bytes)
-        http_encoding = inp.info().get_content_charset()
         encodings = []
         if bom_encoding is not None:
+            # W3C recommends giving the BOM, if present, precedence over HTTP.
+            #   http://www.w3.org/International/questions/qa-byte-order-mark
             encodings.append(bom_encoding)
-        if http_encoding is not None and http_encoding != bom_encoding:
+        if decl_encoding is not None and decl_encoding not in encodings:
+            encodings.append(decl_encoding)
+        if http_encoding is not None and http_encoding not in encodings:
             encodings.append(http_encoding)
         if 'utf-8' not in encodings:
             encodings.append('utf-8')
@@ -317,28 +330,7 @@ class PageChecker:
                 used_encoding = encoding
                 break
         else:
-            # All likely encodings failed; ignore all non-ASCII bytes so
-            # we can look inside the document for clues.
-            content = content_bytes.decode('ascii', 'ignore')
-            used_encoding = None
-
-        # Look for encoding in XML declaration.
-        if is_xml:
-            decl_encoding = encoding_from_xml_decl(content)
-            if used_encoding is None and decl_encoding is not None:
-                new_content = strict_decode(content_bytes, decl_encoding)
-                if new_content is not None:
-                    content = new_content
-                    used_encoding = decl_encoding
-        else:
-            decl_encoding = None
-
-        # TODO: Also look at HTML <meta> tags.
-
-        if used_encoding is None:
-            # TODO: Do the decoding again to capture the error messages.
-            #       Actually, also try non-strict decoding with the first
-            #       encoding from the list.
+            # All likely encodings failed.
             self.scribe.add_report(FetchFailure(
                 page_url, 'Unable to determine document encoding'
                 ))
@@ -352,17 +344,17 @@ class PageChecker:
                 'while actual encoding seems to be "%s"'
                 % (bom_encoding, used_encoding)
                 )
-        if http_encoding not in (None, used_encoding):
-            report.add_warning(
-                'HTTP header specifies encoding "%s", '
-                'while actual encoding seems to be "%s"'
-                % (http_encoding, used_encoding)
-                )
         if decl_encoding not in (None, used_encoding):
             report.add_warning(
                 'XML declaration specifies encoding "%s", '
                 'while actual encoding seems to be "%s"'
                 % (decl_encoding, used_encoding)
+                )
+        if http_encoding not in (None, used_encoding):
+            report.add_warning(
+                'HTTP header specifies encoding "%s", '
+                'while actual encoding seems to be "%s"'
+                % (http_encoding, used_encoding)
                 )
 
         tree = parse_document(content, is_xml, report)

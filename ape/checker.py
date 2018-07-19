@@ -266,22 +266,10 @@ class PageChecker:
             _LOG.error(message)
             self.scribe.add_report(FetchFailure(page_url, message))
             return []
-        self.plugins.resource_loaded(content_bytes, content_type_header, report)
 
         content_type = inp.info().get_content_type()
+        is_xml = content_type.endswith('/xml') or content_type.endswith('+xml')
         http_encoding = inp.info().get_content_charset()
-        try:
-            is_xml = {
-                'text/html': False,
-                'application/xhtml+xml': True,
-                }[content_type]
-        except KeyError:
-            _LOG.info(
-                'Skipping. Document type is not HTML or XHTML, but [%s].',
-                content_type
-                )
-            inp.close()
-            return []
 
         # Speculatively decode the first 1024 bytes, so we can look inside
         # the document for encoding clues.
@@ -304,6 +292,16 @@ class PageChecker:
                     'but starts with an XML declaration'
                     % content_type
                     )
+
+        if not is_xml and not content_type.startswith('text/'):
+            self.plugins.resource_loaded(
+                content_bytes, content_type_header, report
+                )
+            _LOG.info(
+                'Document of type "%s" is probably not text; skipping.',
+                content_type
+                )
+            return []
 
         # Look for encoding in XML declaration.
         decl_encoding = encoding_from_xml_decl(content_head)
@@ -356,6 +354,23 @@ class PageChecker:
                 'while actual encoding seems to be "%s"'
                 % (http_encoding, used_encoding)
                 )
+
+        if page_url.startswith('file:'):
+            # Construct a new header that is likely more accurate.
+            content_type_header = '%s; charset=%s' % (
+                content_type, used_encoding
+                )
+        self.plugins.resource_loaded(content_bytes, content_type_header, report)
+
+        if content_type not in ('text/html', 'application/xhtml+xml'):
+            # TODO: We could check the well-formedness of all XML documents.
+            # TODO: We could find links in the XLink namespace even if we
+            #       don't support the root namespace of the document.
+            _LOG.info(
+                'Document type is not HTML or XHTML, but "%s"; skipping.',
+                content_type
+                )
+            return []
 
         tree = parse_document(content, is_xml, report)
         if tree is None:

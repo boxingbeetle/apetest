@@ -49,6 +49,14 @@ class Plugin:
     one or more methods.
     """
 
+    def close(self):
+        """Tells the plugin to release any resources (processes, sockets
+        etc.) that it may have acquired.
+        There will not be any more calls to the plugin after it is closed.
+        The default implementation does nothing.
+        """
+        pass
+
     def resource_loaded(self, data, content_type_header, report):
         """Called when a resource has been loaded.
         The resource contents are passed in `data` as `bytes`,

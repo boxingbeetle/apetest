@@ -84,6 +84,11 @@ class HTMLValidator(Plugin):
             self.service = None
         self.client = VNUClient(service_url)
 
+    def close(self):
+        self.client.close()
+        if self.service is not None:
+            self.service.terminate()
+
     def resource_loaded(self, data, content_type_header, report):
         # Only forward documents that the checker may be able to handle.
         content_type, args_ = parse_header(content_type_header)
@@ -129,8 +134,3 @@ class HTMLValidator(Plugin):
                 text = concat(text, xml.br, xml.code[extract])
 
             report.add_message(level, text)
-
-    def postprocess(self, scribe):
-        self.client.close()
-        if self.service is not None:
-            self.service.terminate()

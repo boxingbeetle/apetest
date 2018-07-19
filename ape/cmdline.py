@@ -8,32 +8,34 @@ from ape.spider import Spider
 
 def run(url, report_file_name, plugins=()):
     plugins = PluginCollection(plugins)
-
     try:
-        first_req = Request.from_url(url)
-    except ValueError as ex:
-        print('Bad URL:', ex)
-        return 1
+        try:
+            first_req = Request.from_url(url)
+        except ValueError as ex:
+            print('Bad URL:', ex)
+            return 1
 
-    spider = Spider(first_req)
-    base_url = first_req.page_url
-    scribe = Scribe(base_url, spider, plugins)
-    checker = PageChecker(base_url, scribe, plugins)
+        spider = Spider(first_req)
+        base_url = first_req.page_url
+        scribe = Scribe(base_url, spider, plugins)
+        checker = PageChecker(base_url, scribe, plugins)
 
-    print('Checking "%s" and below...' % base_url)
-    for request in spider:
-        referrers = checker.check(request)
-        spider.add_requests(request, referrers)
-    print('Done checking')
+        print('Checking "%s" and below...' % base_url)
+        for request in spider:
+            referrers = checker.check(request)
+            spider.add_requests(request, referrers)
+        print('Done checking')
 
-    print('Writing report to "%s"...' % report_file_name)
-    with open(report_file_name, 'w',
-              encoding='ascii', errors='xmlcharrefreplace') as out:
-        for node in scribe.present():
-            out.write(node.flatten())
-    print('Done reporting')
+        print('Writing report to "%s"...' % report_file_name)
+        with open(report_file_name, 'w',
+                encoding='ascii', errors='xmlcharrefreplace') as out:
+            for node in scribe.present():
+                out.write(node.flatten())
+        print('Done reporting')
 
-    scribe.postprocess()
-    print('Done post processing')
+        scribe.postprocess()
+        print('Done post processing')
 
-    return 0
+        return 0
+    finally:
+        plugins.close()

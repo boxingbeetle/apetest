@@ -1,11 +1,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from ape.checker import PageChecker
+from ape.plugin import PluginCollection
 from ape.report import Scribe
 from ape.request import Request
 from ape.spider import Spider
 
 def run(url, report_file_name, plugins=()):
+    plugins = PluginCollection(plugins)
+
     try:
         first_req = Request.from_url(url)
     except ValueError as ex:

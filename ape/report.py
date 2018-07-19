@@ -203,8 +203,7 @@ class Scribe:
         return path[len(self.base_path) : ]
 
     def add_report(self, report):
-        for plugin in self.plugins:
-            plugin.report_added(report)
+        self.plugins.report_added(report)
 
         url = report.url
         # Note: Currently, each URL is only visited once.
@@ -232,8 +231,7 @@ class Scribe:
             )
 
     def postprocess(self):
-        for plugin in self.plugins:
-            plugin.postprocess(self)
+        self.plugins.postprocess(self)
 
     def present(self):
         title = 'APE - Automated Page Exerciser'

@@ -266,8 +266,7 @@ class PageChecker:
             _LOG.error(message)
             self.scribe.add_report(FetchFailure(page_url, message))
             return []
-        for plugin in self.plugins:
-            plugin.resource_loaded(content_bytes, content_type_header, report)
+        self.plugins.resource_loaded(content_bytes, content_type_header, report)
 
         content_type = inp.info().get_content_type()
         try:

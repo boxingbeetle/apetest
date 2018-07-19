@@ -74,6 +74,26 @@ class Plugin:
         """
         pass
 
+class PluginCollection:
+    """Keeps a collection of `Plugin` instances and dispatches calls to
+    each of them.
+    """
+
+    def __init__(self, plugins):
+        self.plugins = tuple(plugins)
+
+    def __getattr__(self, name):
+        if hasattr(Plugin, name):
+            return self.__dispatch(name)
+        else:
+            raise AttributeError(name)
+
+    def __dispatch(self, name):
+        def dispatch(*args, **kvargs):
+            for plugin in self.plugins:
+                getattr(plugin, name)(*args, **kvargs)
+        return dispatch
+
 def load_plugins():
     """Finds and imports plugin modules, then yields the modules.
     Errors will be logged.

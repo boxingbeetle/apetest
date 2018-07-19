@@ -282,6 +282,21 @@ class PageChecker:
             inp.close()
             return []
 
+        if not is_xml and content_bytes.startswith(b'<?xml'):
+            is_xml = True
+            if page_url.startswith('file:'):
+                # Silently correct content-type detection for local files.
+                # This is not something the user can easily fix, so issuing
+                # a warning would not be helpful.
+                if content_type == 'text/html':
+                    content_type = 'application/xhtml+xml'
+            else:
+                report.add_warning(
+                    'Document is served with content type "%s" '
+                    'but starts with an XML declaration'
+                    % content_type
+                    )
+
         # Build a list of possible encodings.
         # W3C recommends giving the BOM, if present, precedence over HTTP.
         #   http://www.w3.org/International/questions/qa-byte-order-mark

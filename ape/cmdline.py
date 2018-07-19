@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from urllib.parse import urljoin
+
 from ape.checker import PageChecker
 from ape.plugin import PluginCollection
 from ape.report import Scribe
@@ -10,7 +12,7 @@ def run(url, report_file_name, plugins=()):
     plugins = PluginCollection(plugins)
     try:
         try:
-            first_req = Request.from_url(url)
+            first_req = Request.from_url(urljoin('file://', url))
         except ValueError as ex:
             print('Bad URL:', ex)
             return 1

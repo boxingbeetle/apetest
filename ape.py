@@ -17,7 +17,7 @@ def main():
         epilog='This is a test tool; do not use on production sites.'
         )
     parser.add_argument(
-        'url', metavar='URL',
+        'url', metavar='URL|PATH',
         help='web app/site to check'
         )
     parser.add_argument(

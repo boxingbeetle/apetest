@@ -271,4 +271,4 @@ class Scribe:
             for source_req in self.spider.iter_referring_requests(req)
             )
         for name in sorted(page_names):
-            yield xml.li[xml.a(href='#' + name)[name]]
+            yield xml.li[xml.a(href='#' + (name or 'base'))[name or '(base)']]

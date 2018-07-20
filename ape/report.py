@@ -160,6 +160,16 @@ class Page:
             self.failures += 1
 
     def present(self, scribe):
+        # Use more compact presentation for local files.
+        if len(self.query_to_report) == 1:
+            (query, report), = self.query_to_report.items()
+            if query == '' and report.url.startswith('file:'):
+                verdict = 'pass' if report.ok else 'fail'
+                yield xml.h3(class_=verdict)[verdict]
+                yield report.present(scribe)
+                return
+
+        # Use detailed presentation for pages served over HTTP.
         total = len(self.query_to_report)
         yield xml.p[
             '%d queries checked, %d passed, %d failed'

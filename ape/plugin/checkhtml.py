@@ -119,6 +119,14 @@ class HTMLValidator(Plugin):
                     xml.b['Fatal:'], ' This error blocks further checking.'
                     )
 
+            lines = '-'.join(
+                str(message[attr])
+                for attr in ('firstLine', 'lastLine')
+                if attr in message
+                )
+            if lines:
+                text = 'line %s: %s' % (lines, text)
+
             extract = message.get('extract')
             if extract:
                 start = message.get('hiliteStart')

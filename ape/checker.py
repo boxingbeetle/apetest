@@ -2,9 +2,9 @@
 
 from codecs import (
     BOM_UTF8, BOM_UTF16_BE, BOM_UTF16_LE, BOM_UTF32_BE, BOM_UTF32_LE,
-    getdecoder
+    lookup as lookup_codec
     )
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from logging import getLogger
 from os.path import isdir
 import re
@@ -39,22 +39,43 @@ def encoding_from_bom(data):
     else:
         return None
 
-def strict_decode(data, encoding):
-    '''Attempts to decode the given bytes using the given encoding name.
-    Returns the decoded string if it decoded flawlessly, None otherwise.
+def standard_codec_name(codec):
+    name = codec.name
+    return {
+        # IANA prefers "US-ASCII".
+        #   http://www.iana.org/assignments/character-sets/character-sets.xhtml
+        'ascii': 'us-ascii',
+        }.get(name, name)
+
+def try_decode(data, encodings):
+    '''Attempts to decode the given bytes using the given encodings in order.
+    Duplicate and None encoding elements are skipped.
+    Returns a pair of the decoded string and the used encoding if successful,
+    otherwise raises UnicodeDecodeError.
     '''
-    try:
-        decoder = getdecoder(encoding)
-    except LookupError:
-        return None
-    try:
-        text, consumed = decoder(data, 'strict')
-    except UnicodeDecodeError:
-        return None
-    if consumed == len(data):
-        return text
-    else:
-        return None
+    # Build sequence of codecs to try.
+    codecs = OrderedDict()
+    for encoding in encodings:
+        if encoding is not None:
+            try:
+                codec = lookup_codec(encoding)
+            except LookupError:
+                pass
+            else:
+                codecs[standard_codec_name(codec)] = codec
+
+    # Apply decoders to the document.
+    for name, codec in codecs.items():
+        try:
+            text, consumed = codec.decode(data, 'strict')
+        except UnicodeDecodeError:
+            continue
+        if consumed == len(data):
+            return text, name
+    raise UnicodeDecodeError(
+        'Unable to determine document encoding; tried: '
+        + ', '.join(codecs.keys())
+        )
 
 _RE_XML_DECL = re.compile(
     r'<\?xml([ \t\r\n\'"\w.\-=]*).*\?>'
@@ -308,52 +329,47 @@ class PageChecker:
 
         # TODO: Also look at HTML <meta> tags.
 
-        # Build a list of possible encodings.
-        encodings = []
-        if bom_encoding is not None:
-            # W3C recommends giving the BOM, if present, precedence over HTTP.
-            #   http://www.w3.org/International/questions/qa-byte-order-mark
-            encodings.append(bom_encoding)
-        if decl_encoding is not None and decl_encoding not in encodings:
-            encodings.append(decl_encoding)
-        if http_encoding is not None and http_encoding not in encodings:
-            encodings.append(http_encoding)
-        if 'utf-8' not in encodings:
-            encodings.append('utf-8')
-
-        # Try to decode the document.
-        for encoding in encodings:
-            content = strict_decode(content_bytes, encoding)
-            if content is not None:
-                used_encoding = encoding
-                break
-        else:
+        # Try possible encodings in order of precedence.
+        # W3C recommends giving the BOM, if present, precedence over HTTP.
+        #   http://www.w3.org/International/questions/qa-byte-order-mark
+        try:
+            content, used_encoding = try_decode(
+                content_bytes,
+                (bom_encoding, decl_encoding, http_encoding, 'utf-8')
+                )
+        except UnicodeDecodeError as ex:
             # All likely encodings failed.
-            self.scribe.add_report(FetchFailure(
-                page_url, 'Unable to determine document encoding'
-                ))
+            self.scribe.add_report(FetchFailure(page_url, str(ex)))
             return []
 
         # Report differences between suggested encodings and the one we
         # settled on.
-        if bom_encoding not in (None, used_encoding):
-            report.add_warning(
-                'Byte order marker suggests encoding "%s", '
-                'while actual encoding seems to be "%s"'
-                % (bom_encoding, used_encoding)
-                )
-        if decl_encoding not in (None, used_encoding):
-            report.add_warning(
-                'XML declaration specifies encoding "%s", '
-                'while actual encoding seems to be "%s"'
-                % (decl_encoding, used_encoding)
-                )
-        if http_encoding not in (None, used_encoding):
-            report.add_warning(
-                'HTTP header specifies encoding "%s", '
-                'while actual encoding seems to be "%s"'
-                % (http_encoding, used_encoding)
-                )
+        for encoding, source in ((bom_encoding, 'Byte Order Mark'),
+                                 (decl_encoding, 'XML declaration'),
+                                 (http_encoding, 'HTTP header')):
+            if encoding is None:
+                continue
+            try:
+                codec = lookup_codec(encoding)
+            except LookupError:
+                report.add_warning(
+                    '%s specifies encoding "%s", which is unknown to Python'
+                    % (source, encoding, used_encoding)
+                    )
+                continue
+            std_name = standard_codec_name(codec)
+            if std_name != used_encoding:
+                report.add_warning(
+                    '%s specifies encoding "%s", '
+                    'while actual encoding seems to be "%s"'
+                    % (source, encoding, used_encoding)
+                    )
+            elif std_name != encoding:
+                report.add_info(
+                    '%s specifies encoding "%s", '
+                    'which is not the standard name "%s"'
+                    % (source, encoding, used_encoding)
+                    )
 
         if page_url.startswith('file:'):
             # Construct a new header that is likely more accurate.

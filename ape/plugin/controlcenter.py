@@ -16,17 +16,6 @@ def plugin_create(args):
 
 class DataChangeMonitor(Plugin):
 
-    allowed_changes = (
-        # Shadow DB has automatic cleanup.
-        ('shadow', 'remove'),
-        # These are singleton records that are created automatically.
-        # Note that only "add" is accepted, "update" is not.
-        ('project', 'add'),
-        # Schedule start times will automatically update if the current time
-        # is past the stored start time.
-        ('scheduled', 'update'),
-        )
-
     def __init__(self, cclog):
         self._log_file = cclog
         self._log_fd = None
@@ -61,8 +50,22 @@ class DataChangeMonitor(Plugin):
 
     def report_added(self, report):
         for change, db_name, record_id in self.__process_data(report):
-            if (db_name, change) not in self.allowed_changes:
-                report.add_plugin_warning(
-                    'Unexpected %s in database "%s" on record "%s"'
-                    % (change, db_name, record_id)
-                    )
+            if (db_name, change) in (
+                # Shadow DB has automatic cleanup.
+                ('shadow', 'remove'),
+                # These are singleton records that are created automatically.
+                # Note that only "add" is accepted, "update" is not.
+                ('project', 'add'),
+                # Schedule start times will automatically update if the
+                # current time is past the stored start time.
+                ('scheduled', 'update'),
+                # Reserved resource types are created automatically.
+                # The code below checks whether the type was indeed reserved.
+                ('restypes', 'add'),
+                ):
+                if db_name != 'restypes' or record_id.startswith('sf.'):
+                    continue
+            report.add_plugin_warning(
+                'Unexpected %s in database "%s" on record "%s"'
+                % (change, db_name, record_id)
+                )

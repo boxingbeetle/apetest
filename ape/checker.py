@@ -256,15 +256,18 @@ class PageChecker:
         content_url = normalize_url(inp.url)
         if content_url != page_url:
             report = IncrementalReport(page_url)
+            report.checked = True
             referrers = []
             if content_url.startswith(self.base_url):
-                _LOG.info('Redirected to: %s', self.short_url(content_url))
+                report.add_info(
+                    'Redirected to: %s' % self.short_url(content_url)
+                    )
                 try:
                     referrers = [Redirect(Request.from_url(content_url))]
                 except ValueError as ex:
                     report.add_warning(str(ex))
             else:
-                _LOG.info('Redirected outside: %s', content_url)
+                report.add_info('Redirected outside: %s' % content_url)
             if not content_url.startswith('file:'):
                 self.scribe.add_report(report)
                 inp.close()

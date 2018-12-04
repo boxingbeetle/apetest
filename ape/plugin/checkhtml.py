@@ -2,7 +2,7 @@
 
 from cgi import parse_header
 from pathlib import Path
-from socket import AF_INET, SOCK_STREAM, socket
+from socket import AF_INET, SOCK_STREAM, socket # pylint: disable=no-name-in-module
 from subprocess import DEVNULL, Popen
 
 from ape.plugin import Plugin, PluginError

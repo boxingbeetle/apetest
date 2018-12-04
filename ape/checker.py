@@ -399,6 +399,7 @@ class PageChecker:
             #       don't support the root namespace of the document.
 
             for url in urls:
+                _LOG.debug(' Found URL: %s', url)
                 if url.startswith('?'):
                     url = urlsplit(page_url).path + url
                 url = urljoin(page_url, url)
@@ -424,36 +425,17 @@ class PageChecker:
         root = tree.getroot()
         ns_prefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''
 
-        for anchor in root.iter(ns_prefix + 'a'):
-            try:
-                yield anchor.attrib['href']
-            except KeyError:
-                # Not a hyperlink anchor.
-                continue
-
-        for link in root.iter(ns_prefix + 'link'):
-            try:
-                linkhref = link.attrib['href']
-            except KeyError:
-                # Not containing a hyperlink link
-                continue
-            _LOG.debug(' Found link href: %s', linkhref)
-
-        for image in root.iter(ns_prefix + 'img'):
-            try:
-                imgsrc = image.attrib['src']
-            except KeyError:
-                # Not containing a src attribute
-                continue
-            _LOG.debug(' Found image src: %s', imgsrc)
-
-        for script in root.iter(ns_prefix + 'script'):
-            try:
-                scriptsrc = script.attrib['src']
-            except KeyError:
-                # Not containing a src attribute
-                continue
-            _LOG.debug(' Found script src: %s', scriptsrc)
+        for tag_name, attr_name in (
+                (ns_prefix + 'a', 'href'),
+                (ns_prefix + 'link', 'href'),
+                (ns_prefix + 'img', 'src'),
+                (ns_prefix + 'script', 'src')
+                ):
+            for node in root.iter(tag_name):
+                try:
+                    yield node.attrib[attr_name]
+                except KeyError:
+                    pass
 
     def find_referrers_in_html(self, tree, page_url):
         """Yields referrers found in HTML tags in the document `tree`.

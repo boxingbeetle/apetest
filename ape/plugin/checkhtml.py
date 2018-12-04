@@ -70,6 +70,14 @@ class HTMLValidator(Plugin):
     Download the checker from: https://github.com/validator/validator
     '''
 
+    supported_content_types = {
+        'text/html',
+        'application/xhtml+xml',
+        'text/css',
+        'image/svg+xml'
+        }
+    """Content types that the validator is able to check."""
+
     def __init__(self, service_url, launch):
         '''Creates a validator that uses the checker web service
         at `service_url`.
@@ -92,8 +100,7 @@ class HTMLValidator(Plugin):
     def resource_loaded(self, data, content_type_header, report):
         # Only forward documents that the checker may be able to handle.
         content_type, args_ = parse_header(content_type_header)
-        if content_type not in ('text/html', 'text/css') \
-                and not content_type.endswith('+xml'):
+        if content_type not in self.supported_content_types:
             return
 
         for message in self.client.request(data, content_type_header):

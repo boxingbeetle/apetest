@@ -387,33 +387,49 @@ class PageChecker:
             return []
 
         tree = parse_document(content, is_xml, report)
-        if tree is None or not is_html:
-            # TODO: We could find links in the XLink namespace even if we
-            #       don't support the root namespace of the document.
-            self.scribe.add_report(report)
-            return []
+        referrers = []
 
+        if tree is not None:
+            # Find links to other documents.
+            links = defaultdict(LinkSet)
+            urls = []
+            if is_html:
+                urls += self.find_urls_in_html(tree)
+            # TODO: We could find URLs in the XLink namespace even if we
+            #       don't support the root namespace of the document.
+
+            for url in urls:
+                if url.startswith('?'):
+                    url = urlsplit(page_url).path + url
+                url = urljoin(page_url, url)
+                if url.startswith(self.base_url):
+                    try:
+                        request = Request.from_url(url)
+                    except ValueError as ex:
+                        report.add_warning(str(ex))
+                    else:
+                        links[request.page_url].add(request)
+            referrers += links.values()
+
+            # Find other referrers.
+            if is_html:
+                referrers += self.find_referrers_in_html(tree, page_url)
+
+        self.scribe.add_report(report)
+        return referrers
+
+    def find_urls_in_html(self, tree):
+        """Yields URLs found in HTML tags in the document `tree`.
+        """
         root = tree.getroot()
         ns_prefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''
 
-        links = defaultdict(LinkSet)
         for anchor in root.iter(ns_prefix + 'a'):
             try:
-                href = anchor.attrib['href']
+                yield anchor.attrib['href']
             except KeyError:
                 # Not a hyperlink anchor.
                 continue
-            if href.startswith('?'):
-                href = urlsplit(page_url).path + href
-            url = urljoin(page_url, href)
-            if url.startswith(self.base_url):
-                try:
-                    request = Request.from_url(url)
-                except ValueError as ex:
-                    report.add_warning(str(ex))
-                else:
-                    links[request.page_url].add(request)
-        referrers = list(links.values())
 
         for link in root.iter(ns_prefix + 'link'):
             try:
@@ -438,6 +454,12 @@ class PageChecker:
                 # Not containing a src attribute
                 continue
             _LOG.debug(' Found script src: %s', scriptsrc)
+
+    def find_referrers_in_html(self, tree, page_url):
+        """Yields referrers found in HTML tags in the document `tree`.
+        """
+        root = tree.getroot()
+        ns_prefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''
 
         for form_node in root.getiterator(ns_prefix + 'form'):
             # TODO: How to handle an empty action?
@@ -507,8 +529,4 @@ class PageChecker:
             # If the form contains no submit buttons, assume it can be
             # submitted using JavaScript, so continue.
 
-            form = Form(submit_url, method, controls)
-            referrers.append(form)
-
-        self.scribe.add_report(report)
-        return referrers
+            yield Form(submit_url, method, controls)

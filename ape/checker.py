@@ -355,7 +355,7 @@ class PageChecker:
             except LookupError:
                 report.add_warning(
                     '%s specifies encoding "%s", which is unknown to Python'
-                    % (source, encoding, used_encoding)
+                    % (source, encoding)
                     )
                 continue
             std_name = standard_codec_name(codec)

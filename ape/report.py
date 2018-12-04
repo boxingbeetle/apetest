@@ -62,6 +62,7 @@ code {
 
 class Report:
     ok = True # ...until proven otherwise
+    checked = False
 
     def __init__(self, url):
         self.url = url
@@ -72,6 +73,8 @@ class Report:
         self.ok = False # pylint: disable=invalid-name
 
     def present(self, scribe):
+        if not self.checked:
+            yield xml.p['No content checks were performed']
         if self._plugin_warnings:
             yield xml.p['Problems reported by plugins:']
             yield xml.ul[(

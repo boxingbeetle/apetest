@@ -15,6 +15,10 @@ def plugin_arguments(parser):
         help='check HTML using v.Nu web service at PORT (localhost) or '
              'URL (remote), or launch a new instance'
         )
+    parser.add_argument(
+        '--css', action='store_true',
+        help='check CSS using v.Nu web service as well'
+        )
 
 def _pick_port():
     '''Returns an unused TCP port.
@@ -55,6 +59,14 @@ def _launch_service(jar_path):
     return proc, 'http://localhost:%d' % port
 
 def plugin_create(args):
+    content_types = {
+        'text/html',
+        'application/xhtml+xml',
+        'image/svg+xml'
+        }
+    if args.css:
+        content_types.add('text/css')
+
     url = args.check
     if url is not None:
         launch = False
@@ -63,28 +75,23 @@ def plugin_create(args):
             launch = True
         elif url.isdigit():
             url = 'http://localhost:' + url
-        yield HTMLValidator(url, launch)
+        yield HTMLValidator(url, launch, content_types)
 
 class HTMLValidator(Plugin):
     '''Runs the Nu Html Checker (v.Nu) on loaded documents.
     Download the checker from: https://github.com/validator/validator
     '''
 
-    supported_content_types = {
-        'text/html',
-        'application/xhtml+xml',
-        'text/css',
-        'image/svg+xml'
-        }
-    """Content types that the validator is able to check."""
-
-    def __init__(self, service_url, launch):
+    def __init__(self, service_url, launch, content_types):
         '''Creates a validator that uses the checker web service
         at `service_url`.
         If `launch` is True, the validator should be launched using
         the JAR file specified by `service_url`; if `launch` is False,
         `service_url` is the URL of an externally started web service.
+        Documents of types in the `content_types` set will be checked,
+        other documents will be ignored.
         '''
+        self.content_types = content_types
         if launch:
             service, service_url = _launch_service(service_url)
             self.service = service
@@ -98,9 +105,8 @@ class HTMLValidator(Plugin):
             self.service.terminate()
 
     def resource_loaded(self, data, content_type_header, report):
-        # Only forward documents that the checker may be able to handle.
         content_type, args_ = parse_header(content_type_header)
-        if content_type not in self.supported_content_types:
+        if content_type not in self.content_types:
             return
 
         for message in self.client.request(data, content_type_header):
@@ -149,3 +155,5 @@ class HTMLValidator(Plugin):
                 text = concat(text, xml.br, xml.code[extract])
 
             report.add_message(level, text)
+
+        report.checked = True

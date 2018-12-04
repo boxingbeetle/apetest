@@ -379,42 +379,35 @@ class PageChecker:
                 )
         self.plugins.resource_loaded(content_bytes, content_type_header, report)
 
-        if not (is_html or is_xml):
-            _LOG.info(
-                'Document type is not HTML or XML, but "%s"; skipping.',
-                content_type
-                )
-            return []
-
-        tree = parse_document(content, is_xml, report)
         referrers = []
+        if is_html or is_xml:
+            tree = parse_document(content, is_xml, report)
+            if tree is not None:
+                # Find links to other documents.
+                links = defaultdict(LinkSet)
+                urls = []
+                if is_html:
+                    urls += self.find_urls_in_html(tree)
+                # TODO: We could find URLs in the XLink namespace even if we
+                #       don't support the root namespace of the document.
 
-        if tree is not None:
-            # Find links to other documents.
-            links = defaultdict(LinkSet)
-            urls = []
-            if is_html:
-                urls += self.find_urls_in_html(tree)
-            # TODO: We could find URLs in the XLink namespace even if we
-            #       don't support the root namespace of the document.
+                for url in urls:
+                    _LOG.debug(' Found URL: %s', url)
+                    if url.startswith('?'):
+                        url = urlsplit(page_url).path + url
+                    url = urljoin(page_url, url)
+                    if url.startswith(self.base_url):
+                        try:
+                            request = Request.from_url(url)
+                        except ValueError as ex:
+                            report.add_warning(str(ex))
+                        else:
+                            links[request.page_url].add(request)
+                referrers += links.values()
 
-            for url in urls:
-                _LOG.debug(' Found URL: %s', url)
-                if url.startswith('?'):
-                    url = urlsplit(page_url).path + url
-                url = urljoin(page_url, url)
-                if url.startswith(self.base_url):
-                    try:
-                        request = Request.from_url(url)
-                    except ValueError as ex:
-                        report.add_warning(str(ex))
-                    else:
-                        links[request.page_url].add(request)
-            referrers += links.values()
-
-            # Find other referrers.
-            if is_html:
-                referrers += self.find_referrers_in_html(tree, page_url)
+                # Find other referrers.
+                if is_html:
+                    referrers += self.find_referrers_in_html(tree, page_url)
 
         self.scribe.add_report(report)
         return referrers

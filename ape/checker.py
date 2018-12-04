@@ -388,13 +388,7 @@ class PageChecker:
             if tree is not None:
                 # Find links to other documents.
                 links = defaultdict(LinkSet)
-                urls = []
-                if is_html:
-                    urls += self.find_urls_in_html(tree)
-                # TODO: We could find URLs in the XLink namespace even if we
-                #       don't support the root namespace of the document.
-
-                for url in urls:
+                for url in self.find_urls(tree):
                     _LOG.debug(' Found URL: %s', url)
                     if url.startswith('?'):
                         url = urlsplit(page_url).path + url
@@ -415,23 +409,44 @@ class PageChecker:
         self.scribe.add_report(report)
         return referrers
 
-    def find_urls_in_html(self, tree):
-        """Yields URLs found in HTML tags in the document `tree`.
-        """
-        root = tree.getroot()
-        ns_prefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''
+    _htmlLinkElements = {
+        'a': 'href',
+        'link': 'href',
+        'img': 'src',
+        'script': 'src',
+        }
+    _xmlLinkElements = {
+        '{http://www.w3.org/1999/xhtml}' + tag_name: attr_name
+        for tag_name, attr_name in _htmlLinkElements.items()
+        }
+    # SVG 1.1 uses XLink, but SVG 2 has native 'href' attributes.
+    # We're only interested in elements that can link to external
+    # resources, not all elements that support 'href'.
+    _xmlLinkElements.update({
+        '{http://www.w3.org/2000/svg}' + tag_name: 'href'
+        for tag_name in ('a', 'image', 'script')
+        })
+    _xmlLinkElements.update({
+        '{http://www.w3.org/2005/Atom}link': 'href'
+        })
+    # Insert HTML elements without namespace for HTML trees and
+    # with namespace for XHTML trees.
+    _linkElements = dict(_htmlLinkElements)
+    _linkElements.update(_xmlLinkElements)
 
-        for tag_name, attr_name in (
-                (ns_prefix + 'a', 'href'),
-                (ns_prefix + 'link', 'href'),
-                (ns_prefix + 'img', 'src'),
-                (ns_prefix + 'script', 'src')
-                ):
-            for node in root.iter(tag_name):
-                try:
-                    yield node.attrib[attr_name]
-                except KeyError:
-                    pass
+    def find_urls(self, tree):
+        """Yields URLs found in the document `tree`.
+        """
+        get_attr_name = self._linkElements.__getitem__
+        for node in tree.getroot().iter():
+            try:
+                yield node.attrib[get_attr_name(node.tag)]
+            except KeyError:
+                pass
+            try:
+                yield node.attrib['{http://www.w3.org/1999/xlink}href']
+            except KeyError:
+                pass
 
     def find_referrers_in_html(self, tree, page_url):
         """Yields referrers found in HTML tags in the document `tree`.

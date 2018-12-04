@@ -289,6 +289,7 @@ class PageChecker:
             return []
 
         content_type = inp.info().get_content_type()
+        is_html = content_type in ('text/html', 'application/xhtml+xml')
         is_xml = content_type.endswith('/xml') or content_type.endswith('+xml')
         http_encoding = inp.info().get_content_charset()
 
@@ -378,18 +379,17 @@ class PageChecker:
                 )
         self.plugins.resource_loaded(content_bytes, content_type_header, report)
 
-        if content_type not in ('text/html', 'application/xhtml+xml'):
-            # TODO: We could check the well-formedness of all XML documents.
-            # TODO: We could find links in the XLink namespace even if we
-            #       don't support the root namespace of the document.
+        if not (is_html or is_xml):
             _LOG.info(
-                'Document type is not HTML or XHTML, but "%s"; skipping.',
+                'Document type is not HTML or XML, but "%s"; skipping.',
                 content_type
                 )
             return []
 
         tree = parse_document(content, is_xml, report)
-        if tree is None:
+        if tree is None or not is_html:
+            # TODO: We could find links in the XLink namespace even if we
+            #       don't support the root namespace of the document.
             self.scribe.add_report(report)
             return []
 

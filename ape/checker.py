@@ -5,6 +5,7 @@ from codecs import (
     lookup as lookup_codec
     )
 from collections import OrderedDict, defaultdict
+from enum import Enum
 from logging import getLogger
 from os.path import isdir
 import re
@@ -23,6 +24,8 @@ from ape.control import (
 from ape.referrer import Form, LinkSet, Redirect
 from ape.report import FetchFailure, IncrementalReport
 from ape.request import Request
+
+Accept = Enum('Accept', 'ANY HTML')
 
 _LOG = getLogger(__name__)
 
@@ -123,7 +126,7 @@ class RedirectResult:
     def __init__(self, url):
         self.url = url
 
-def fetch_page(request):
+def fetch_page(request, accept):
     url = str(request)
     fetch_url = url
     remove_index = False
@@ -138,10 +141,11 @@ def fetch_page(request):
     # TODO: Figure out how to do authentication, "user:password@" in
     #       the URL does not work.
     url_req = URLRequest(fetch_url)
-    url_req.add_header(
-        'Accept',
-        'text/html; q=0.8, application/xhtml+xml; q=1.0'
-        )
+    url_req.add_header('Accept', {
+        # Prefer XHTML to HTML because it is stricter.
+        Accept.ANY: 'text/html; q=0.8, application/xhtml+xml; q=1.0',
+        Accept.HTML: 'text/html; q=1.0'
+        }[accept])
     while True:
         try:
             result = urlopen(url_req)
@@ -233,8 +237,9 @@ class PageChecker:
     references to other pages.
     '''
 
-    def __init__(self, base_url, scribe, plugins):
+    def __init__(self, base_url, accept, scribe, plugins):
         self.base_url = normalize_url(base_url)
+        self.accept = accept
         self.scribe = scribe
         self.plugins = plugins
 
@@ -247,7 +252,7 @@ class PageChecker:
         _LOG.info('Checking page: %s', self.short_url(page_url))
 
         try:
-            inp = fetch_page(req)
+            inp = fetch_page(req, self.accept)
         except FetchFailure as report:
             _LOG.info('Failed to open page')
             self.scribe.add_report(report)

@@ -8,7 +8,7 @@ from ape.report import Scribe
 from ape.request import Request
 from ape.spider import Spider
 
-def run(url, report_file_name, plugins=()):
+def run(url, report_file_name, accept, plugins=()):
     plugins = PluginCollection(plugins)
     try:
         try:
@@ -20,7 +20,7 @@ def run(url, report_file_name, plugins=()):
         spider = Spider(first_req)
         base_url = first_req.page_url
         scribe = Scribe(base_url, spider, plugins)
-        checker = PageChecker(base_url, scribe, plugins)
+        checker = PageChecker(base_url, accept, scribe, plugins)
 
         print('Checking "%s" and below...' % base_url)
         for request in spider:

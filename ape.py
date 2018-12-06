@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 import logging
 import sys
 
+from ape.checker import Accept
 from ape.cmdline import run
 from ape.plugin import add_plugin_arguments, create_plugins, load_plugins
 
@@ -19,6 +20,10 @@ def main():
     parser.add_argument(
         'url', metavar='URL|PATH',
         help='web app/site to check'
+        )
+    parser.add_argument(
+        '--accept', type=str, choices=('any', 'html'), default='any',
+        help='accept serialization: any (HTML or XHTML; default) or HTML only'
         )
     parser.add_argument(
         'report', metavar='REPORT',
@@ -48,7 +53,8 @@ def main():
         except Exception: # pylint: disable=broad-except
             sys.exit(1)
 
-    sys.exit(run(args.url, args.report, plugins))
+    accept = Accept[args.accept.upper()]
+    sys.exit(run(args.url, args.report, accept, plugins))
 
 if __name__ == '__main__':
     main()

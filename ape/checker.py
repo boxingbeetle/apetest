@@ -251,8 +251,9 @@ class PageChecker:
         page_url = str(req)
         _LOG.info('Checking page: %s', self.short_url(page_url))
 
+        accept = self.accept
         try:
-            inp = fetch_page(req, self.accept)
+            inp = fetch_page(req, accept)
         except FetchFailure as report:
             _LOG.info('Failed to open page')
             self.scribe.add_report(report)
@@ -332,6 +333,12 @@ class PageChecker:
                 content_type
                 )
             return []
+
+        if is_html and is_xml and accept is Accept.HTML:
+            report.add_warning(
+                'HTML document is serialized as XML, while the HTTP Accept '
+                'header did not include "application/xhtml+xml"'
+                )
 
         # Look for encoding in XML declaration.
         decl_encoding = encoding_from_xml_decl(content_head)

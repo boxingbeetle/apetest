@@ -200,8 +200,12 @@ def parse_document(content, is_xml, report):
         # when parsing strings.
         content = strip_xml_decl(content)
     root = etree.fromstring(content, parser)
-    for error in parser.error_log:
-        report.add_error(error)
+    # The lxml HTML parser is an HTML4 parser. HTML5 is similar enough
+    # that it will still be able to produce a document tree, but it will
+    # report errors on for example inline SVG.
+    if is_xml:
+        for error in parser.error_log:
+            report.add_error(error)
     return None if root is None else root.getroottree()
 
 def parse_input_control(attrib):

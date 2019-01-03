@@ -9,6 +9,7 @@ import sys
 from ape.checker import Accept
 from ape.cmdline import run
 from ape.plugin import add_plugin_arguments, create_plugins, load_plugins
+from ape.version import VERSION_STRING
 
 def main():
     # Register core arguments.
@@ -32,6 +33,9 @@ def main():
     parser.add_argument(
         '-v', '--verbose', action='count', default=0,
         help='increase amount of logging, can be passed multiple times'
+        )
+    parser.add_argument(
+        '-V', '--version', action='version', version='APE %s' % VERSION_STRING
         )
 
     # Let plugins register their arguments.

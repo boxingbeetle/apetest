@@ -24,8 +24,11 @@ from ape.control import (
 from ape.referrer import Form, LinkSet, Redirect
 from ape.report import FetchFailure, IncrementalReport
 from ape.request import Request
+from ape.version import VERSION_STRING
 
 Accept = Enum('Accept', 'ANY HTML')
+
+USER_AGENT = 'APE/%s' % VERSION_STRING
 
 _LOG = getLogger(__name__)
 
@@ -146,6 +149,7 @@ def fetch_page(request, accept):
         Accept.ANY: 'text/html; q=0.8, application/xhtml+xml; q=1.0',
         Accept.HTML: 'text/html; q=1.0'
         }[accept])
+    url_req.add_header('User-Agent', USER_AGENT)
     while True:
         try:
             result = urlopen(url_req)

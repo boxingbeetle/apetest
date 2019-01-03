@@ -129,7 +129,11 @@ class RedirectResult:
     def __init__(self, url):
         self.url = url
 
-def fetch_page(request, accept):
+def open_page(request, accept_header='*/*'):
+    """Opens a connection to retrieve a requested page.
+    Returns an open input stream on success.
+    Raises FetchFailure on errors.
+    """
     url = str(request)
     fetch_url = url
     remove_index = False
@@ -144,11 +148,7 @@ def fetch_page(request, accept):
     # TODO: Figure out how to do authentication, "user:password@" in
     #       the URL does not work.
     url_req = URLRequest(fetch_url)
-    url_req.add_header('Accept', {
-        # Prefer XHTML to HTML because it is stricter.
-        Accept.ANY: 'text/html; q=0.8, application/xhtml+xml; q=1.0',
-        Accept.HTML: 'text/html; q=1.0'
-        }[accept])
+    url_req.add_header('Accept', accept_header)
     url_req.add_header('User-Agent', USER_AGENT)
     while True:
         try:
@@ -180,11 +180,13 @@ def fetch_page(request, accept):
                     return ex
                 else:
                     raise FetchFailure(
-                        url, 'Bad request (HTTP error 400): %s' % ex.msg
+                        url, 'Bad request (HTTP error 400): %s' % ex.msg,
+                        http_status=ex.code
                         )
             else:
                 raise FetchFailure(
-                    url, 'HTTP error %d: %s' % (ex.code, ex.msg)
+                    url, 'HTTP error %d: %s' % (ex.code, ex.msg),
+                    http_status=ex.code
                     )
         except URLError as ex:
             raise FetchFailure(url, str(ex.reason))
@@ -260,8 +262,13 @@ class PageChecker:
         _LOG.info('Checking page: %s', self.short_url(page_url))
 
         accept = self.accept
+        accept_header = {
+            # Prefer XHTML to HTML because it is stricter.
+            Accept.ANY: 'text/html; q=0.8, application/xhtml+xml; q=1.0',
+            Accept.HTML: 'text/html; q=1.0'
+            }[accept]
         try:
-            inp = fetch_page(req, accept)
+            inp = open_page(req, accept_header)
         except FetchFailure as report:
             _LOG.info('Failed to open page')
             self.scribe.add_report(report)

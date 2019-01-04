@@ -143,3 +143,50 @@ def try_decode(data, encodings):
         'Unable to determine document encoding; tried: '
         + ', '.join(codecs.keys())
         )
+
+def decode_and_report(data, encoding_options, report):
+    """Attempts to decode the given bytes using the given encoding options
+    in order. Each option is a pair of encoding name or None and a description
+    of where this encoding suggestion originated.
+    Returns the decoded string and the encoding used to decode it.
+    Raises UnicodeDecodeError if the data could not be decoded.
+    Non-fatal problems are added to the report.
+    """
+
+    encodings = [encoding for encoding, source in encoding_options]
+    # Always try to decode as UTF-8, since that is the most common encoding
+    # these days, plus it's a superset of ASCII so it also works for old or
+    # simple documents.
+    encodings.append('utf-8')
+    text, used_encoding = try_decode(data, encodings)
+
+    # Report differences between suggested encodings and the one we
+    # settled on.
+    for encoding, source in encoding_options:
+        if encoding is None:
+            continue
+
+        try:
+            codec = lookup_codec(encoding)
+        except LookupError:
+            report.add_warning(
+                '%s specifies encoding "%s", which is unknown to Python'
+                % (source, encoding)
+                )
+            continue
+
+        std_name = standard_codec_name(codec)
+        if std_name != used_encoding:
+            report.add_warning(
+                '%s specifies encoding "%s", '
+                'while actual encoding seems to be "%s"'
+                % (source, encoding, used_encoding)
+                )
+        elif std_name != encoding:
+            report.add_info(
+                '%s specifies encoding "%s", '
+                'which is not the standard name "%s"'
+                % (source, encoding, used_encoding)
+                )
+
+    return text, used_encoding

@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-from codecs import lookup as lookup_codec
 from collections import defaultdict
 from enum import Enum
 from logging import getLogger
@@ -14,9 +13,7 @@ from ape.control import (
     SelectSingle, SelectMultiple, SubmitButton, SubmitButtons,
     TextArea, TextField
     )
-from ape.fetch import (
-    encoding_from_bom, open_page, standard_codec_name, try_decode
-    )
+from ape.fetch import decode_and_report, encoding_from_bom, open_page
 from ape.referrer import Form, LinkSet, Redirect
 from ape.report import FetchFailure, IncrementalReport
 from ape.request import Request
@@ -235,43 +232,17 @@ class PageChecker:
         # W3C recommends giving the BOM, if present, precedence over HTTP.
         #   http://www.w3.org/International/questions/qa-byte-order-mark
         try:
-            content, used_encoding = try_decode(
+            content, used_encoding = decode_and_report(
                 content_bytes,
-                (bom_encoding, decl_encoding, http_encoding, 'utf-8')
+                ((bom_encoding, 'Byte Order Mark'),
+                 (decl_encoding, 'XML declaration'),
+                 (http_encoding, 'HTTP header')),
+                report
                 )
         except UnicodeDecodeError as ex:
             # All likely encodings failed.
             self.scribe.add_report(FetchFailure(page_url, str(ex)))
             return []
-
-        # Report differences between suggested encodings and the one we
-        # settled on.
-        for encoding, source in ((bom_encoding, 'Byte Order Mark'),
-                                 (decl_encoding, 'XML declaration'),
-                                 (http_encoding, 'HTTP header')):
-            if encoding is None:
-                continue
-            try:
-                codec = lookup_codec(encoding)
-            except LookupError:
-                report.add_warning(
-                    '%s specifies encoding "%s", which is unknown to Python'
-                    % (source, encoding)
-                    )
-                continue
-            std_name = standard_codec_name(codec)
-            if std_name != used_encoding:
-                report.add_warning(
-                    '%s specifies encoding "%s", '
-                    'while actual encoding seems to be "%s"'
-                    % (source, encoding, used_encoding)
-                    )
-            elif std_name != encoding:
-                report.add_info(
-                    '%s specifies encoding "%s", '
-                    'which is not the standard name "%s"'
-                    % (source, encoding, used_encoding)
-                    )
 
         if page_url.startswith('file:'):
             # Construct a new header that is likely more accurate.

@@ -1,5 +1,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+from codecs import (
+    BOM_UTF8, BOM_UTF16_BE, BOM_UTF16_LE, BOM_UTF32_BE, BOM_UTF32_LE,
+    lookup as lookup_codec
+    )
+from collections import OrderedDict
 from logging import getLogger
 from os.path import isdir
 from time import sleep
@@ -85,3 +90,56 @@ def open_page(request, accept_header='*/*'):
             raise FetchFailure(url, str(ex.reason))
         except OSError as ex:
             raise FetchFailure(url, ex.strerror)
+
+def encoding_from_bom(data):
+    """Looks for a byte-order-marker at the start of the given bytes.
+    If found, return the encoding matching that BOM, otherwise return None.
+    """
+    if data.startswith(BOM_UTF8):
+        return 'utf-8'
+    elif data.startswith(BOM_UTF16_LE) or data.startswith(BOM_UTF16_BE):
+        return 'utf-16'
+    elif data.startswith(BOM_UTF32_LE) or data.startswith(BOM_UTF32_BE):
+        return 'utf-32'
+    else:
+        return None
+
+def standard_codec_name(codec):
+    """Maps codec name to the preferred standardized version.
+    """
+    name = codec.name
+    return {
+        # IANA prefers "US-ASCII".
+        #   http://www.iana.org/assignments/character-sets/character-sets.xhtml
+        'ascii': 'us-ascii',
+        }.get(name, name)
+
+def try_decode(data, encodings):
+    """Attempts to decode the given bytes using the given encodings in order.
+    Duplicate and None encoding elements are skipped.
+    Returns a pair of the decoded string and the used encoding if successful,
+    otherwise raises UnicodeDecodeError.
+    """
+    # Build sequence of codecs to try.
+    codecs = OrderedDict()
+    for encoding in encodings:
+        if encoding is not None:
+            try:
+                codec = lookup_codec(encoding)
+            except LookupError:
+                pass
+            else:
+                codecs[standard_codec_name(codec)] = codec
+
+    # Apply decoders to the document.
+    for name, codec in codecs.items():
+        try:
+            text, consumed = codec.decode(data, 'strict')
+        except UnicodeDecodeError:
+            continue
+        if consumed == len(data):
+            return text, name
+    raise UnicodeDecodeError(
+        'Unable to determine document encoding; tried: '
+        + ', '.join(codecs.keys())
+        )

@@ -175,17 +175,18 @@ class PageChecker:
 
         report = IncrementalReport(page_url)
 
-        content_type_header = inp.info()['Content-Type']
+        headers = inp.headers
+        content_type_header = headers['Content-Type']
         if content_type_header is None:
             message = 'Missing Content-Type header'
             _LOG.error(message)
             self.scribe.add_report(FetchFailure(page_url, message))
             return []
 
-        content_type = inp.info().get_content_type()
+        content_type = headers.get_content_type()
         is_html = content_type in ('text/html', 'application/xhtml+xml')
         is_xml = content_type.endswith('/xml') or content_type.endswith('+xml')
-        http_encoding = inp.info().get_content_charset()
+        http_encoding = headers.get_content_charset()
 
         # Speculatively decode the first 1024 bytes, so we can look inside
         # the document for encoding clues.

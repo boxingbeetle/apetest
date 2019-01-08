@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-from urllib.parse import urljoin
+from os import getcwd
+from urllib.parse import urljoin, urlparse
 
 from ape.checker import PageChecker
 from ape.plugin import PluginCollection
@@ -8,11 +9,30 @@ from ape.report import Scribe
 from ape.request import Request
 from ape.spider import Spider
 
+def detect_url(arg):
+    """Attempts to turn a command line argument into a full URL.
+    """
+    url = urlparse(arg)
+    if url.scheme:
+        return arg
+
+    if arg.startswith('/'):
+        # Assume absolute file path.
+        return urljoin('file://', arg)
+
+    idx = arg.find(':')
+    if idx != -1 and arg[idx + 1:].isdigit():
+        # Host and port without scheme, assume HTTP.
+        return 'http://' + arg
+
+    # Assume relative file path.
+    return urljoin('file://%s/' % getcwd(), arg)
+
 def run(url, report_file_name, accept, plugins=()):
     plugins = PluginCollection(plugins)
     try:
         try:
-            first_req = Request.from_url(urljoin('file://', url))
+            first_req = Request.from_url(detect_url(url))
         except ValueError as ex:
             print('Bad URL:', ex)
             return 1

@@ -36,13 +36,18 @@ def open_page(request, accept_header='*/*'):
     fetch_url = url
     remove_index = False
     if url.startswith('file:'):
+        # Ignore queries and fragments on local files.
+        url_parts = urlsplit(url)
+        fetch_url = 'file://' + url_parts.path
+
         # Emulate the way a web server handles directories.
-        path = unquote(urlsplit(url).path)
+        path = unquote(url_parts.path)
         if not path.endswith('/') and isdir(path):
             return RedirectResult(url + '/')
         elif path.endswith('/'):
             remove_index = True
-            fetch_url = url + 'index.html'
+            fetch_url += 'index.html'
+
     # TODO: Figure out how to do authentication, "user:password@" in
     #       the URL does not work.
     url_req = URLRequest(fetch_url)

@@ -174,24 +174,24 @@ def decode_and_report(data, encoding_options, report):
         try:
             codec = lookup_codec(encoding)
         except LookupError:
-            report.add_warning(
-                '%s specifies encoding "%s", which is unknown to Python'
-                % (source, encoding)
+            report.warning(
+                '%s specifies encoding "%s", which is unknown to Python',
+                source, encoding
                 )
             continue
 
         std_name = standard_codec_name(codec)
         if std_name != used_encoding:
-            report.add_warning(
+            report.warning(
                 '%s specifies encoding "%s", '
-                'while actual encoding seems to be "%s"'
-                % (source, encoding, used_encoding)
+                'while actual encoding seems to be "%s"',
+                source, encoding, used_encoding
                 )
         elif std_name != encoding:
-            report.add_info(
+            report.info(
                 '%s specifies encoding "%s", '
-                'which is not the standard name "%s"'
-                % (source, encoding, used_encoding)
+                'which is not the standard name "%s"',
+                source, encoding, used_encoding
                 )
 
     return text, used_encoding

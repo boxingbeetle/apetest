@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from cgi import parse_header
+from logging import ERROR, INFO, WARNING
 from pathlib import Path
 from socket import AF_INET, SOCK_STREAM, socket # pylint: disable=no-name-in-module
 from subprocess import DEVNULL, Popen
@@ -115,22 +116,16 @@ class HTMLValidator(Plugin):
             text = message.get('message', '(no message)')
 
             if msg_type == 'info':
-                level = 'warning' if subtype == 'warning' else 'info'
+                level = WARNING if subtype == 'warning' else INFO
             elif msg_type == 'error':
-                level = 'error'
+                level = ERROR
             elif msg_type == 'non-document-error':
                 subtype = subtype or 'general'
                 text = '%s error in checker: %s' % (subtype.capitalize(), text)
-                level = 'error'
+                level = ERROR
             else:
                 text = 'Undocumented message type "%s": %s' % (msg_type, text)
-                level = 'error'
-
-            if msg_type == 'error' and subtype == 'fatal':
-                text = concat(
-                    text, xml.br,
-                    xml.b['Fatal:'], ' This error blocks further checking.'
-                    )
+                level = ERROR
 
             lines = '-'.join(
                 str(message[attr])
@@ -139,6 +134,14 @@ class HTMLValidator(Plugin):
                 )
             if lines:
                 text = 'line %s: %s' % (lines, text)
+
+            html = text
+
+            if msg_type == 'error' and subtype == 'fatal':
+                html = concat(
+                    html, xml.br,
+                    xml.b['Fatal:'], ' This error blocks further checking.'
+                    )
 
             extract = message.get('extract')
             if extract:
@@ -152,8 +155,8 @@ class HTMLValidator(Plugin):
                             xml.span(class_='extract')[extract[start:end]],
                             extract[end:]
                             )
-                text = concat(text, xml.br, xml.code[extract])
+                html = concat(html, xml.br, xml.code[extract])
 
-            report.add_message(level, text)
+            report.log(level, text, extra={'html': html})
 
         report.checked = True

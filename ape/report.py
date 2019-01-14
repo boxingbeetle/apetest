@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections import defaultdict
+import logging
 from urllib.parse import unquote_plus, urlsplit
 
 from ape.request import Request
-from ape.xmlgen import concat, xml
+from ape.xmlgen import xml
 
 _STYLE_SHEET = '''
 body {
@@ -100,55 +101,71 @@ class FetchFailure(Report, Exception):
         yield xml.p[self.description, ': ', str(self)]
         yield Report.present(self, scribe)
 
-class IncrementalReport(Report):
+class StoreHandler(logging.Handler):
+    """A log handler that stores all logged records in a list.
+    """
 
-    @staticmethod
-    def __present_message(data):
-        if isinstance(data, str):
-            return data
+    def __init__(self):
+        logging.Handler.__init__(self)
+        self.records = defaultdict(list)
 
-        if hasattr(data, 'message'):
-            message = data.message
-        else:
-            message = concat(data)
+    def emit(self, record):
+        self.format(record)
+        self.records[record.url].append(record)
 
-        if hasattr(data, 'line'):
-            line = data.line
-        elif hasattr(data, 'position'):
-            line = data.position[0]
-        else:
-            line = None
-        if line is not None:
-            message += ' (line %d)' % line
+logger = logging.getLogger(__name__)
+handler = StoreHandler()
+logger.addHandler(handler)
+logger.propagate = False
 
-        return message
+class IncrementalReport(Report, logging.LoggerAdapter):
 
     def __init__(self, url):
         Report.__init__(self, url)
-        self._messages = []
+        logging.LoggerAdapter.__init__(self, logger, dict(url=url))
 
-    def add_message(self, level, message):
-        self._messages.append((level, message))
-        if level != 'info':
-            self.ok = False
+    def log(self, level, msg, *args, **kwargs):
+        if level > logging.INFO:
+            self.ok = False # pylint: disable=invalid-name
+        super().log(level, msg, *args, **kwargs)
 
-    def add_info(self, message):
-        self.add_message('info', message)
+    def process(self, msg, kwargs):
+        if isinstance(msg, str):
+            message = msg
+        else:
+            if hasattr(msg, 'line'):
+                line = msg.line
+            elif hasattr(msg, 'position'):
+                line = msg.position[0]
+            else:
+                line = None
 
-    def add_warning(self, message):
-        self.add_message('warning', message)
+            message = msg.message
+            if line is not None:
+                message += ' (line %d)' % line
 
-    def add_error(self, message):
-        self.add_message('error', message)
+        extra = kwargs.get('extra')
+        if extra is None:
+            extra = self.extra
+        else:
+            extra.update(self.extra)
+        kwargs['extra'] = extra
+
+        return message, kwargs
 
     def present(self, scribe):
+        present_record = self.present_record
         yield xml.ul[(
-            xml.li(class_=level)[
-                level + ': ', self.__present_message(data)
-                ]
-            for level, data in self._messages
+            present_record(record)
+            for record in handler.records[self.url]
             )]
         yield Report.present(self, scribe)
+
+    @staticmethod
+    def present_record(record):
+        level = record.levelname.lower()
+        html = getattr(record, 'html', record.message)
+        return xml.li(class_=level)[level + ': ', html]
 
 class Page:
 

@@ -78,7 +78,7 @@ def parse_document(content, is_xml, report):
     # report errors on for example inline SVG.
     if is_xml:
         for error in parser.error_log:
-            report.add_error(error)
+            report.error(error)
     return None if root is None else root.getroottree()
 
 def parse_input_control(attrib):
@@ -147,15 +147,13 @@ class PageChecker:
             report.checked = True
             referrers = []
             if content_url.startswith(self.base_url):
-                report.add_info(
-                    'Redirected to: %s' % self.short_url(content_url)
-                    )
+                report.info('Redirected to: %s', self.short_url(content_url))
                 try:
                     referrers = [Redirect(Request.from_url(content_url))]
                 except ValueError as ex:
-                    report.add_warning(str(ex))
+                    report.warning('%s', ex)
             else:
-                report.add_info('Redirected outside: %s' % content_url)
+                report.info('Redirected outside: %s', content_url)
             if not content_url.startswith('file:'):
                 self.scribe.add_report(report)
                 inp.close()
@@ -201,10 +199,10 @@ class PageChecker:
                 if content_type == 'text/html':
                     content_type = 'application/xhtml+xml'
             else:
-                report.add_warning(
+                report.warning(
                     'Document is served with content type "%s" '
-                    'but starts with an XML declaration'
-                    % content_type
+                    'but starts with an XML declaration',
+                    content_type
                     )
 
         if not is_xml and not content_type.startswith('text/'):
@@ -218,7 +216,7 @@ class PageChecker:
             return []
 
         if is_html and is_xml and accept is Accept.HTML:
-            report.add_warning(
+            report.warning(
                 'HTML document is serialized as XML, while the HTTP Accept '
                 'header did not include "application/xhtml+xml"'
                 )
@@ -266,7 +264,7 @@ class PageChecker:
                         try:
                             request = Request.from_url(url)
                         except ValueError as ex:
-                            report.add_warning(str(ex))
+                            report.warning('%s', ex)
                         else:
                             links[request.page_url].add(request)
                 referrers += links.values()

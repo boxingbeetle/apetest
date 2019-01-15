@@ -15,7 +15,8 @@ from urllib.request import Request as URLRequest, urlopen
 from ape.report import FetchFailure
 from ape.version import VERSION_STRING
 
-USER_AGENT = 'APE/%s' % VERSION_STRING
+USER_AGENT_PREFIX = 'APE-Test'
+USER_AGENT = '%s/%s' % (USER_AGENT_PREFIX, VERSION_STRING)
 
 _LOG = getLogger(__name__)
 

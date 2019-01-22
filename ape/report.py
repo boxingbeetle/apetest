@@ -61,46 +61,6 @@ code {
 }
 '''
 
-class Report:
-    ok = True # ...until proven otherwise
-    checked = False
-
-    def __init__(self, url):
-        self.url = url
-        self._plugin_warnings = []
-
-    def add_plugin_warning(self, message):
-        self._plugin_warnings.append(message)
-        self.ok = False # pylint: disable=invalid-name
-
-    def present(self, scribe):
-        if not self.checked:
-            yield xml.p['No content checks were performed']
-        if self._plugin_warnings:
-            yield xml.p['Problems reported by plugins:']
-            yield xml.ul[(
-                xml.li[warning]
-                for warning in self._plugin_warnings
-                )]
-        if not self.ok:
-            yield xml.p['Referenced by:']
-            # TODO: Store Request object instead of recreating it.
-            request = Request.from_url(self.url)
-            yield xml.ul[scribe.present_referrers(request)]
-
-class FetchFailure(Report, Exception):
-    ok = False
-    description = 'Failed to fetch'
-
-    def __init__(self, url, message, http_error=None):
-        Report.__init__(self, url)
-        Exception.__init__(self, message)
-        self.http_error = http_error
-
-    def present(self, scribe):
-        yield xml.p[self.description, ': ', str(self)]
-        yield Report.present(self, scribe)
-
 class StoreHandler(logging.Handler):
     """A log handler that stores all logged records in a list.
     """
@@ -118,16 +78,61 @@ handler = StoreHandler()
 logger.addHandler(handler)
 logger.propagate = False
 
-class IncrementalReport(Report, logging.LoggerAdapter):
+class Report(logging.LoggerAdapter):
+    ok = True # ...until proven otherwise
+    checked = False
 
     def __init__(self, url):
-        Report.__init__(self, url)
         logging.LoggerAdapter.__init__(self, logger, dict(url=url))
+        self.url = url
+        self._plugin_warnings = []
 
     def log(self, level, msg, *args, **kwargs):
         if level > logging.INFO:
             self.ok = False # pylint: disable=invalid-name
         super().log(level, msg, *args, **kwargs)
+
+    def add_plugin_warning(self, message):
+        self._plugin_warnings.append(message)
+        self.ok = False # pylint: disable=invalid-name
+
+    def present(self, scribe):
+        present_record = self.present_record
+        yield xml.ul[(
+            present_record(record)
+            for record in handler.records[self.url]
+            )]
+
+        if not self.checked:
+            yield xml.p['No content checks were performed']
+        if self._plugin_warnings:
+            yield xml.p['Problems reported by plugins:']
+            yield xml.ul[(
+                xml.li[warning]
+                for warning in self._plugin_warnings
+                )]
+        if not self.ok:
+            yield xml.p['Referenced by:']
+            # TODO: Store Request object instead of recreating it.
+            request = Request.from_url(self.url)
+            yield xml.ul[scribe.present_referrers(request)]
+
+    @staticmethod
+    def present_record(record):
+        level = record.levelname.lower()
+        html = getattr(record, 'html', record.message)
+        return xml.li(class_=level)[level + ': ', html]
+
+class FetchFailure(Report, Exception):
+    ok = False
+
+    def __init__(self, url, message, http_error=None):
+        Report.__init__(self, url)
+        Exception.__init__(self, message)
+        self.http_error = http_error
+        self.error('Failed to fetch: %s', message)
+
+class IncrementalReport(Report):
 
     def process(self, msg, kwargs):
         if isinstance(msg, str):
@@ -152,20 +157,6 @@ class IncrementalReport(Report, logging.LoggerAdapter):
         kwargs['extra'] = extra
 
         return message, kwargs
-
-    def present(self, scribe):
-        present_record = self.present_record
-        yield xml.ul[(
-            present_record(record)
-            for record in handler.records[self.url]
-            )]
-        yield Report.present(self, scribe)
-
-    @staticmethod
-    def present_record(record):
-        level = record.levelname.lower()
-        html = getattr(record, 'html', record.message)
-        return xml.li(class_=level)[level + ': ', html]
 
 class Page:
 

@@ -13,9 +13,8 @@ from ape.control import (
     SelectSingle, SelectMultiple, SubmitButton, SubmitButtons,
     TextArea, TextField
     )
-from ape.fetch import decode_and_report, encoding_from_bom, open_page
+from ape.fetch import decode_and_report, encoding_from_bom, load_page
 from ape.referrer import Form, LinkSet, Redirect
-from ape.report import FetchFailure, IncrementalReport
 from ape.request import Request
 
 Accept = Enum('Accept', 'ANY HTML')
@@ -134,60 +133,43 @@ class PageChecker:
             Accept.ANY: 'text/html; q=0.8, application/xhtml+xml; q=1.0',
             Accept.HTML: 'text/html; q=1.0'
             }[accept]
-        try:
-            inp = open_page(req_url, accept_header)
-        except FetchFailure as report:
-            inp = None
-            http_error = report.http_error
-            if http_error is not None:
-                if http_error.code == 400:
-                    # Generic client error, could be because we submitted an
-                    # invalid form value.
-                    if req.maybe_bad:
-                        # Validate the error page body.
-                        inp = http_error
-            if inp is None:
-                if http_error is not None:
-                    http_error.close()
-                self.scribe.add_report(report)
-                return []
 
-        content_url = normalize_url(inp.url)
-        if content_url != req_url:
-            report = IncrementalReport(req_url)
+        report, response, content_bytes = load_page(
+            req_url, req.maybe_bad, accept_header
+            )
+        referrers = []
+
+        if response is not None:
+            content_url = normalize_url(response.url)
+            if content_url != req_url:
+                if content_url.startswith(self.base_url):
+                    if not content_url.startswith('file:'):
+                        report.info(
+                            'Redirected to: %s', self.short_url(content_url)
+                            )
+                    try:
+                        referrers.append(
+                            Redirect(Request.from_url(content_url))
+                            )
+                    except ValueError as ex:
+                        report.warning('%s', ex)
+                else:
+                    report.info('Redirected outside: %s', content_url)
+
+        if content_bytes is None:
+            report.info('Could not get any content to check')
             report.checked = True
-            referrers = []
-            if content_url.startswith(self.base_url):
-                report.info('Redirected to: %s', self.short_url(content_url))
-                try:
-                    referrers = [Redirect(Request.from_url(content_url))]
-                except ValueError as ex:
-                    report.warning('%s', ex)
-            else:
-                report.info('Redirected outside: %s', content_url)
-            if not content_url.startswith('file:'):
-                self.scribe.add_report(report)
-                inp.close()
+            self.scribe.add_report(report)
             return referrers
 
-        try:
-            content_bytes = inp.read()
-        except IOError as ex:
-            _LOG.info('Failed to fetch: %s', ex)
-            self.scribe.add_report(FetchFailure(req_url, str(ex)))
-            return []
-        finally:
-            inp.close()
-
-        report = IncrementalReport(req_url)
-
-        headers = inp.headers
+        headers = response.headers
         content_type_header = headers['Content-Type']
         if content_type_header is None:
             message = 'Missing Content-Type header'
             _LOG.error(message)
-            self.scribe.add_report(FetchFailure(req_url, message))
-            return []
+            report.error(message)
+            self.scribe.add_report(report)
+            return referrers
 
         content_type = headers.get_content_type()
         is_html = content_type in ('text/html', 'application/xhtml+xml')
@@ -220,11 +202,13 @@ class PageChecker:
             self.plugins.resource_loaded(
                 content_bytes, content_type_header, report
                 )
-            _LOG.info(
-                'Document of type "%s" is probably not text; skipping.',
-                content_type
-                )
-            return []
+            message = 'Document of type "%s" is probably not text; ' \
+                'skipping.' % content_type
+            _LOG.info(message)
+            report.info(message)
+            report.checked = True # not really, but we just logged why not
+            self.scribe.add_report(report)
+            return referrers
 
         if is_html and is_xml and accept is Accept.HTML:
             report.warning(
@@ -250,8 +234,9 @@ class PageChecker:
                 )
         except UnicodeDecodeError as ex:
             # All likely encodings failed.
-            self.scribe.add_report(FetchFailure(req_url, str(ex)))
-            return []
+            report.error('Failed to decode contents')
+            self.scribe.add_report(report)
+            return referrers
 
         if req_url.startswith('file:'):
             # Construct a new header that is likely more accurate.
@@ -260,7 +245,6 @@ class PageChecker:
                 )
         self.plugins.resource_loaded(content_bytes, content_type_header, report)
 
-        referrers = []
         if is_html or is_xml:
             tree = parse_document(content, is_xml, report)
             if tree is not None:

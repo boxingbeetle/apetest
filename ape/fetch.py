@@ -12,7 +12,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import unquote, urlsplit
 from urllib.request import Request as URLRequest, urlopen
 
-from ape.report import FetchFailure
+from ape.report import FetchFailure, IncrementalReport
 from ape.version import VERSION_STRING
 
 USER_AGENT_PREFIX = 'APE-Test'
@@ -28,9 +28,12 @@ class RedirectResult:
     def __init__(self, url):
         self.url = url
 
-def open_page(url, accept_header='*/*'):
+    def close(self):
+        pass
+
+def open_page(url, ignore_client_error=False, accept_header='*/*'):
     """Opens a connection to retrieve a requested page.
-    Returns an open input stream on success.
+    Returns a response object wrapping an open input stream on success.
     Raises FetchFailure on errors.
     """
     fetch_url = url
@@ -56,9 +59,6 @@ def open_page(url, accept_header='*/*'):
     while True:
         try:
             result = urlopen(url_req)
-            if remove_index:
-                result.url = url
-            return result
         except HTTPError as ex:
             if ex.code == 503:
                 if 'retry-after' in ex.headers:
@@ -74,14 +74,50 @@ def open_page(url, accept_header='*/*'):
                 _LOG.info('Server not ready yet, trying again '
                           'in %d seconds', seconds)
                 sleep(seconds)
+            elif ex.code == 400 and ignore_client_error:
+                # Ignore generic client error, because we used a speculative
+                # request and 400 can be the correct response to that.
+                return ex
             else:
                 message = 'HTTP error %d: %s' % (ex.code, ex.msg)
-                _LOG.info('%s', message)
                 raise FetchFailure(url, message, http_error=ex)
         except URLError as ex:
             raise FetchFailure(url, str(ex.reason))
         except OSError as ex:
             raise FetchFailure(url, ex.strerror)
+        else:
+            if remove_index:
+                result.url = url
+            return result
+
+def load_page(url, ignore_client_error=False, accept_header='*/*'):
+    """Loads the contents of a resource.
+    Returns a report, the response object and the contents (bytes),
+    or None instead of the response object and/or the contents
+    if the resource could not be retrieved; in this case errors were
+    logged to the report.
+    """
+    try:
+        response = open_page(url, ignore_client_error, accept_header)
+    except FetchFailure as failure:
+        _LOG.info('Failed to fetch "%s": %s', url, failure)
+        response = failure.http_error
+        if response is None:
+            return failure, None, None
+        report = failure
+    else:
+        report = IncrementalReport(url)
+
+    try:
+        content = response.read()
+    except IOError as ex:
+        _LOG.info('Failed to read "%s" contents: %s', url, ex)
+        report.error('Failed to read contents: %s', ex)
+        return report, response, None
+    else:
+        return report, response, content
+    finally:
+        response.close()
 
 def encoding_from_bom(data):
     """Looks for a byte-order-marker at the start of the given bytes.

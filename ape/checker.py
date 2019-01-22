@@ -120,13 +120,13 @@ class PageChecker:
         self.scribe = scribe
         self.plugins = plugins
 
-    def short_url(self, page_url):
-        assert page_url.startswith(self.base_url), page_url
-        return page_url[self.base_url.rindex('/') + 1 : ]
+    def short_url(self, url):
+        assert url.startswith(self.base_url), url
+        return url[self.base_url.rindex('/') + 1 : ]
 
     def check(self, req):
-        page_url = str(req)
-        _LOG.info('Checking page: %s', self.short_url(page_url))
+        req_url = str(req)
+        _LOG.info('Checking page: %s', self.short_url(req_url))
 
         accept = self.accept
         accept_header = {
@@ -135,7 +135,7 @@ class PageChecker:
             Accept.HTML: 'text/html; q=1.0'
             }[accept]
         try:
-            inp = open_page(page_url, accept_header)
+            inp = open_page(req_url, accept_header)
         except FetchFailure as report:
             inp = None
             http_error = report.http_error
@@ -153,8 +153,8 @@ class PageChecker:
                 return []
 
         content_url = normalize_url(inp.url)
-        if content_url != page_url:
-            report = IncrementalReport(page_url)
+        if content_url != req_url:
+            report = IncrementalReport(req_url)
             report.checked = True
             referrers = []
             if content_url.startswith(self.base_url):
@@ -174,19 +174,19 @@ class PageChecker:
             content_bytes = inp.read()
         except IOError as ex:
             _LOG.info('Failed to fetch: %s', ex)
-            self.scribe.add_report(FetchFailure(page_url, str(ex)))
+            self.scribe.add_report(FetchFailure(req_url, str(ex)))
             return []
         finally:
             inp.close()
 
-        report = IncrementalReport(page_url)
+        report = IncrementalReport(req_url)
 
         headers = inp.headers
         content_type_header = headers['Content-Type']
         if content_type_header is None:
             message = 'Missing Content-Type header'
             _LOG.error(message)
-            self.scribe.add_report(FetchFailure(page_url, message))
+            self.scribe.add_report(FetchFailure(req_url, message))
             return []
 
         content_type = headers.get_content_type()
@@ -203,7 +203,7 @@ class PageChecker:
 
         if not is_xml and content_head.startswith('<?xml'):
             is_xml = True
-            if page_url.startswith('file:'):
+            if req_url.startswith('file:'):
                 # Silently correct content-type detection for local files.
                 # This is not something the user can easily fix, so issuing
                 # a warning would not be helpful.
@@ -250,10 +250,10 @@ class PageChecker:
                 )
         except UnicodeDecodeError as ex:
             # All likely encodings failed.
-            self.scribe.add_report(FetchFailure(page_url, str(ex)))
+            self.scribe.add_report(FetchFailure(req_url, str(ex)))
             return []
 
-        if page_url.startswith('file:'):
+        if req_url.startswith('file:'):
             # Construct a new header that is likely more accurate.
             content_type_header = '%s; charset=%s' % (
                 content_type, used_encoding
@@ -269,8 +269,8 @@ class PageChecker:
                 for url in self.find_urls(tree):
                     _LOG.debug(' Found URL: %s', url)
                     if url.startswith('?'):
-                        url = urlsplit(page_url).path + url
-                    url = urljoin(page_url, url)
+                        url = urlsplit(req_url).path + url
+                    url = urljoin(req_url, url)
                     if url.startswith(self.base_url):
                         try:
                             request = Request.from_url(url)
@@ -282,7 +282,7 @@ class PageChecker:
 
                 # Find other referrers.
                 if is_html:
-                    referrers += self.find_referrers_in_html(tree, page_url)
+                    referrers += self.find_referrers_in_html(tree, req_url)
 
         self.scribe.add_report(report)
         return referrers
@@ -326,7 +326,7 @@ class PageChecker:
             except KeyError:
                 pass
 
-    def find_referrers_in_html(self, tree, page_url):
+    def find_referrers_in_html(self, tree, url):
         """Yields referrers found in HTML tags in the document `tree`.
         """
         root = tree.getroot()
@@ -339,7 +339,7 @@ class PageChecker:
             #       3. flag as error (not clearly specced)
             #       I think either flag as error, or mimic the browsers.
             try:
-                action = form_node.attrib['action'] or urlsplit(page_url).path
+                action = form_node.attrib['action'] or urlsplit(url).path
                 method = form_node.attrib['method'].lower()
             except KeyError:
                 continue
@@ -349,7 +349,7 @@ class PageChecker:
             if method != 'get':
                 # The DTD will already have flagged this as a violation.
                 continue
-            submit_url = urljoin(page_url, action)
+            submit_url = urljoin(url, action)
             if not submit_url.startswith(self.base_url):
                 continue
 

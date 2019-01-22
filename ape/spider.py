@@ -1,13 +1,18 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections import defaultdict
+from urllib.parse import urljoin
+
+from ape.fetch import USER_AGENT_PREFIX, load_text
+from ape.robots import lookup_robots_rules, parse_robots_txt, scan_robots_txt
 
 class Spider:
     # TODO: Now just the first 100 are checked, it would be better to try
     #       variations of all query arguments.
     max_queries_per_page = 100
 
-    def __init__(self, first_req):
+    def __init__(self, first_req, rules):
+        self._rules = rules
         self._requests_to_check = set([first_req])
         self._requests_checked = set()
         self._queries_per_page = defaultdict(int)
@@ -53,3 +58,25 @@ class Spider:
             for referrer in self._site_graph[source_req]:
                 if referrer.has_request(dest_req):
                     yield source_req
+
+def spider_req(first_req):
+    """Creates a spider for the given request.
+    Will use information from robots.txt if available.
+    """
+    base_url = first_req.page_url
+    if base_url.startswith('file:'):
+        robots_url = urljoin(base_url, 'robots.txt')
+    else:
+        robots_url = urljoin(base_url, '/robots.txt')
+
+    print('fetching "robots.txt"...')
+    report, robots_lines = load_text(robots_url)
+    if robots_lines is None:
+        rules = []
+    else:
+        robots_records = scan_robots_txt(robots_lines, report)
+        rules_map = parse_robots_txt(robots_records, report)
+        rules = lookup_robots_rules(rules_map, USER_AGENT_PREFIX)
+        report.checked = True
+
+    return Spider(first_req, rules), report

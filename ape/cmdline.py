@@ -7,7 +7,7 @@ from ape.checker import PageChecker
 from ape.plugin import PluginCollection
 from ape.report import Scribe
 from ape.request import Request
-from ape.spider import Spider
+from ape.spider import spider_req
 
 def detect_url(arg):
     """Attempts to turn a command line argument into a full URL.
@@ -37,9 +37,10 @@ def run(url, report_file_name, accept, plugins=()):
             print('Bad URL:', ex)
             return 1
 
-        spider = Spider(first_req)
+        spider, robots_report = spider_req(first_req)
         base_url = first_req.page_url
         scribe = Scribe(base_url, spider, plugins)
+        scribe.add_report(robots_report)
         checker = PageChecker(base_url, accept, scribe, plugins)
 
         print('Checking "%s" and below...' % base_url)

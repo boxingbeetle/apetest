@@ -7,6 +7,7 @@ from codecs import (
 from collections import OrderedDict
 from logging import getLogger
 from os.path import isdir
+import re
 from time import sleep
 from urllib.error import HTTPError, URLError
 from urllib.parse import unquote, urlsplit
@@ -129,6 +130,30 @@ def load_page(url, ignore_client_error=False, accept_header='*/*'):
         return report, response, content
     finally:
         response.close()
+
+_RE_EOLN = re.compile(r'\r\n|\r|\n')
+
+def load_text(url, accept_header='text/plain'):
+    """Loads a text document.
+    Returns a report and the contents (list with one string per line),
+    or None instead of contents if the resource could not be retrieved.
+    """
+    report, response, content_bytes = load_page(
+        url, accept_header=accept_header
+        )
+    if content_bytes is None:
+        return report, None
+
+    bom_encoding = encoding_from_bom(content_bytes)
+    http_encoding = response.headers.get_content_charset()
+    content, used_encoding_ = decode_and_report(
+        content_bytes,
+        ((bom_encoding, 'Byte Order Mark'),
+         (http_encoding, 'HTTP header')),
+        report
+        )
+
+    return report, _RE_EOLN.split(content)
 
 def encoding_from_bom(data):
     """Looks for a byte-order-marker at the start of the given bytes.

@@ -135,11 +135,22 @@ class PageChecker:
             Accept.HTML: 'text/html; q=1.0'
             }[accept]
         try:
-            inp = open_page(req, accept_header)
+            inp = open_page(page_url, accept_header)
         except FetchFailure as report:
-            _LOG.info('Failed to open page')
-            self.scribe.add_report(report)
-            return []
+            inp = None
+            http_error = report.http_error
+            if http_error is not None:
+                if http_error.code == 400:
+                    # Generic client error, could be because we submitted an
+                    # invalid form value.
+                    if req.maybe_bad:
+                        # Validate the error page body.
+                        inp = http_error
+            if inp is None:
+                if http_error is not None:
+                    http_error.close()
+                self.scribe.add_report(report)
+                return []
 
         content_url = normalize_url(inp.url)
         if content_url != page_url:

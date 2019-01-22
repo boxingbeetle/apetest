@@ -92,10 +92,10 @@ class FetchFailure(Report, Exception):
     ok = False
     description = 'Failed to fetch'
 
-    def __init__(self, url, message, http_status=None):
+    def __init__(self, url, message, http_error=None):
         Report.__init__(self, url)
         Exception.__init__(self, message)
-        self.http_status = http_status
+        self.http_error = http_error
 
     def present(self, scribe):
         yield xml.p[self.description, ': ', str(self)]

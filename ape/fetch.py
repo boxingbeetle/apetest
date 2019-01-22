@@ -28,12 +28,11 @@ class RedirectResult:
     def __init__(self, url):
         self.url = url
 
-def open_page(request, accept_header='*/*'):
+def open_page(url, accept_header='*/*'):
     """Opens a connection to retrieve a requested page.
     Returns an open input stream on success.
     Raises FetchFailure on errors.
     """
-    url = str(request)
     fetch_url = url
     remove_index = False
     if url.startswith('file:'):
@@ -75,23 +74,10 @@ def open_page(request, accept_header='*/*'):
                 _LOG.info('Server not ready yet, trying again '
                           'in %d seconds', seconds)
                 sleep(seconds)
-            elif ex.code == 400:
-                # Generic client error, could be because we submitted an
-                # invalid form value.
-                _LOG.info('Bad request (HTTP error 400): %s', ex.msg)
-                if request.maybe_bad:
-                    # Validate the error page body.
-                    return ex
-                else:
-                    raise FetchFailure(
-                        url, 'Bad request (HTTP error 400): %s' % ex.msg,
-                        http_status=ex.code
-                        )
             else:
-                raise FetchFailure(
-                    url, 'HTTP error %d: %s' % (ex.code, ex.msg),
-                    http_status=ex.code
-                    )
+                message = 'HTTP error %d: %s' % (ex.code, ex.msg)
+                _LOG.info('%s', message)
+                raise FetchFailure(url, message, http_error=ex)
         except URLError as ex:
             raise FetchFailure(url, str(ex.reason))
         except OSError as ex:

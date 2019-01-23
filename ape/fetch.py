@@ -10,7 +10,9 @@ from os.path import isdir
 from time import sleep
 from urllib.error import HTTPError, URLError
 from urllib.parse import unquote, urlsplit
-from urllib.request import Request as URLRequest, urlopen
+from urllib.request import (
+    HTTPRedirectHandler, Request as URLRequest, build_opener
+    )
 
 from ape.report import FetchFailure, IncrementalReport
 from ape.version import VERSION_STRING
@@ -30,6 +32,13 @@ class RedirectResult:
 
     def close(self):
         pass
+
+class CustomRedirectHandler(HTTPRedirectHandler):
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise HTTPError(newurl, code, msg, headers, fp)
+
+_URL_OPENER = build_opener(CustomRedirectHandler)
 
 def open_page(url, ignore_client_error=False, accept_header='*/*'):
     """Opens a connection to retrieve a requested page.
@@ -58,7 +67,7 @@ def open_page(url, ignore_client_error=False, accept_header='*/*'):
     url_req.add_header('User-Agent', USER_AGENT)
     while True:
         try:
-            result = urlopen(url_req)
+            result = _URL_OPENER.open(url_req)
         except HTTPError as ex:
             if ex.code == 503:
                 if 'retry-after' in ex.headers:
@@ -74,6 +83,9 @@ def open_page(url, ignore_client_error=False, accept_header='*/*'):
                 _LOG.info('Server not ready yet, trying again '
                           'in %d seconds', seconds)
                 sleep(seconds)
+            elif 300 <= ex.code < 400:
+                # Do not treat redirects as errors.
+                return ex
             elif ex.code == 400 and ignore_client_error:
                 # Ignore generic client error, because we used a speculative
                 # request and 400 can be the correct response to that.
@@ -100,7 +112,6 @@ def load_page(url, ignore_client_error=False, accept_header='*/*'):
     try:
         response = open_page(url, ignore_client_error, accept_header)
     except FetchFailure as failure:
-        _LOG.info('Failed to fetch "%s": %s', url, failure)
         response = failure.http_error
         if response is None:
             return failure, None, None

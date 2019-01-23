@@ -85,16 +85,11 @@ class Report(logging.LoggerAdapter):
     def __init__(self, url):
         logging.LoggerAdapter.__init__(self, logger, dict(url=url))
         self.url = url
-        self._plugin_warnings = []
 
     def log(self, level, msg, *args, **kwargs):
         if level > logging.INFO:
             self.ok = False # pylint: disable=invalid-name
         super().log(level, msg, *args, **kwargs)
-
-    def add_plugin_warning(self, message):
-        self._plugin_warnings.append(message)
-        self.ok = False # pylint: disable=invalid-name
 
     def present(self, scribe):
         present_record = self.present_record
@@ -105,12 +100,6 @@ class Report(logging.LoggerAdapter):
 
         if not self.checked:
             yield xml.p['No content checks were performed']
-        if self._plugin_warnings:
-            yield xml.p['Problems reported by plugins:']
-            yield xml.ul[(
-                xml.li[warning]
-                for warning in self._plugin_warnings
-                )]
         if not self.ok:
             yield xml.p['Referenced by:']
             # TODO: Store Request object instead of recreating it.

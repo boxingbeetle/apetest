@@ -28,9 +28,7 @@ class DataChangeMonitor(Plugin):
                     self._log_file, os.O_RDONLY | os.O_NONBLOCK
                     )
             except OSError as ex:
-                report.add_plugin_warning(
-                    'Could not open log file for reading: %s' % ex
-                    )
+                report.warning('Could not open log file for reading: %s', ex)
                 return
         while True:
             new_data = os.read(self._log_fd, 200)
@@ -65,7 +63,7 @@ class DataChangeMonitor(Plugin):
                 ):
                 if db_name != 'restypes' or record_id.startswith('sf.'):
                     continue
-            report.add_plugin_warning(
-                'Unexpected %s in database "%s" on record "%s"'
-                % (change, db_name, record_id)
+            report.warning(
+                'Unexpected %s in database "%s" on record "%s"',
+                change, db_name, record_id
                 )

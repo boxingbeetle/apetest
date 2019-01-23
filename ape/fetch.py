@@ -5,14 +5,17 @@ from codecs import (
     lookup as lookup_codec
     )
 from collections import OrderedDict
+from email import message_from_string
+from io import BytesIO
 from logging import getLogger
 from os.path import isdir
 import re
 from time import sleep
 from urllib.error import HTTPError, URLError
-from urllib.parse import unquote, urlsplit
+from urllib.parse import urlsplit
 from urllib.request import (
-    HTTPRedirectHandler, Request as URLRequest, build_opener
+    FileHandler, HTTPRedirectHandler, Request as URLRequest,
+    build_opener, url2pathname
     )
 
 from ape.report import FetchFailure, IncrementalReport
@@ -23,52 +26,45 @@ USER_AGENT = '%s/%s' % (USER_AGENT_PREFIX, VERSION_STRING)
 
 _LOG = getLogger(__name__)
 
-class RedirectResult:
-    '''Fake HTTP result object that represents a redirection.
-    Only the members we use are implemented.
-    '''
-
-    def __init__(self, url):
-        self.url = url
-
-    def close(self):
-        pass
-
 class CustomRedirectHandler(HTTPRedirectHandler):
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise HTTPError(newurl, code, msg, headers, fp)
 
-_URL_OPENER = build_opener(CustomRedirectHandler)
+class CustomFileHandler(FileHandler):
+
+    def open_local_file(self, req):
+        local_path = url2pathname(urlsplit(req.full_url).path)
+
+        # Emulate the way a web server handles directories.
+        if isdir(local_path):
+            if local_path.endswith('/'):
+                local_path += 'index.html'
+            else:
+                raise HTTPError(
+                    'file://%s/' % local_path, 301, 'Path is a directory',
+                    message_from_string('content-type: text/plain'), BytesIO()
+                    )
+
+        # Ignore queries and fragments on local files.
+        req.full_url = 'file://' + local_path
+        return super().open_local_file(req)
+
+_URL_OPENER = build_opener(CustomRedirectHandler, CustomFileHandler)
 
 def open_page(url, ignore_client_error=False, accept_header='*/*'):
     """Opens a connection to retrieve a requested page.
     Returns a response object wrapping an open input stream on success.
     Raises FetchFailure on errors.
     """
-    fetch_url = url
-    remove_index = False
-    if url.startswith('file:'):
-        # Ignore queries and fragments on local files.
-        url_parts = urlsplit(url)
-        fetch_url = 'file://' + url_parts.path
-
-        # Emulate the way a web server handles directories.
-        path = unquote(url_parts.path)
-        if not path.endswith('/') and isdir(path):
-            return RedirectResult(url + '/')
-        elif path.endswith('/'):
-            remove_index = True
-            fetch_url += 'index.html'
-
     # TODO: Figure out how to do authentication, "user:password@" in
     #       the URL does not work.
-    url_req = URLRequest(fetch_url)
+    url_req = URLRequest(url)
     url_req.add_header('Accept', accept_header)
     url_req.add_header('User-Agent', USER_AGENT)
     while True:
         try:
-            result = _URL_OPENER.open(url_req)
+            return _URL_OPENER.open(url_req)
         except HTTPError as ex:
             if ex.code == 503:
                 if 'retry-after' in ex.headers:
@@ -98,10 +94,6 @@ def open_page(url, ignore_client_error=False, accept_header='*/*'):
             raise FetchFailure(url, str(ex.reason))
         except OSError as ex:
             raise FetchFailure(url, ex.strerror)
-        else:
-            if remove_index:
-                result.url = url
-            return result
 
 def load_page(url, ignore_client_error=False, accept_header='*/*'):
     """Loads the contents of a resource.

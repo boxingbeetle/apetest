@@ -1,10 +1,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections import defaultdict
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 from ape.fetch import USER_AGENT_PREFIX, load_text
-from ape.robots import lookup_robots_rules, parse_robots_txt, scan_robots_txt
+from ape.robots import (
+    lookup_robots_rules, parse_robots_txt, path_allowed, scan_robots_txt
+    )
 
 class Spider:
     # TODO: Now just the first 100 are checked, it would be better to try
@@ -12,6 +14,7 @@ class Spider:
     max_queries_per_page = 100
 
     def __init__(self, first_req, rules):
+        self._base_url = first_req.page_url
         self._rules = rules
         self._requests_to_check = set([first_req])
         self._requests_checked = set()
@@ -31,13 +34,39 @@ class Spider:
             checked.add(request)
             yield request
 
+    def referrer_allowed(self, referrer):
+        """Returns True iff this spider is allowed to visit the resources
+        referenced by `referrer`.
+        TODO: Currently the `checker` module rejects out-of-scope URLs,
+              but it would be cleaner to do that at the spider level,
+              in case we ever want to support crawling multiple roots
+              or want to report all external links.
+        """
+        path = urlsplit(referrer.page_url).path or '/'
+        base_url = self._base_url
+        if base_url.startswith('file:'):
+            base_path = urlsplit(base_url).path or '/'
+            if not path.startswith(base_path):
+                # Path is outside the tree rooted at our base URL.
+                return False
+            path = path[base_path.rindex('/'):]
+
+        return path_allowed(path, self._rules)
+
     def add_requests(self, source_req, referrers):
+        # Filter referrers according to rules.
+        allowed_referrers = [
+            referrer
+            for referrer in referrers
+            if self.referrer_allowed(referrer)
+            ]
+
         # Currently each request is only visited once, so we do not have to
         # merge data, but that might change once we start doing POSTs.
         assert source_req not in self._site_graph
-        self._site_graph[source_req] = referrers
+        self._site_graph[source_req] = allowed_referrers
 
-        for referrer in referrers:
+        for referrer in allowed_referrers:
             url = referrer.page_url
             self._page_referred_from[url].add(source_req)
 

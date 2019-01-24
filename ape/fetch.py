@@ -130,10 +130,23 @@ def load_text(url, accept_header='text/plain'):
     Returns a report and the contents (list with one string per line),
     or None instead of contents if the resource could not be retrieved.
     """
-    report, response, content_bytes = load_page(
-        url, accept_header=accept_header
-        )
-    if content_bytes is None:
+    redirect_count = 0
+    while True:
+        report, response, content_bytes = load_page(
+            url, accept_header=accept_header
+            )
+        if response is not None:
+            if response.code in (200, None):
+                break
+            if response.code in (301, 302, 303, 307):
+                redirect_count += 1
+                if redirect_count <= 10:
+                    # Note: The new URL could be outside our crawl root,
+                    #       but since this function is not used for the
+                    #       actual crawling, that is fine.
+                    url = response.url
+                    continue
+                report.warning('Redirect limit exceeded')
         return report, None
 
     bom_encoding = encoding_from_bom(content_bytes)

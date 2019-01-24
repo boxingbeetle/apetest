@@ -48,7 +48,19 @@ class CustomFileHandler(FileHandler):
 
         # Ignore queries and fragments on local files.
         req.full_url = 'file://' + local_path
-        return super().open_local_file(req)
+
+        try:
+            return super().open_local_file(req)
+        except URLError as ex:
+            # Report file-not-found as an HTTP 404 status.
+            reason = ex.reason
+            if isinstance(reason, FileNotFoundError):
+                raise HTTPError(
+                    req.full_url, 404, str(reason),
+                    message_from_string('content-type: text/plain'), BytesIO()
+                    )
+            else:
+                raise
 
 _URL_OPENER = build_opener(CustomRedirectHandler, CustomFileHandler)
 

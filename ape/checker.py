@@ -166,6 +166,22 @@ class PageChecker:
 
         if content_bytes is None:
             report.info('Could not get any content to check')
+            skip_content = True
+        elif response.code in (200, None):
+            skip_content = False
+        else:
+            # TODO: This should probably be user-selectable.
+            #       A lot of web servers produce error and redirection
+            #       notices that are not HTML5 compliant. Checking the
+            #       content is likely only useful if the application
+            #       under test is producing the content instead.
+            report.info(
+                'Skipping content check because of HTTP status %d',
+                response.code
+                )
+            skip_content = True
+
+        if skip_content:
             report.checked = True
             self.scribe.add_report(report)
             return referrers

@@ -40,7 +40,8 @@ def run(url, report_file_name, accept, plugins=()):
         spider, robots_report = spider_req(first_req)
         base_url = first_req.page_url
         scribe = Scribe(base_url, spider, plugins)
-        scribe.add_report(robots_report)
+        if robots_report is not None:
+            scribe.add_report(robots_report)
         checker = PageChecker(base_url, accept, scribe, plugins)
 
         print('Checking "%s" and below...' % base_url)

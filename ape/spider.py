@@ -99,8 +99,12 @@ def spider_req(first_req):
         robots_url = urljoin(base_url, '/robots.txt')
 
     print('fetching "robots.txt"...')
-    report, robots_lines = load_text(robots_url)
+    report, response, robots_lines = load_text(robots_url)
     if robots_lines is None:
+        if response is not None and response.code == 404:
+            # It is not an error if "robots.txt" does not exist.
+            print('no "robots.txt" was found')
+            report = None
         rules = []
     else:
         robots_records = scan_robots_txt(robots_lines, report)

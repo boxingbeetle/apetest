@@ -139,8 +139,9 @@ _RE_EOLN = re.compile(r'\r\n|\r|\n')
 
 def load_text(url, accept_header='text/plain'):
     """Loads a text document.
-    Returns a report and the contents (list with one string per line),
-    or None instead of contents if the resource could not be retrieved.
+    Returns a report, response object and the contents (list with one
+    string per line), or None instead of response object and/or the
+    contents if the resource could not be retrieved.
     """
     redirect_count = 0
     while True:
@@ -159,7 +160,7 @@ def load_text(url, accept_header='text/plain'):
                     url = response.url
                     continue
                 report.warning('Redirect limit exceeded')
-        return report, None
+        return report, response, None
 
     bom_encoding = encoding_from_bom(content_bytes)
     http_encoding = response.headers.get_content_charset()
@@ -170,7 +171,7 @@ def load_text(url, accept_header='text/plain'):
         report
         )
 
-    return report, _RE_EOLN.split(content)
+    return report, response, _RE_EOLN.split(content)
 
 def encoding_from_bom(data):
     """Looks for a byte-order-marker at the start of the given bytes.

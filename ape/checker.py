@@ -71,7 +71,15 @@ def parse_document(content, is_xml, report):
         # The lxml parser does not accept encoding in XML declarations
         # when parsing strings.
         content = strip_xml_decl(content)
-    root = etree.fromstring(content, parser)
+    try:
+        root = etree.fromstring(content, parser)
+    except etree.XMLSyntaxError:
+        report.error(
+            'Failed to parse document as %s; '
+            'cannot gather references to other documents.',
+            'XML' if is_xml else 'HTML'
+            )
+        return None
     # The lxml HTML parser is an HTML4 parser. HTML5 is similar enough
     # that it will still be able to produce a document tree, but it will
     # report errors on for example inline SVG.

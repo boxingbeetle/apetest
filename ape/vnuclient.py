@@ -19,8 +19,10 @@ class RedirectError(HTTPException):
     '''Raised when a redirect status from the server cannot be handled.
     '''
 
-    msg = property(lambda self: self.args[0])
-    url = property(lambda self: self.args[1])
+    # PyLint mistakenly thinks `args` is not subscriptable.
+    #   https://github.com/PyCQA/pylint/issues/2333
+    msg = property(lambda self: self.args[0]) # pylint: disable=unsubscriptable-object
+    url = property(lambda self: self.args[1]) # pylint: disable=unsubscriptable-object
 
     def __init__(self, msg, url):
         # pylint: disable=useless-super-delegation
@@ -34,8 +36,8 @@ class RequestFailed(HTTPException):
     '''Raised when a response has a non-successful status code.
     '''
 
-    msg = property(lambda self: self.args[0])
-    status = property(lambda self: self.args[1])
+    msg = property(lambda self: self.args[0]) # pylint: disable=unsubscriptable-object
+    status = property(lambda self: self.args[1]) # pylint: disable=unsubscriptable-object
 
     def __init__(self, response):
         super().__init__(response.reason, response.status)

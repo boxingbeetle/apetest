@@ -274,22 +274,7 @@ class PageChecker:
             tree = parse_document(content, is_xml, report)
             if tree is not None:
                 # Find links to other documents.
-                links = defaultdict(LinkSet)
-                for url in self.find_urls(tree):
-                    _LOG.debug(' Found URL: %s', url)
-                    if url.startswith('?'):
-                        url = urlsplit(req_url).path + url
-                    url = urljoin(req_url, url)
-                    if url.startswith(self.base_url):
-                        try:
-                            request = Request.from_url(url)
-                        except ValueError as ex:
-                            report.warning('%s', ex)
-                        else:
-                            links[request.page_url].add(request)
-                referrers += links.values()
-
-                # Find other referrers.
+                referrers += self.find_referrers_in_xml(tree, req_url, report)
                 if is_html:
                     referrers += self.find_referrers_in_html(tree, req_url)
 
@@ -334,6 +319,24 @@ class PageChecker:
                 yield node.attrib['{http://www.w3.org/1999/xlink}href']
             except KeyError:
                 pass
+
+    def find_referrers_in_xml(self, tree, tree_url, report):
+        """Yields referrers found in XML tags in the document `tree`.
+        """
+        links = defaultdict(LinkSet)
+        for url in self.find_urls(tree):
+            _LOG.debug(' Found URL: %s', url)
+            if url.startswith('?'):
+                url = urlsplit(tree_url).path + url
+            url = urljoin(tree_url, url)
+            if url.startswith(self.base_url):
+                try:
+                    request = Request.from_url(url)
+                except ValueError as ex:
+                    report.warning('%s', ex)
+                else:
+                    links[request.page_url].add(request)
+        yield from links.values()
 
     def find_referrers_in_html(self, tree, url):
         """Yields referrers found in HTML tags in the document `tree`.

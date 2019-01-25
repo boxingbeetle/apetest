@@ -147,7 +147,8 @@ class PageChecker:
             )
         referrers = []
 
-        if response is not None:
+        if response is not None and response.code is not None \
+                and 300 <= response.code < 400:
             content_url = normalize_url(response.url)
             if content_url != req_url:
                 if content_url.startswith(self.base_url):

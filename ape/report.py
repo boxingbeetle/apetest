@@ -74,6 +74,7 @@ class StoreHandler(logging.Handler):
         self.records[record.url].append(record)
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 handler = StoreHandler()
 logger.addHandler(handler)
 logger.propagate = False

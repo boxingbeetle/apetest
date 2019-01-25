@@ -52,7 +52,7 @@ def run(url, report_file_name, accept, plugins=()):
 
         print('Writing report to "%s"...' % report_file_name)
         with open(report_file_name, 'w',
-                encoding='ascii', errors='xmlcharrefreplace') as out:
+                  encoding='ascii', errors='xmlcharrefreplace') as out:
             for node in scribe.present():
                 out.write(node.flatten())
         print('Done reporting')

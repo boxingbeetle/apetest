@@ -17,7 +17,7 @@ from ape.fetch import decode_and_report, encoding_from_bom, load_page
 from ape.referrer import Form, LinkSet, Redirect
 from ape.request import Request
 
-Accept = Enum('Accept', 'ANY HTML')
+Accept = Enum('Accept', 'ANY HTML') # pylint: disable=invalid-name
 
 _LOG = getLogger(__name__)
 
@@ -97,7 +97,7 @@ def parse_input_control(attrib):
     name = attrib.get('name')
     ctype = attrib.get('type')
     value = attrib.get('value')
-    if ctype == 'text' or ctype == 'password':
+    if ctype in ('text', 'password'):
         return TextField(name, value)
     elif ctype == 'checkbox':
         return Checkbox(name, value)
@@ -107,9 +107,9 @@ def parse_input_control(attrib):
         return FileInput(name, value)
     elif ctype == 'hidden':
         return HiddenInput(name, value)
-    elif ctype == 'submit' or ctype == 'image':
+    elif ctype in ('submit', 'image'):
         return SubmitButton(name, value)
-    elif ctype == 'button' or ctype == 'reset':
+    elif ctype in ('button', 'reset'):
         # Type "button" is used by JavaScript, "reset" by the browser.
         return None
     else:

@@ -73,18 +73,18 @@ class StoreHandler(logging.Handler):
         self.format(record)
         self.records[record.url].append(record)
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = StoreHandler()
-logger.addHandler(handler)
-logger.propagate = False
+_LOG = logging.getLogger(__name__)
+_LOG.setLevel(logging.INFO)
+_HANDLER = StoreHandler()
+_LOG.addHandler(_HANDLER)
+_LOG.propagate = False
 
 class Report(logging.LoggerAdapter):
     ok = True # ...until proven otherwise
     checked = False
 
     def __init__(self, url):
-        logging.LoggerAdapter.__init__(self, logger, dict(url=url))
+        logging.LoggerAdapter.__init__(self, _LOG, dict(url=url))
         self.url = url
 
     def log(self, level, msg, *args, **kwargs):
@@ -96,7 +96,7 @@ class Report(logging.LoggerAdapter):
         present_record = self.present_record
         yield xml.ul[(
             present_record(record)
-            for record in handler.records[self.url]
+            for record in _HANDLER.records[self.url]
             )]
 
         if not self.checked:

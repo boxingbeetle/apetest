@@ -62,6 +62,10 @@ disable=no-else-return,
     # false positives because methods for operator overloading are not
     # considered to be public methods.
     # https://github.com/PyCQA/pylint/issues/1933
+        fixme,
+    # A lot of TODOs mark incomplete features or poor design, which should
+    # be fixed at some point, but are not urgent enough to be included in
+    # every run.
         print-statement,
         parameter-unpacking,
         unpacking-in-except,

@@ -130,6 +130,19 @@ def txt(text):
     """Creates an XML character data object containing `text`."""
     return _Text(text)
 
+class _Raw(_XMLSerializable):
+
+    def __init__(self, text):
+        _XMLSerializable.__init__(self)
+        self.__text = text
+
+    def _to_fragments(self):
+        yield self.__text
+
+def raw(text):
+    """Inserts text without escaping. This is useful for style or scripts."""
+    return _Raw(text)
+
 class _XMLSequence(_XMLSerializable):
 
     def __init__(self, children):
@@ -218,4 +231,4 @@ def concat(*siblings):
     """
     return _XMLSequence(_adapt(siblings))
 
-__all__ = ('xml', 'txt', 'concat')
+__all__ = ('xml', 'txt', 'raw', 'concat')

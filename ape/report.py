@@ -5,9 +5,9 @@ import logging
 from urllib.parse import unquote_plus, urlsplit
 
 from ape.request import Request
-from ape.xmlgen import xml
+from ape.xmlgen import raw, xml
 
-_STYLE_SHEET = '''
+_STYLE_SHEET = raw('''
 body {
     margin: 0;
     padding: 0;
@@ -44,13 +44,13 @@ li {
     line-height: 125%;
 }
 li.error {
-    color: #C00000;
+    list-style-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 10 10" version="1.1"><path fill="%23e00" d="M0,5 a5,5 0 0 0 10,0 5,5 0 0 0 -10,0 Z M5,3.75 6.75,2 8,3.25 6.25,5 8,6.75 6.75,8 5,6.25 3.25,8 2,6.75 3.75,5 2,3.25 3.35,2 Z"/></svg>');
 }
 li.warning {
-    color: #006680;
+    list-style-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 10 10" version="1.1"><path fill="%23f70" d="M1,10 h8 a1,1 0 0 0 0.866,-1.5 l-4,-7 a1,1 0 0 0 -1.732,0 l-4,7 a1,1 0 0 0 0.866,1.5 Z M4.5,3 h1 v4 h-1 Z M5,7.75 a0.75,0.75 0 0 1 0,1.5 0.75,0.75 0 0 1 0,-1.5 Z"/></svg>');
 }
 li.info {
-    color: #202020;
+    list-style-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 10 10" version="1.1"><path fill="%2333f" d="M0,5 a5,5 0 0 0 10,0 5,5 0 0 0 -10,0 Z M5,1.25 a1,1 0 0 1 0,2 1,1 0 0 1 0,-2 Z M3.5,4.25 h2 v3 h1 v1 h-3 v-1 h1 v-2 h-1 Z"/></svg>');
 }
 span.extract {
     background: #FFFFB0;
@@ -59,7 +59,7 @@ code {
     background: #F0F0F0;
     color: #000000;
 }
-'''
+''')
 
 class StoreHandler(logging.Handler):
     """A log handler that stores all logged records in a list.
@@ -111,7 +111,7 @@ class Report(logging.LoggerAdapter):
     def present_record(record):
         level = record.levelname.lower()
         html = getattr(record, 'html', record.message)
-        return xml.li(class_=level)[level + ': ', html]
+        return xml.li(class_=level)[html]
 
 class FetchFailure(Report, Exception):
     ok = False

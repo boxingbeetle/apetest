@@ -42,7 +42,6 @@ class PluginError(Exception):
     to create the `Plugin` instances requested by the command line
     arguments.
     """
-    pass
 
 class Plugin:
     """Plugin interface: your plugin class should inherit this and override
@@ -55,7 +54,6 @@ class Plugin:
         There will not be any more calls to the plugin after it is closed.
         The default implementation does nothing.
         """
-        pass
 
     def resource_loaded(self, data, content_type_header, report):
         """Called when a resource has been loaded.
@@ -66,21 +64,18 @@ class Plugin:
         resource data.
         The default implementation does nothing.
         """
-        pass
 
     def report_added(self, report):
         """Called when the APE core has finished a `Report`.
         Plugins can override this method to act on the report data.
         The default implementation does nothing.
         """
-        pass
 
     def postprocess(self, scribe):
         """Called when the APE core has finished a test run.
         Plugins can override this method to process the results.
         The default implementation does nothing.
         """
-        pass
 
 class PluginCollection:
     """Keeps a collection of `Plugin` instances and dispatches calls to

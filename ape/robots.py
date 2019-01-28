@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Functions for handling robot exclusion files ("robots.txt").
+"""Functions for handling robot exclusion files (`robots.txt`).
 
 There is no official standard for these files: it started with a post
 that was later developed into a draft RFC, but that was never finalized.
@@ -8,7 +8,8 @@ Later, several search engines invented their own extensions.
 
 This module implements all of the original proposal and some of the
 extensions:
-- "allow" rules
+
+- `allow` rules
 - percent-encoded UTF-8 in paths
 
 Note that the module takes sequences of strings as its input,
@@ -17,19 +18,30 @@ For interoperability, it is recommended to support at least
 UTF-8 both with and without a BOM.
 
 Features that are not (yet) implemented:
-- non-group records such as "sitemap"
-- "crawl-delay" rules
+
+- non-group records such as `sitemap`
+- `crawl-delay` rules
 - wildcards in paths
 
-https://en.wikipedia.org/wiki/Robots_exclusion_standard
-https://developers.google.com/search/reference/robots_txt
-http://www.robotstxt.org/
+References:
+
+- <https://en.wikipedia.org/wiki/Robots_exclusion_standard>
+- <https://developers.google.com/search/reference/robots_txt>
+- <http://www.robotstxt.org/>
 """
 
 def scan_robots_txt(lines, logger):
-    """Iterates through the records, where each record is a list of
-    (lineno, token, value) triples.
-    Problems are logged.
+    """Tokenizes the contents of a `robots.txt` file.
+
+    lines
+        Contents of a `robots.txt` file.
+    logger
+        Problems found while scanning are logged here.
+
+    Yields:
+
+    record: (lineno, token, value)*
+        Records, where each record is a sequence of triples.
     """
     record = []
     for lineno, line in enumerate(lines, 1):
@@ -58,11 +70,21 @@ def scan_robots_txt(lines, logger):
         yield record
 
 def parse_robots_txt(records, logger):
-    """Parses robots.txt records.
-    Returns a mapping from case-folded user agent name to allow/disallow
-    rules, where rules are a sequence of pair containing a bool (True iff
-    allowed) and a URL prefix string.
-    Problems are logged.
+    """Parses `robots.txt` records.
+
+    Parameters:
+
+    records
+        Tokenized records as produced by `scan_robots_txt`.
+    logger
+        Problems found while parsing are logged here.
+
+    Returns:
+
+    rules_map: { user_agent: (allowed, url_prefix)* }
+        A mapping from user agent name (case-folded) to a sequence of
+        allow/disallow rules, where `allowed` is `True` iff the user agent
+        is allowed to visit URLs starting with `url_prefix`.
     """
     result = {}
     unknowns = set()
@@ -115,8 +137,9 @@ def parse_robots_txt(records, logger):
     return result
 
 def unescape_path(path):
-    """Decode percent-encoded URL path.
-    Raise ValueError if the escaping is incorrect.
+    """Decodes a percent-encoded URL path.
+
+    Raises `ValueError` if the escaping is incorrect.
     """
     idx = 0
     while True:
@@ -185,8 +208,19 @@ def unescape_path(path):
                     )
 
 def lookup_robots_rules(rules_map, user_agent):
-    """Looks up a user agent in the rules map.
-    Returns a list of rules that apply to the given user agent.
+    """Looks up a user agent in a rules mapping.
+
+    Parameters:
+
+    rules_map
+        Rules mapping as produced by `parse_robots_txt`.
+    user_agent
+        Name of the user agent to look up in the rules.
+
+    Returns:
+
+    rules: (allowed, url_prefix)*
+        The rules that apply to the given user agent.
     """
     user_agent = user_agent.casefold()
     for name, rules in rules_map.items():
@@ -195,8 +229,20 @@ def lookup_robots_rules(rules_map, user_agent):
     return rules_map.get('*', [])
 
 def path_allowed(path, rules):
-    """Returns True iff `path` is allowed by `rules`.
-    The path should not contain percent-encoded values other than %2f ('/').
+    """Checks whether the given rules allow visiting the given path.
+
+    Parameters:
+
+    path
+        URL path component.
+        Must not contain percent-encoded values other than `%2f` (`/`).
+    rules
+        Rules as returned by `lookup_robots_rules`.
+
+    Returns:
+
+    allowed
+        `True` iff `path` is allowed by `rules`.
     """
     # The draft RFC specifies that the first match should be used,
     # but both Google and Bing use the longest (most specific) match

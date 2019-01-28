@@ -31,6 +31,9 @@ types of content are supported:
 - iterables (list, tuple, generator etc.) containing objects of the
   supported types; nested iterables are allowed
 - ``None``, which will be ignored
+- `raw` objects, which will be inserted into the output without escaping;
+  this is useful to insert CDATA sections or CSS and JavaScript when
+  outputting HTML5 in HTML form
 
 It is possible to derive an XML element from an existing one by
 applying the attribute or nested content syntax to it. This will

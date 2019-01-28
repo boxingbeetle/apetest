@@ -1,5 +1,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""Client for using the web service of the Nu Html Checker (v.Nu).
+
+`VNUClient` can connect to the checker web service and have it process one
+or more requests.
+
+You can find the checker itself at <https://validator.github.io/>
+"""
+
 from gzip import GzipFile
 from http.client import HTTPConnection, HTTPException, UnknownProtocol
 try:
@@ -15,14 +23,19 @@ import json
 
 _LOG = getLogger(__name__)
 
-class RedirectError(HTTPException):
-    """Raised when a redirect status from the server cannot be handled.
-    """
+__pdoc__ = {}
 
-    # PyLint mistakenly thinks `args` is not subscriptable.
+class RedirectError(HTTPException):
+    """Raised when a redirect status from the service cannot be handled."""
+
+    # PyLint mistakenly thinks 'args' is not subscriptable.
     #   https://github.com/PyCQA/pylint/issues/2333
     msg = property(lambda self: self.args[0]) # pylint: disable=unsubscriptable-object
+    """Error message."""
     url = property(lambda self: self.args[1]) # pylint: disable=unsubscriptable-object
+    """URL that we were redirected from."""
+
+    __pdoc__['RedirectError.__init__'] = False
 
     def __init__(self, msg, url):
         # pylint: disable=useless-super-delegation
@@ -33,11 +46,14 @@ class RedirectError(HTTPException):
         return '%s at %s' % self.args
 
 class RequestFailed(HTTPException):
-    """Raised when a response has a non-successful status code.
-    """
+    """Raised when a response has a non-successful status code."""
 
     msg = property(lambda self: self.args[0]) # pylint: disable=unsubscriptable-object
+    """Error message."""
     status = property(lambda self: self.args[1]) # pylint: disable=unsubscriptable-object
+    """HTTP status code."""
+
+    __pdoc__['RequestFailed.__init__'] = False
 
     def __init__(self, response):
         super().__init__(response.reason, response.status)
@@ -47,14 +63,16 @@ class RequestFailed(HTTPException):
 
 class VNUClient:
     """Manages a connection to the checker web service.
+
     A connection will be opened on demand but has to be closed explicitly,
-    either by calling the `close()` method or using the client object as
-    the context manager in a `with` statement.
+    either by calling the `VNUClient.close` method or by using the client
+    object as the context manager in a `with` statement.
     A client with a closed connection can be used again: the connection
     will be re-opened.
     """
 
     def __init__(self, url):
+        """Initializes a client that connects to the v.Nu checker at `url`."""
         self.service_url = url
         self._connection = None
         self._remote = None
@@ -67,8 +85,7 @@ class VNUClient:
 
     def __connect(self, url):
         """Returns an HTTPConnection instance for the given URL string.
-        Raises UnknownProtocol if the URL uses an unsupported scheme.
-        Raises InvalidURL if the URL contains a bad port.
+        Can raise UnknownProtocol or InvalidURL.
         """
         url_parts = urlsplit(url)
         scheme = url_parts.scheme
@@ -95,6 +112,7 @@ class VNUClient:
 
     def close(self):
         """Closes the current connection.
+
         Does nothing if there is no open connection.
         """
         if self._connection:
@@ -205,13 +223,36 @@ class VNUClient:
                 raise RequestFailed(response)
 
     def request(self, data, content_type, errors_only=False):
-        """Feeds the given data to the checker.
-        Yields message dictionaries, as described in the checker's
-        JSON output format.
-        Raises OSError when an unrecoverable low-level I/O error occurs.
-        Raises HTTPException when an unrecoverable HTTP error occurs.
-        Raises ValueError when the response body could not be decoded
-        or parsed.
+        """Feeds the given document to the checker.
+
+        Parameters:
+
+        data
+            Document to check, as `bytes`.
+        content_type
+            Media type for the document.
+            This string is sent as the value for the HTTP "Content-Type"
+            header, so it can also include encoding information,
+            for example "text/html; charset=utf-8".
+        errors_only
+            When `True`, the checker returns only errors and no warnings
+            or informational messages.
+
+        Yields:
+
+        dict
+            Message objects as described in
+            [the checker's JSON output format](
+            https://github.com/validator/validator/wiki/Output-»-JSON).
+
+        Raises:
+
+        OSError
+            When an unrecoverable low-level I/O error occurs.
+        HTTPException
+            When an unrecoverable HTTP error occurs.
+        ValueError
+            When the response body could not be decoded or parsed.
         """
         url = self.service_url + '?out=json'
         if errors_only:

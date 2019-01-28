@@ -1,16 +1,25 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""Home of the `ape.request.Request` class."""
+
 from functools import total_ordering
 
 from urllib.parse import quote_plus, unquote_plus, urlsplit, urlunsplit
 
 @total_ordering
 class Request:
-    """A page and arguments combination.
+    """A resource request consisting of a page URL plus arguments.
+
+    To get the full URL including query, use `str(request)`.
     """
 
     @staticmethod
     def from_url(url):
+        """Creates a `Request` from a URL.
+
+        Raises `ValueError` if `url` cannot be represented by a `Request`
+        object because it uses non-standard query syntax.
+        """
         scheme, host, path, query_str, fragment_ = urlsplit(url)
         page_url = urlunsplit((scheme, host, path, '', ''))
         query = []
@@ -31,9 +40,19 @@ class Request:
         return Request(page_url, query)
 
     def __init__(self, page_url, query, maybe_bad=False):
-        """For constructed requests that are not guaranteed to be correct,
-        set "maybe_bad" to True. For requests that originate from the user
-        or the web app under test, leave "maybe_bad" as False.
+        """Initializes a request object from a split URL.
+
+        Parameters:
+
+        page_url
+            URL without the query.
+        query: (key, value)*
+            The query part of the URL, as a sequence of key-value pairs.
+        maybe_bad: bool
+            For speculative requests that are not guaranteed to be correct,
+            pass `True`.
+            For requests that originate from the user or the web app under
+            test, use the `False` default.
         """
         self.page_url = page_url
         self.query = tuple(sorted(query))

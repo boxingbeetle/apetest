@@ -8,7 +8,7 @@ help:
 
 docs:
 	rm -rf output/docs/api
-	PYTHONPATH=. pdoc ape --all-submodules --html --html-dir output/docs/api
+	PYTHONPATH=. pdoc ape --html --html-dir output/docs/api
 
 liveapi:
-	PYTHONPATH=. pdoc --http --http-port 8765
+	PYTHONPATH=. pdoc --http localhost:8765 ape

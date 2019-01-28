@@ -13,15 +13,15 @@ An XML element can be created using the following syntax:
         xml.egg(class_='large')
         ]
 
-``xml``.*name* creates an XML element with the given name.
+`xml`.*name* creates an XML element with the given name.
 If the name is not a constant or contains for example a dash,
-you can use the alternative syntax ``xml['tricky-name']``.
+you can use the alternative syntax `xml['tricky-name']`.
 
 Attributes are added to an element using keyword arguments. If an
 argument's value is `None`, that attribute will be omitted.
 Argument values will be converted to strings if necessary.
 Trailing underscores in names will be stripped off, which is
-useful for names such as ``class`` that are reserved in Python.
+useful for names such as `class` that are reserved in Python.
 
 Nested content is added to an element using brackets. The following
 types of content are supported:
@@ -30,25 +30,23 @@ types of content are supported:
 - strings, which will be treated as character data
 - iterables (list, tuple, generator etc.) containing objects of the
   supported types; nested iterables are allowed
-- ``None``, which will be ignored
-- `raw` objects, which will be inserted into the output without escaping;
-  this is useful to insert CDATA sections or CSS and JavaScript when
-  outputting HTML5 in HTML form
+- `None`, which will be ignored
+- `raw` objects, which contain text that will not be escaped
 
 It is possible to derive an XML element from an existing one by
 applying the attribute or nested content syntax to it. This will
 produce a new XML element with updated attributes or added content;
 the original element object will not be modified.
 
-You can construct sequences of XML objects using the ``+`` operator
-or the `concat()` function. If you are creating a sequence of many
-objects, `concat()` will perform better. The same conversion rules
+You can construct sequences of XML objects using the `+` operator
+or the `concat` function. If you are creating a sequence of many
+objects, `concat` will perform better. The same conversion rules
 for nested content are applied when creating sequences.
 
 You can also create a sequence of XML objects using the `join()` method
 of any XML object, similar to Python's `str.join()`. If you want the
 separator to be character data, you can create a character data object
-using the `txt()` function. For example:
+using the `txt` function. For example:
 
     xml.br.join(lines)
 
@@ -58,7 +56,7 @@ using the `txt()` function. For example:
         )
 
 To output the generated XML, you convert an XML object to a string
-by calling its ``flatten()`` method.
+by calling its `flatten()` method.
 
 When an element is flattened, the generated XML will be well-formed,
 assuming you used only allowed characters in element and attribute
@@ -143,7 +141,11 @@ class _Raw(_XMLSerializable):
         yield self.__text
 
 def raw(text):
-    """Inserts text without escaping. This is useful for style or scripts."""
+    """Creates a segment that will appear in the output without escaping.
+
+    This is useful to insert CDATA sections or CSS and JavaScript when
+    outputting HTML that will not be parsed by an XML parser.
+    """
     return _Raw(text)
 
 class _XMLSequence(_XMLSerializable):
@@ -210,8 +212,9 @@ class _XMLElementFactory:
         return _XMLElement(key, {}, None)
 
 xml = _XMLElementFactory() # pylint: disable=invalid-name
-"""Factory for XML elements. See the module level documentation for usage
-instructions.
+"""Factory for XML elements.
+
+See the module level documentation for usage instructions.
 """
 
 def _adapt(node):
@@ -229,6 +232,7 @@ def _adapt(node):
 
 def concat(*siblings):
     """Creates an XML sequence by concatenating `siblings`.
+
     Siblings must be XML objects or convertible to XML objects,
     otherwise `TypeError` will be raised.
     """

@@ -81,8 +81,8 @@ class Spider:
                 self._requests_to_check.add(request)
 
     def iter_referring_requests(self, dest_req):
-        '''Iterate through the requests that refer to the given request.
-        '''
+        """Iterate through the requests that refer to the given request.
+        """
         for source_req in self._page_referred_from[dest_req.page_url]:
             for referrer in self._site_graph[source_req]:
                 if referrer.has_request(dest_req):

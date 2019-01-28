@@ -6,8 +6,8 @@ from urllib.parse import quote_plus, unquote_plus, urlsplit, urlunsplit
 
 @total_ordering
 class Request:
-    '''A page and arguments combination.
-    '''
+    """A page and arguments combination.
+    """
 
     @staticmethod
     def from_url(url):
@@ -31,10 +31,10 @@ class Request:
         return Request(page_url, query)
 
     def __init__(self, page_url, query, maybe_bad=False):
-        '''For constructed requests that are not guaranteed to be correct,
+        """For constructed requests that are not guaranteed to be correct,
         set "maybe_bad" to True. For requests that originate from the user
         or the web app under test, leave "maybe_bad" as False.
-        '''
+        """
         self.page_url = page_url
         self.query = tuple(sorted(query))
         self.maybe_bad = bool(maybe_bad)

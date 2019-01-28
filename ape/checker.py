@@ -30,19 +30,19 @@ _RE_XML_DECL_ATTR = re.compile(
     )
 
 def strip_xml_decl(text):
-    '''Strips the XML declaration from the start of the given text.
+    """Strips the XML declaration from the start of the given text.
     Returns the given text without XML declaration, or the unmodified text if
     no XML declaration was found.
-    '''
+    """
     match = _RE_XML_DECL.match(text)
     return text if match is None else text[match.end():]
 
 def encoding_from_xml_decl(text):
-    '''Looks for an XML declaration with an "encoding" attribute at the start
+    """Looks for an XML declaration with an "encoding" attribute at the start
     of the given text.
     If found, the attribute value is converted to lower case and then returned,
     otherwise None is returned.
-    '''
+    """
     match = _RE_XML_DECL.match(text)
     if match is not None:
         decl = match.group(1)
@@ -53,18 +53,18 @@ def encoding_from_xml_decl(text):
     return None
 
 def normalize_url(url):
-    '''Returns a unique string for the given URL.
+    """Returns a unique string for the given URL.
     This is required in some places, since different libs have different
     opinions whether local URLs should start with "file:/" or "file:///".
-    '''
+    """
     return urlunsplit(urlsplit(url))
 
 def parse_document(content, is_xml, report):
-    '''Parse `content` as XML (if `is_xlm` is true) or HTML (otherwise).
+    """Parse `content` as XML (if `is_xlm` is true) or HTML (otherwise).
     Parse errors are added to `report`.
     Return a document etree, or None if the document is too broken
     to be parsed at all.
-    '''
+    """
     parser_factory = etree.XMLParser if is_xml else etree.HTMLParser
     parser = parser_factory(recover=True)
     if is_xml:
@@ -117,9 +117,9 @@ def parse_input_control(attrib):
         return None
 
 class PageChecker:
-    '''Retrieves a page, validates the XML and parses the contents to find
+    """Retrieves a page, validates the XML and parses the contents to find
     references to other pages.
-    '''
+    """
 
     def __init__(self, base_url, accept, scribe, plugins):
         self.base_url = normalize_url(base_url)

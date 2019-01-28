@@ -1,27 +1,27 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 class Control:
-    '''A submittable element in a form.
+    """A submittable element in a form.
     The alternative name = None, value = None represents a control not being
     part of the submission, for example an unchecked checkbox.
-    '''
+    """
 
     def has_alternative(self, name, value):
-        '''Returns True iff the given name-value combination could be submitted
+        """Returns True iff the given name-value combination could be submitted
         by this control.
         Note that for free input controls, it is possible this method returns
         True while the name-value pair is not in the sequence returned by the
         "alternatives" method.
-        '''
+        """
         raise NotImplementedError
 
     def alternatives(self):
-        '''Returns a sequence containing all alternative name-value pairs of
+        """Returns a sequence containing all alternative name-value pairs of
         the ways this control can be submitted.
         For multiple-choice controls all possible alternatives are considered,
         for free input controls there is an infinite number of alternatives, so
         we just pick a few.
-        '''
+        """
         raise NotImplementedError
 
 class SingleValueControl(Control):
@@ -38,8 +38,8 @@ class SingleValueControl(Control):
         yield self.name, self.value
 
 class FileInput(SingleValueControl):
-    '''A control for selecting and uploading files.
-    '''
+    """A control for selecting and uploading files.
+    """
 
     def has_alternative(self, name, value):
         # Any text could be submitted, so we only have to check the name.
@@ -142,9 +142,9 @@ class SubmitButtons(Control):
         return self.buttons
 
 class SelectMultiple(SingleValueControl):
-    '''Pseudo-control which represents an option in a <select> control where
+    """Pseudo-control which represents an option in a <select> control where
     multiple options can be active at the same time.
-    '''
+    """
 
     def has_alternative(self, name, value):
         return (
@@ -157,8 +157,8 @@ class SelectMultiple(SingleValueControl):
         yield self.name, self.value # selected
 
 class SelectSingle(Control):
-    '''A <select> control where one option can be active at the same time.
-    '''
+    """A <select> control where one option can be active at the same time.
+    """
 
     def __init__(self, name, options):
         Control.__init__(self)

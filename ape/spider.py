@@ -1,5 +1,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""Keeps track of links between pages.
+
+Use `spider_req` to create a `Spider`, then iterate through it to receive
+new requests to check and call `Spider.add_requests` to add links you found
+while checking.
+
+At any point during or after the crawling, `Spider.iter_referring_requests`
+can be used to ask which other requests linked to a given request.
+"""
+
 from collections import defaultdict
 from urllib.parse import urljoin, urlsplit
 
@@ -9,11 +19,29 @@ from ape.robots import (
     )
 
 class Spider:
-    # TODO: Now just the first 100 are checked, it would be better to try
-    #       variations of all query arguments.
+    """Web crawler that remembers which requests have been discovered,
+    which have been checked and the links between them.
+
+    Instances of this class are iterable. Every request yielded is
+    automatically marked as visited. It is valid to add new requests
+    while iterating.
+    """
+
     max_queries_per_page = 100
+    """Maximum number of queries to generate with the same path.
+
+    For pages with many arguments, the number of possible queries can
+    become so large that it not feasible to check them all.
+    """
+    # TODO: Currently just the first 100 are checked, it would be better
+    #       to try variations of all query arguments.
 
     def __init__(self, first_req, rules):
+        """Initializes a spider that starts at `first_req` and follows
+        the given exclusion rules.
+
+        In most cases, you should use `spider_req` instead.
+        """
         self._base_url = first_req.page_url
         self._rules = rules
         self._requests_to_check = set([first_req])
@@ -35,13 +63,13 @@ class Spider:
             yield request
 
     def referrer_allowed(self, referrer):
-        """Returns True iff this spider is allowed to visit the resources
+        """Returns `True` iff this spider is allowed to visit the resources
         referenced by `referrer`.
-        TODO: Currently the `checker` module rejects out-of-scope URLs,
-              but it would be cleaner to do that at the spider level,
-              in case we ever want to support crawling multiple roots
-              or want to report all external links.
         """
+        # TODO: Currently the 'checker' module rejects out-of-scope URLs,
+        #       but it would be cleaner to do that at the spider level,
+        #       in case we ever want to support crawling multiple roots
+        #       or want to report all external links.
         path = urlsplit(referrer.page_url).path or '/'
         base_url = self._base_url
         if base_url.startswith('file:'):
@@ -54,6 +82,14 @@ class Spider:
         return path_allowed(path, self._rules)
 
     def add_requests(self, source_req, referrers):
+        """Adds the requests from `referrers`, which were discovered
+        in `source_req`.
+
+        Added requests that were not discovered before are registered
+        as to be checked. The spider also remembers that `source_req`
+        links to the added requests.
+        """
+
         # Filter referrers according to rules.
         allowed_referrers = [
             referrer
@@ -81,7 +117,7 @@ class Spider:
                 self._requests_to_check.add(request)
 
     def iter_referring_requests(self, dest_req):
-        """Iterate through the requests that refer to the given request.
+        """Iterates through the requests that refer to the given request.
         """
         for source_req in self._page_referred_from[dest_req.page_url]:
             for referrer in self._site_graph[source_req]:
@@ -89,8 +125,11 @@ class Spider:
                     yield source_req
 
 def spider_req(first_req):
-    """Creates a spider for the given request.
-    Will use information from robots.txt if available.
+    """Creates a `Spider` that starts at the given `ape.request.Request`.
+
+    This function will attempt to read `robots.txt` from the server
+    or base directory contained in `first_req`. Any rules found there
+    that apply to APE will be passed on to the new `Spider`.
     """
     base_url = first_req.page_url
     if base_url.startswith('file:'):

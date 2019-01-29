@@ -193,37 +193,27 @@ class Page:
 class Scribe:
 
     def __init__(self, base_url, spider, plugins):
-        self.base_url = base_url
-        self.spider = spider
         scheme_, host_, base_path, query, fragment = urlsplit(base_url)
         assert query == ''
         assert fragment == ''
         # HTTP requires empty URL path to be mapped to "/".
         #   https://tools.ietf.org/html/rfc7230#section-5.3.1
         base_path = base_path or '/'
-        self.base_path = base_path = base_path[ : base_path.rindex('/') + 1]
+        self._base_path = base_path = base_path[ : base_path.rindex('/') + 1]
 
-        self.plugins = plugins
-
-        self.reports = {}
+        self._spider = spider
+        self._plugins = plugins
         self._pages = defaultdict(Page)
-        self.reports_by_page = {}
 
     def __url_to_name(self, url):
         path = urlsplit(url).path or '/'
-        assert path.startswith(self.base_path)
-        return path[len(self.base_path) : ]
+        assert path.startswith(self._base_path)
+        return path[len(self._base_path) : ]
 
     def add_report(self, report):
-        self.plugins.report_added(report)
+        self._plugins.report_added(report)
 
         url = report.url
-        # Note: Currently, each URL is only visited once.
-        #       Since we do not modify the database, a second fetch would
-        #       not lead to different results than the first.
-        assert url not in self.reports
-        self.reports[url] = report
-
         page = self._pages[self.__url_to_name(url)]
         page.add_report(report)
 
@@ -243,7 +233,7 @@ class Scribe:
             )
 
     def postprocess(self):
-        self.plugins.postprocess(self)
+        self._plugins.postprocess(self)
 
     def present(self):
         title = 'APE - Automated Page Exerciser'
@@ -280,7 +270,7 @@ class Scribe:
         #       but we know the exact requests.
         page_names = set(
             self.__url_to_name(source_req.page_url)
-            for source_req in self.spider.iter_referring_requests(req)
+            for source_req in self._spider.iter_referring_requests(req)
             )
         for name in sorted(page_names):
             yield xml.li[xml.a(href='#' + (name or 'base'))[name or '(base)']]

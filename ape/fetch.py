@@ -18,7 +18,7 @@ from urllib.request import (
     build_opener, url2pathname
     )
 
-from ape.report import FetchFailure, IncrementalReport
+from ape.report import FetchFailure, Report
 from ape.version import VERSION_STRING
 
 USER_AGENT_PREFIX = 'APE-Test'
@@ -122,7 +122,7 @@ def load_page(url, ignore_client_error=False, accept_header='*/*'):
             return failure, None, None
         report = failure
     else:
-        report = IncrementalReport(url)
+        report = Report(url)
 
     try:
         content = response.read()

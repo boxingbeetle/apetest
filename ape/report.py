@@ -3,7 +3,7 @@
 """Gathers and presents checker results in a report.
 
 If a page was loaded, the results of checking it can be stored
-in an `IncrementalReport`. If a page fails to load, the problems
+in a `Report` instance. If a page fails to load, the problems
 in trying to fetch it can be stored in a `FetchFailure` report.
 
 Reports are `logging.LoggerAdapter` implementations, so you can
@@ -101,11 +101,7 @@ _LOG.addHandler(_HANDLER)
 _LOG.propagate = False
 
 class Report(logging.LoggerAdapter):
-    """Base class for reports.
-
-    A report gathers check results for a document produced by one
-    request.
-    """
+    """Gathers check results for a document produced by one request."""
 
     def __init__(self, url):
         """Initialize a report that will be collecting results
@@ -135,6 +131,37 @@ class Report(logging.LoggerAdapter):
         if level > logging.INFO:
             self.ok = False
         super().log(level, msg, *args, **kwargs)
+
+    def process(self, msg, kwargs):
+        """Process contextual information for a logged message.
+
+        Our `url` will be inserted into the log record.
+        """
+
+        # TODO: This formatting should either happen before logging
+        #       or in StoreHandler, but not here.
+        if isinstance(msg, str):
+            message = msg
+        else:
+            if hasattr(msg, 'line'):
+                line = msg.line
+            elif hasattr(msg, 'position'):
+                line = msg.position[0]
+            else:
+                line = None
+
+            message = msg.message
+            if line is not None:
+                message += ' (line %d)' % line
+
+        extra = kwargs.get('extra')
+        if extra is None:
+            extra = self.extra
+        else:
+            extra.update(self.extra)
+        kwargs['extra'] = extra
+
+        return message, kwargs
 
     def present(self, scribe):
         """Yield an XHTML rendering of this report."""
@@ -183,32 +210,6 @@ class FetchFailure(Report, Exception):
         """
 
         self.error('Failed to fetch: %s', message)
-
-class IncrementalReport(Report):
-
-    def process(self, msg, kwargs):
-        if isinstance(msg, str):
-            message = msg
-        else:
-            if hasattr(msg, 'line'):
-                line = msg.line
-            elif hasattr(msg, 'position'):
-                line = msg.position[0]
-            else:
-                line = None
-
-            message = msg.message
-            if line is not None:
-                message += ' (line %d)' % line
-
-        extra = kwargs.get('extra')
-        if extra is None:
-            extra = self.extra
-        else:
-            extra.update(self.extra)
-        kwargs['extra'] = extra
-
-        return message, kwargs
 
 class Page:
     """Information collected by `Scribe` about a single page.

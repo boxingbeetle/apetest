@@ -54,9 +54,19 @@ class Request:
             For requests that originate from the user or the web app under
             test, use the `False` default.
         """
+
         self.page_url = page_url
+        """URL without the query."""
+
         self.query = tuple(sorted(query))
+        """The query part of the URL, as a sequence of key-value pairs."""
+
         self.maybe_bad = bool(maybe_bad)
+        """`True` iff this request is speculative.
+
+        Client errors returned when making speculative requests should not
+        be reported as problems of a web app.
+        """
 
     def __eq__(self, other):
         if isinstance(other, Request):

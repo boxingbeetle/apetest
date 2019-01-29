@@ -138,22 +138,6 @@ class Report(logging.LoggerAdapter):
         Our `url` will be inserted into the log record.
         """
 
-        # TODO: This formatting should either happen before logging
-        #       or in StoreHandler, but not here.
-        if isinstance(msg, str):
-            message = msg
-        else:
-            if hasattr(msg, 'line'):
-                line = msg.line
-            elif hasattr(msg, 'position'):
-                line = msg.position[0]
-            else:
-                line = None
-
-            message = msg.message
-            if line is not None:
-                message += ' (line %d)' % line
-
         extra = kwargs.get('extra')
         if extra is None:
             extra = self.extra
@@ -161,7 +145,7 @@ class Report(logging.LoggerAdapter):
             extra.update(self.extra)
         kwargs['extra'] = extra
 
-        return message, kwargs
+        return msg, kwargs
 
     def present(self, scribe):
         """Yield an XHTML rendering of this report."""

@@ -2,9 +2,9 @@
 
 """APE's plugin infrastructure.
 
-Each plugin is a separate module in the "ape.plugin" package.
-Plugins can register command line options by defining the following
-function:
+Each plugin is a separate module in the `ape.plugin` package.
+Plugins can register command line options by defining the
+following function:
 
     def plugin_arguments(parser):
         parser.add_argument('--cow', help='fetchez la vache')
@@ -17,8 +17,8 @@ It is not mandatory to implement ``plugin_arguments()``, but in general
 plugins should not activate automatically, so there should at least
 be a command line argument to enable them.
 
-To instantiate plugins, the plugin module must define the following
-function:
+To instantiate plugins, the plugin module must define the
+following function:
 
     def plugin_create(args):
         if args.cow is not None:
@@ -51,28 +51,38 @@ class Plugin:
     def close(self):
         """Tells the plugin to release any resources (processes, sockets
         etc.) that it may have acquired.
+
         There will not be any more calls to the plugin after it is closed.
         The default implementation does nothing.
         """
 
     def resource_loaded(self, data, content_type_header, report):
         """Called when a resource has been loaded.
-        The resource contents are passed in `data` as `bytes`,
-        while `content_type_header` is a `str` containing the full
-        Content-Type header (including charset, if the server sent it).
+
+        Parameters:
+
+        data: bytes
+            The resource contents.
+        content_type_header: str
+            The HTTP `Content-Type` header received for this resource,
+            including `charset` if the server sent it.
+        report: ape.report.Report
+            Report to which problems found in the resource can be logged.
+
         Plugins can override this method to perform checks on the raw
-        resource data.
-        The default implementation does nothing.
+        resource data. The default implementation does nothing.
         """
 
     def report_added(self, report):
-        """Called when the APE core has finished a `Report`.
+        """Called when a `ape.report.Report` has been finished.
+
         Plugins can override this method to act on the report data.
         The default implementation does nothing.
         """
 
     def postprocess(self, scribe):
-        """Called when the APE core has finished a test run.
+        """Called when the test run has finished.
+
         Plugins can override this method to process the results.
         The default implementation does nothing.
         """
@@ -83,6 +93,7 @@ class PluginCollection:
     """
 
     def __init__(self, plugins):
+        """Initialize a collection containing `plugins`."""
         self.plugins = tuple(plugins)
 
     def __getattr__(self, name):
@@ -98,8 +109,14 @@ class PluginCollection:
         return dispatch
 
 def load_plugins():
-    """Finds and imports plugin modules, then yields the modules.
-    Errors will be logged.
+    """Discover and import plugin modules.
+
+    Yields:
+
+    module
+        Imported plugin module.
+
+    Errors will be logged to the default logger.
     """
     for finder_, name, ispkg_ in iter_modules(__path__, 'ape.plugin.'):
         try:
@@ -108,9 +125,16 @@ def load_plugins():
             _LOG.exception('Error importing plugin module "%s":', name)
 
 def add_plugin_arguments(module, parser):
-    """Asks plugin `module` to register the plugin's command line arguments
-    on `parser`, which is an instance of `argparse.ArgumentParser`.
-    Errors will be logged.
+    """Ask a plugin module to register its command line arguments.
+
+    Parameters:
+
+    module
+        Plugin module.
+    parser: argparse.ArgumentParser
+        Command line parser on which arguments must be registered.
+
+    Errors will be logged to the default logger.
     """
     try:
         func = getattr(module, 'plugin_arguments')
@@ -125,9 +149,18 @@ def add_plugin_arguments(module, parser):
                            'plugin module "%s":', module.__name__)
 
 def create_plugins(module, args):
-    """Asks plugin `module` to create `Plugin` objects for the given
-    command line arguments in `args` (`argparse.Namespace`).
-    Errors will be logged and propagated.
+    """Ask a plugin module to create `Plugin` objects according to
+    the command line arguments.
+
+    Parameters:
+
+    module
+        Plugin module.
+    args: argparse.Namespace
+        Parsed command line arguments.
+
+    Errors will be logged to the default logger.
+    Exceptions will be re-raised after logging.
     """
     try:
         func = getattr(module, 'plugin_create')

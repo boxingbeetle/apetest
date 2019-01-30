@@ -103,6 +103,7 @@ def open_page(url, ignore_client_error=False, accept_header='*/*'):
 
     # TODO: Figure out how to do authentication, "user:password@" in
     #       the URL does not work.
+    #       There is support for HTTP basic auth in urllib.
     url_req = URLRequest(url)
     url_req.add_header('Accept', accept_header)
     url_req.add_header('User-Agent', USER_AGENT)

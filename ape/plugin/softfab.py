@@ -1,5 +1,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""Plugin that creates a properties file summarizing the test results.
+
+This properties file can be used as-is by SoftFab, but should be easy
+to use with other tools as well. The format is of a Java `.properties`
+file, similar to a Windows `.ini` file. It is a text with with one
+key-value pair per line, with `=` as the separator.
+"""
+
 from ape.plugin import Plugin
 
 def plugin_arguments(parser):
@@ -13,8 +21,10 @@ def plugin_create(args):
         yield PropertiesPlugin(args.result)
 
 class PropertiesPlugin(Plugin):
+    """Plugin that creates a SoftFab-compatible results properties file."""
 
     def __init__(self, properties_file):
+        """Initialize the plugin to write `properties_file`."""
         self.properties_file = properties_file
 
     def postprocess(self, scribe):

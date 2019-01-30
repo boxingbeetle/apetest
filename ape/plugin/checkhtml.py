@@ -1,5 +1,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""Plugin that checks HTML and optionally CSS.
+
+The actual checking is done by the Nu Html Checker (v.Nu).
+Download the checker from <https://validator.github.io/>
+or install the `html5validator` package with `pip`.
+
+The checker is written in Java, so you must have a Java runtime (JRE)
+installed to run it.
+"""
+
 from cgi import parse_header
 from logging import ERROR, INFO, WARNING
 from pathlib import Path
@@ -22,18 +32,18 @@ def plugin_arguments(parser):
         )
 
 def _pick_port():
-    '''Returns an unused TCP port.
+    """Returns an unused TCP port.
     While we can not guarantee it will stay unused, it is very unlikely
     that it will become used within a few seconds.
-    '''
+    """
     with socket(AF_INET, SOCK_STREAM) as sock:
         sock.bind(('', 0))
         return sock.getsockname()[1]
 
 def _find_vnujar():
-    '''Returns the full path to "vnu.jar".
+    """Returns the full path to "vnu.jar".
     Raises PluginError if "vnu.jar" cannot be found.
-    '''
+    """
     try:
         import vnujar
     except ImportError:
@@ -79,19 +89,24 @@ def plugin_create(args):
         yield HTMLValidator(url, launch, content_types)
 
 class HTMLValidator(Plugin):
-    '''Runs the Nu Html Checker (v.Nu) on loaded documents.
-    Download the checker from: https://github.com/validator/validator
-    '''
+    """Runs the Nu Html Checker on loaded documents."""
 
     def __init__(self, service_url, launch, content_types):
-        '''Creates a validator that uses the checker web service
-        at `service_url`.
-        If `launch` is True, the validator should be launched using
-        the JAR file specified by `service_url`; if `launch` is False,
-        `service_url` is the URL of an externally started web service.
-        Documents of types in the `content_types` set will be checked,
-        other documents will be ignored.
-        '''
+        """Initialize a validator using the given checker web service.
+
+        Parameters:
+
+        service_url
+            URL for the checker web service.
+        launch
+            If `True`, the validator should be launched using
+            the JAR file specified by `service_url`.
+            If `False`, `service_url` is the URL of an externally
+            started web service.
+        content_types: str*
+            Documents of these types will be checked,
+            other documents will be ignored.
+        """
         self.content_types = content_types
         if launch:
             service, service_url = _launch_service(service_url)

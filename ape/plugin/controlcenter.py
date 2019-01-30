@@ -1,5 +1,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""Plugin that monitors the SoftFab Control Center's log
+while it is being tested.
+
+This plugin is only useful as-is for people working on SoftFab, but it
+can serve as an example for implementing a custom plugin that checks the
+log of a web app under test.
+"""
+
 import os
 
 from ape.plugin import Plugin
@@ -15,8 +23,14 @@ def plugin_create(args):
         yield DataChangeMonitor(args.cclog)
 
 class DataChangeMonitor(Plugin):
+    """Monitors the log file for reported database changes.
+
+    HTTP `GET` requests must be idempotent, so any database activity
+    resulting from them is suspect.
+    """
 
     def __init__(self, cclog):
+        """Initialize a monitor for the log at file path `cclog`."""
         self._log_file = cclog
         self._log_fd = None
         self._partial_line = b''

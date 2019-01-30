@@ -1,5 +1,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""Checks a document for problems and finds links to other documents.
+
+The `PageChecker` class is where the work is done.
+"""
+
 from collections import defaultdict
 from enum import Enum
 from logging import getLogger
@@ -17,7 +22,14 @@ from ape.fetch import decode_and_report, encoding_from_bom, load_page
 from ape.referrer import Form, LinkSet, Redirect
 from ape.request import Request
 
-Accept = Enum('Accept', 'ANY HTML') # pylint: disable=invalid-name
+class Accept(Enum):
+    """The types of documents that we tell the server we accept."""
+
+    ANY = 1
+    """Accept both HTML and XHTML."""
+
+    HTML = 2
+    """Accept only HTML."""
 
 _LOG = getLogger(__name__)
 
@@ -30,7 +42,8 @@ _RE_XML_DECL_ATTR = re.compile(
     )
 
 def strip_xml_decl(text):
-    """Strips the XML declaration from the start of the given text.
+    """Strip the XML declaration from the start of the given text.
+
     Returns the given text without XML declaration, or the unmodified text if
     no XML declaration was found.
     """
@@ -38,11 +51,17 @@ def strip_xml_decl(text):
     return text if match is None else text[match.end():]
 
 def encoding_from_xml_decl(text):
-    """Looks for an XML declaration with an "encoding" attribute at the start
+    """Look for an XML declaration with an `encoding` attribute at the start
     of the given text.
-    If found, the attribute value is converted to lower case and then returned,
-    otherwise None is returned.
+
+    Returns:
+
+    encoding
+        The attribute value, converted to lower case.
+    None
+        If no attribute was found.
     """
+
     match = _RE_XML_DECL.match(text)
     if match is not None:
         decl = match.group(1)
@@ -54,16 +73,31 @@ def encoding_from_xml_decl(text):
 
 def normalize_url(url):
     """Returns a unique string for the given URL.
-    This is required in some places, since different libs have different
-    opinions whether local URLs should start with "file:/" or "file:///".
+
+    This is required in some places, since different libraries
+    have different opinions whether local URLs should start with
+    `file:/` or `file:///`.
     """
     return urlunsplit(urlsplit(url))
 
 def parse_document(content, is_xml, report):
-    """Parse `content` as XML (if `is_xlm` is true) or HTML (otherwise).
-    Parse errors are added to `report`.
-    Return a document etree, or None if the document is too broken
-    to be parsed at all.
+    """Parse the given XML or HTML document.
+
+    Parameters:
+
+    content
+        Text to be parsed.
+    is_xlm
+        If `True`, parse as XML, otherwise parse as HTML.
+    report: ape.report.Report
+        Parse errors are logged here.
+
+    Returns:
+
+    tree
+        A document `etree`.
+    None
+        If the document is too broken to be parsed.
     """
     parser_factory = etree.XMLParser if is_xml else etree.HTMLParser
     parser = parser_factory(recover=True)
@@ -102,7 +136,7 @@ def parse_document(content, is_xml, report):
 
     return None if root is None else root.getroottree()
 
-def parse_input_control(attrib):
+def _parse_input_control(attrib):
     _LOG.debug('input: %s', attrib)
     disabled = 'disabled' in attrib
     if disabled:
@@ -131,21 +165,42 @@ def parse_input_control(attrib):
         return None
 
 class PageChecker:
-    """Retrieves a page, validates the XML and parses the contents to find
-    references to other pages.
+    """Retrieves a page, checks its contents and finds references
+    to other pages.
     """
 
     def __init__(self, base_url, accept, scribe, plugins):
+        """Initialize page checker.
+
+        Parameters:
+
+        base_url
+            Base URL for the web site or app under test.
+        accept: Accept
+            The types of documents that we tell the server we accept.
+        scribe: ape.report.Scribe
+            Reports will be added here.
+        plugins: ape.plugin.PluginCollection
+            Plugins to notify of loaded documents.
+        """
+
         self.base_url = normalize_url(base_url)
         self.accept = accept
         self.scribe = scribe
         self.plugins = plugins
 
     def short_url(self, url):
+        """Return a shortened version of `url`.
+
+        This drops the part of the URL that all pages share.
+        """
+
         assert url.startswith(self.base_url), url
         return url[self.base_url.rindex('/') + 1 : ]
 
     def check(self, req):
+        """Check a single `ape.request.Request`."""
+
         req_url = str(req)
         _LOG.info('Checking page: %s', self.short_url(req_url))
 
@@ -321,7 +376,7 @@ class PageChecker:
     _linkElements.update(_xmlLinkElements)
 
     def find_urls(self, tree):
-        """Yields URLs found in the document `tree`.
+        """Yield URLs found in the document `tree`.
         """
         get_attr_name = self._linkElements.__getitem__
         for node in tree.getroot().iter():
@@ -335,7 +390,8 @@ class PageChecker:
                 pass
 
     def find_referrers_in_xml(self, tree, tree_url, report):
-        """Yields referrers found in XML tags in the document `tree`.
+        """Yield `ape.referrer.Referrer` objects for links found
+        in XML tags in the document `tree`.
         """
         links = defaultdict(LinkSet)
         for url in self.find_urls(tree):
@@ -353,7 +409,8 @@ class PageChecker:
         yield from links.values()
 
     def find_referrers_in_html(self, tree, url):
-        """Yields referrers found in HTML tags in the document `tree`.
+        """Yield `ape.referrer.Referrer` objects for links and forms
+        found in HTML tags in the document `tree`.
         """
         root = tree.getroot()
         ns_prefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''
@@ -385,7 +442,7 @@ class PageChecker:
             radio_buttons = defaultdict(list)
             submit_buttons = []
             for inp in form_node.getiterator(ns_prefix + 'input'):
-                control = parse_input_control(inp.attrib)
+                control = _parse_input_control(inp.attrib)
                 if control is None:
                     pass
                 elif isinstance(control, RadioButton):

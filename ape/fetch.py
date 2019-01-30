@@ -1,5 +1,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""Load documents via HTTP.
+
+`load_page` loads arbitrary resources (as `bytes`).
+`load_text` loads and decodes plain text documents.
+
+Various functions to decode text are also available,
+in particular `decode_and_report` to attempt to decode text using
+several encoding options and `encoding_from_bom` to auto-detect
+a document's encoding by looking for a Unicode byte-order-marker.
+"""
+
 from codecs import (
     BOM_UTF8, BOM_UTF16_BE, BOM_UTF16_LE, BOM_UTF32_BE, BOM_UTF32_LE,
     lookup as lookup_codec
@@ -26,12 +37,12 @@ USER_AGENT = '%s/%s' % (USER_AGENT_PREFIX, VERSION_STRING)
 
 _LOG = getLogger(__name__)
 
-class CustomRedirectHandler(HTTPRedirectHandler):
+class _CustomRedirectHandler(HTTPRedirectHandler):
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise HTTPError(newurl, code, msg, headers, fp)
 
-class CustomFileHandler(FileHandler):
+class _CustomFileHandler(FileHandler):
 
     def open_local_file(self, req):
         local_path = url2pathname(urlsplit(req.full_url).path)
@@ -62,13 +73,34 @@ class CustomFileHandler(FileHandler):
             else:
                 raise
 
-_URL_OPENER = build_opener(CustomRedirectHandler, CustomFileHandler)
+_URL_OPENER = build_opener(_CustomRedirectHandler, _CustomFileHandler)
 
 def open_page(url, ignore_client_error=False, accept_header='*/*'):
-    """Opens a connection to retrieve a requested page.
-    Returns a response object wrapping an open input stream on success.
-    Raises FetchFailure on errors.
+    """Open a connection to retrieve a resource via HTTP `GET`.
+
+    Parameters:
+
+    url
+        The URL of the resource to request.
+    ignore_client_error
+        If `True`, a client error (HTTP status 400) is not reported
+        as an error. This is useful to avoid false positives when
+        making speculative requests.
+    accept_header
+        HTTP `Accept` header to use for the request.
+
+    Returns:
+
+    response
+        An `http.client.HTTPResponse` object that contains an open
+        stream that data can be read from.
+
+    Raises:
+
+    ape.report.FetchFailure
+        If no connection could be opened.
     """
+
     # TODO: Figure out how to do authentication, "user:password@" in
     #       the URL does not work.
     url_req = URLRequest(url)
@@ -108,12 +140,32 @@ def open_page(url, ignore_client_error=False, accept_header='*/*'):
             raise FetchFailure(url, ex.strerror)
 
 def load_page(url, ignore_client_error=False, accept_header='*/*'):
-    """Loads the contents of a resource.
-    Returns a report, the response object and the contents (bytes),
-    or None instead of the response object and/or the contents
-    if the resource could not be retrieved; in this case errors were
-    logged to the report.
+    """Load the contents of a resource via HTTP `GET`.
+
+    Parameters:
+
+    url
+        The URL of the resource to load.
+    ignore_client_error
+        If `True`, a client error (HTTP status 400) is not reported
+        as an error. This is useful to avoid false positives when
+        making speculative requests.
+    accept_header
+        HTTP `Accept` header to use for the request.
+
+    Returns:
+
+    report, response, contents
+        `report` is a `ape.report.Report` instance that may already
+        have some messages logged to it.
+
+        `response` is an `http.client.HTTPResponse` object if
+        a response was received from the server, or `None` otherwise.
+
+        `contents` is the loaded data as `bytes`, or `None` if
+        the loading failed.
     """
+
     try:
         response = open_page(url, ignore_client_error, accept_header)
     except FetchFailure as failure:
@@ -138,10 +190,26 @@ def load_page(url, ignore_client_error=False, accept_header='*/*'):
 _RE_EOLN = re.compile(r'\r\n|\r|\n')
 
 def load_text(url, accept_header='text/plain'):
-    """Loads a text document.
-    Returns a report, response object and the contents (list with one
-    string per line), or None instead of response object and/or the
-    contents if the resource could not be retrieved.
+    """Load a text document.
+
+    Parameters:
+
+    url
+        The URL of the document to load.
+    accept_header
+        HTTP `Accept` header to use for the request.
+
+    Returns:
+
+    report, response, contents
+        `report` is a `ape.report.Report` instance that may already
+        have some messages logged to it.
+
+        `response` is an `http.client.HTTPResponse` object if
+        a response was received from the server, or `None` otherwise.
+
+        `contents` is the document as a list of lines, or `None` if
+        the loading failed.
     """
     redirect_count = 0
     while True:
@@ -174,8 +242,8 @@ def load_text(url, accept_header='text/plain'):
     return report, response, _RE_EOLN.split(content)
 
 def encoding_from_bom(data):
-    """Looks for a byte-order-marker at the start of the given bytes.
-    If found, return the encoding matching that BOM, otherwise return None.
+    """Look for a byte-order-marker at the start of the given `bytes`.
+    If found, return the encoding matching that BOM, otherwise return `None`.
     """
     if data.startswith(BOM_UTF8):
         return 'utf-8'
@@ -187,8 +255,7 @@ def encoding_from_bom(data):
         return None
 
 def standard_codec_name(codec):
-    """Maps codec name to the preferred standardized version.
-    """
+    """Map a codec name to the preferred standardized version."""
     name = codec.name
     return {
         # IANA prefers "US-ASCII".
@@ -197,11 +264,27 @@ def standard_codec_name(codec):
         }.get(name, name)
 
 def try_decode(data, encodings):
-    """Attempts to decode the given bytes using the given encodings in order.
-    Duplicate and None encoding elements are skipped.
-    Returns a pair of the decoded string and the used encoding if successful,
-    otherwise raises UnicodeDecodeError.
+    """Attempt to decode text using the given encodings in order.
+
+    Parameters:
+
+    data: bytes
+        Encoded version of the text.
+    encodings: (encoding | None)*
+        Names of the encodings to try.
+        Duplicate and `None` entries are skipped.
+
+    Returns:
+
+    text, encoding
+        The decoded string and the encoding used to decode it.
+
+    Raises:
+
+    UnicodeDecodeError
+        If the text could not be decoded.
     """
+
     # Build sequence of codecs to try.
     codecs = OrderedDict()
     for encoding in encodings:
@@ -227,12 +310,30 @@ def try_decode(data, encodings):
         )
 
 def decode_and_report(data, encoding_options, report):
-    """Attempts to decode the given bytes using the given encoding options
-    in order. Each option is a pair of encoding name or None and a description
-    of where this encoding suggestion originated.
-    Returns the decoded string and the encoding used to decode it.
-    Raises UnicodeDecodeError if the data could not be decoded.
-    Non-fatal problems are added to the report.
+    """Attempt to decode text using several encoding options in order.
+
+    Parameters:
+
+    data: bytes
+        Encoded version of the text.
+    encoding_options: (encoding | None, source)*
+        Each option is a pair of encoding name and a description of
+        where this encoding suggestion originated.
+        If the encoding name is `None`, the option is skipped.
+    report
+        Non-fatal problems are logged here.
+        Such problems include an unknown or differing encodings
+        among the options.
+
+    Returns:
+
+    text, encoding
+        The decoded string and the encoding used to decode it.
+
+    Raises:
+
+    UnicodeDecodeError
+        If the text could not be decoded.
     """
 
     encodings = [encoding for encoding, source in encoding_options]

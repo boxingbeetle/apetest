@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""Command line interface."""
+
 from os import getcwd
 from urllib.parse import urljoin, urlparse
 
@@ -10,8 +12,7 @@ from ape.request import Request
 from ape.spider import spider_req
 
 def detect_url(arg):
-    """Attempts to turn a command line argument into a full URL.
-    """
+    """Attempt to turn a command line argument into a full URL."""
     url = urlparse(arg)
     if url.scheme:
         return arg
@@ -29,6 +30,25 @@ def detect_url(arg):
     return urljoin('file://%s/' % getcwd(), arg)
 
 def run(url, report_file_name, accept, plugins=()):
+    """Runs APE with the given arguments.
+
+    Parameters:
+
+    url
+        Base URL of the web site or app to check.
+    report_file_name
+        Path to write the HTML report to.
+    accept: ape.checker.Accept
+        Document types that we tell the server that we accept.
+    plugins: ape.plugin.Plugin*
+        Plugins to use on this run.
+
+    Returns:
+
+    exit_code
+        0 if successful, non-zero on errors.
+
+    """
     plugins = PluginCollection(plugins)
     try:
         try:

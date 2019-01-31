@@ -18,8 +18,8 @@ from collections import defaultdict
 import logging
 from urllib.parse import unquote_plus, urlsplit
 
-from ape.request import Request
-from ape.xmlgen import raw, xml
+from apetest.request import Request
+from apetest.xmlgen import raw, xml
 
 _STYLE_SHEET = raw('''
 body {
@@ -268,10 +268,10 @@ class Scribe:
             The root URL will be computed from this by dropping the path
             element after the last directory level, if any.
         spider
-            `ape.spider.Spider` instance from which links between pages
+            `apetest.spider.Spider` instance from which links between pages
             can be looked up.
         plugins
-            Collection of `ape.plugin.Plugin` instances that will receive
+            Collection of `apetest.plugin.Plugin` instances that will receive
             notifications from this scribe.
         """
         scheme_, host_, base_path, query, fragment = urlsplit(base_url)

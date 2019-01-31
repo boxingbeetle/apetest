@@ -13,14 +13,14 @@ from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from lxml import etree
 
-from ape.control import (
+from apetest.control import (
     Checkbox, FileInput, HiddenInput, RadioButton, RadioButtonGroup,
     SelectSingle, SelectMultiple, SubmitButton, SubmitButtons,
     TextArea, TextField
     )
-from ape.fetch import decode_and_report, encoding_from_bom, load_page
-from ape.referrer import Form, LinkSet, Redirect
-from ape.request import Request
+from apetest.fetch import decode_and_report, encoding_from_bom, load_page
+from apetest.referrer import Form, LinkSet, Redirect
+from apetest.request import Request
 
 class Accept(Enum):
     """The types of documents that we tell the server we accept."""
@@ -89,7 +89,7 @@ def parse_document(content, is_xml, report):
         Text to be parsed.
     is_xlm
         If `True`, parse as XML, otherwise parse as HTML.
-    report: ape.report.Report
+    report: apetest.report.Report
         Parse errors are logged here.
 
     Returns:
@@ -178,9 +178,9 @@ class PageChecker:
             Base URL for the web site or app under test.
         accept: Accept
             The types of documents that we tell the server we accept.
-        scribe: ape.report.Scribe
+        scribe: apetest.report.Scribe
             Reports will be added here.
-        plugins: ape.plugin.PluginCollection
+        plugins: apetest.plugin.PluginCollection
             Plugins to notify of loaded documents.
         """
 
@@ -199,7 +199,7 @@ class PageChecker:
         return url[self.base_url.rindex('/') + 1 : ]
 
     def check(self, req):
-        """Check a single `ape.request.Request`."""
+        """Check a single `apetest.request.Request`."""
 
         req_url = str(req)
         _LOG.info('Checking page: %s', self.short_url(req_url))
@@ -390,7 +390,7 @@ class PageChecker:
                 pass
 
     def find_referrers_in_xml(self, tree, tree_url, report):
-        """Yield `ape.referrer.Referrer` objects for links found
+        """Yield `apetest.referrer.Referrer` objects for links found
         in XML tags in the document `tree`.
         """
         links = defaultdict(LinkSet)
@@ -409,7 +409,7 @@ class PageChecker:
         yield from links.values()
 
     def find_referrers_in_html(self, tree, url):
-        """Yield `ape.referrer.Referrer` objects for links and forms
+        """Yield `apetest.referrer.Referrer` objects for links and forms
         found in HTML tags in the document `tree`.
         """
         root = tree.getroot()

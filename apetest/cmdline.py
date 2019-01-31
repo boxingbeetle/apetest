@@ -5,11 +5,11 @@
 from os import getcwd
 from urllib.parse import urljoin, urlparse
 
-from ape.checker import PageChecker
-from ape.plugin import PluginCollection
-from ape.report import Scribe
-from ape.request import Request
-from ape.spider import spider_req
+from apetest.checker import PageChecker
+from apetest.plugin import PluginCollection
+from apetest.report import Scribe
+from apetest.request import Request
+from apetest.spider import spider_req
 
 def detect_url(arg):
     """Attempt to turn a command line argument into a full URL."""
@@ -38,9 +38,9 @@ def run(url, report_file_name, accept, plugins=()):
         Base URL of the web site or app to check.
     report_file_name
         Path to write the HTML report to.
-    accept: ape.checker.Accept
+    accept: apetest.checker.Accept
         Document types that we tell the server that we accept.
-    plugins: ape.plugin.Plugin*
+    plugins: apetest.plugin.Plugin*
         Plugins to use on this run.
 
     Returns:

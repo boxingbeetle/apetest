@@ -6,10 +6,10 @@ from argparse import ArgumentParser
 import logging
 import sys
 
-from ape.checker import Accept
-from ape.cmdline import run
-from ape.plugin import add_plugin_arguments, create_plugins, load_plugins
-from ape.version import VERSION_STRING
+from apetest.checker import Accept
+from apetest.cmdline import run
+from apetest.plugin import add_plugin_arguments, create_plugins, load_plugins
+from apetest.version import VERSION_STRING
 
 def main():
     # Register core arguments.

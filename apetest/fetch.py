@@ -29,8 +29,8 @@ from urllib.request import (
     build_opener, url2pathname
     )
 
-from ape.report import FetchFailure, Report
-from ape.version import VERSION_STRING
+from apetest.report import FetchFailure, Report
+from apetest.version import VERSION_STRING
 
 USER_AGENT_PREFIX = 'APE-Test'
 USER_AGENT = '%s/%s' % (USER_AGENT_PREFIX, VERSION_STRING)
@@ -97,7 +97,7 @@ def open_page(url, ignore_client_error=False, accept_header='*/*'):
 
     Raises:
 
-    ape.report.FetchFailure
+    apetest.report.FetchFailure
         If no connection could be opened.
     """
 
@@ -157,7 +157,7 @@ def load_page(url, ignore_client_error=False, accept_header='*/*'):
     Returns:
 
     report, response, contents
-        `report` is a `ape.report.Report` instance that may already
+        `report` is a `apetest.report.Report` instance that may already
         have some messages logged to it.
 
         `response` is an `http.client.HTTPResponse` object if
@@ -203,7 +203,7 @@ def load_text(url, accept_header='text/plain'):
     Returns:
 
     report, response, contents
-        `report` is a `ape.report.Report` instance that may already
+        `report` is a `apetest.report.Report` instance that may already
         have some messages logged to it.
 
         `response` is an `http.client.HTTPResponse` object if

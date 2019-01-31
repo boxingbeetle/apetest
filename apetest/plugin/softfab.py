@@ -8,7 +8,7 @@ file, similar to a Windows `.ini` file. It is a text with with one
 key-value pair per line, with `=` as the separator.
 """
 
-from ape.plugin import Plugin
+from apetest.plugin import Plugin
 
 def plugin_arguments(parser):
     parser.add_argument(

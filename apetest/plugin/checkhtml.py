@@ -16,9 +16,9 @@ from pathlib import Path
 from socket import AF_INET, SOCK_STREAM, socket # pylint: disable=no-name-in-module
 from subprocess import DEVNULL, Popen
 
-from ape.plugin import Plugin, PluginError
-from ape.vnuclient import VNUClient
-from ape.xmlgen import concat, xml
+from apetest.plugin import Plugin, PluginError
+from apetest.vnuclient import VNUClient
+from apetest.xmlgen import concat, xml
 
 def plugin_arguments(parser):
     parser.add_argument(

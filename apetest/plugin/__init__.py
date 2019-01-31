@@ -2,7 +2,7 @@
 
 """APE's plugin infrastructure.
 
-Each plugin is a separate module in the `ape.plugin` package.
+Each plugin is a separate module in the `apetest.plugin` package.
 Plugins can register command line options by defining the
 following function:
 
@@ -66,7 +66,7 @@ class Plugin:
         content_type_header: str
             The HTTP `Content-Type` header received for this resource,
             including `charset` if the server sent it.
-        report: ape.report.Report
+        report: apetest.report.Report
             Report to which problems found in the resource can be logged.
 
         Plugins can override this method to perform checks on the raw
@@ -74,7 +74,7 @@ class Plugin:
         """
 
     def report_added(self, report):
-        """Called when a `ape.report.Report` has been finished.
+        """Called when a `apetest.report.Report` has been finished.
 
         Plugins can override this method to act on the report data.
         The default implementation does nothing.
@@ -118,7 +118,7 @@ def load_plugins():
 
     Errors will be logged to the default logger.
     """
-    for finder_, name, ispkg_ in iter_modules(__path__, 'ape.plugin.'):
+    for finder_, name, ispkg_ in iter_modules(__path__, 'apetest.plugin.'):
         try:
             yield import_module(name)
         except Exception: # pylint: disable=broad-except

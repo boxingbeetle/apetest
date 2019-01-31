@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Home of the `ape.request.Request` class."""
+"""Home of the `apetest.request.Request` class."""
 
 from functools import total_ordering
 

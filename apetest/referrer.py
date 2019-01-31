@@ -8,7 +8,7 @@
 when submitted.
 """
 
-from ape.request import Request
+from apetest.request import Request
 
 class Referrer:
     """Models an entity that can generate requests.
@@ -60,7 +60,7 @@ class Redirect(Referrer):
         Referrer.__init__(self, target.page_url)
 
         self.target = target
-        """The `ape.request.Request` that a user agent is redirected to."""
+        """The `apetest.request.Request` that a user agent is redirected to."""
 
     def has_request(self, request):
         return request == self.target
@@ -79,10 +79,10 @@ class LinkSet(Referrer):
         Referrer.__init__(self, None) # page_url is set later
 
         self.links = set()
-        """The links (`ape.request.Request` objects) that were added."""
+        """The links (`apetest.request.Request` objects) that were added."""
 
     def add(self, request):
-        """Adds a linked `ape.request.Request` to this set.
+        """Adds a linked `apetest.request.Request` to this set.
 
         All links in the set must point to the same page:
         the URL without the query must be equal.
@@ -111,7 +111,7 @@ class Form(Referrer):
         Referrer.__init__(self, page_url)
         self.method = method
         self.controls = controls
-        """Collection of `ape.control.Control` objects that represent
+        """Collection of `apetest.control.Control` objects that represent
         user interface input elements that contribute to the submitted
         query.
         """

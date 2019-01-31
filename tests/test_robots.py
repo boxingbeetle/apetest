@@ -1,7 +1,7 @@
 import logging
 import unittest
 
-from ape.robots import (
+from apetest.robots import (
     lookup_robots_rules, parse_robots_txt, path_allowed, scan_robots_txt
     )
 

@@ -10,7 +10,7 @@ log of a web app under test.
 
 import os
 
-from ape.plugin import Plugin
+from apetest.plugin import Plugin
 
 def plugin_arguments(parser):
     parser.add_argument(

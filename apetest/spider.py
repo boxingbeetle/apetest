@@ -13,8 +13,8 @@ can be used to ask which other requests linked to a given request.
 from collections import defaultdict
 from urllib.parse import urljoin, urlsplit
 
-from ape.fetch import USER_AGENT_PREFIX, load_text
-from ape.robots import (
+from apetest.fetch import USER_AGENT_PREFIX, load_text
+from apetest.robots import (
     lookup_robots_rules, parse_robots_txt, path_allowed, scan_robots_txt
     )
 
@@ -125,7 +125,7 @@ class Spider:
                     yield source_req
 
 def spider_req(first_req):
-    """Creates a `Spider` that starts at the given `ape.request.Request`.
+    """Creates a `Spider` that starts at the given `apetest.request.Request`.
 
     This function will attempt to read `robots.txt` from the server
     or base directory contained in `first_req`. Any rules found there

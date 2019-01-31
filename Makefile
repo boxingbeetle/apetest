@@ -8,7 +8,7 @@ help:
 
 docs:
 	rm -rf output/docs/api
-	PYTHONPATH=. pdoc apetest --html --html-dir output/docs/api
+	PYTHONPATH=$(PWD)/src pdoc apetest --html --html-dir output/docs/api
 
 liveapi:
-	PYTHONPATH=. pdoc --http localhost:8765 apetest
+	PYTHONPATH=$(PWD)/src pdoc --http localhost:8765 apetest

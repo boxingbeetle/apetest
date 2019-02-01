@@ -1,9 +1,10 @@
-.PHONY: help docs liveapi
+.PHONY: help docs liveapi lint
 
 help:
 	@echo "Available targets:"
 	@echo "  liveapi:  Serve live API documentation through HTTP."
 	@echo "  docs:     Generate documentation as HTML files."
+	@echo "  lint:     Checks sources with PyLint."
 	@echo "  help:     Show this overview."
 
 docs:
@@ -12,3 +13,6 @@ docs:
 
 liveapi:
 	PYTHONPATH=$(PWD)/src pdoc --http localhost:8765 apetest
+
+lint:
+	PYTHONPATH=src pylint apetest

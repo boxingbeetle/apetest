@@ -7,8 +7,8 @@ help:
 	@echo "  help:     Show this overview."
 
 docs:
-	rm -rf output/docs/api
-	PYTHONPATH=$(PWD)/src pdoc apetest --html --html-dir output/docs/api
+	rm -rf docs/api
+	PYTHONPATH=$(PWD)/src pdoc apetest --html --html-dir docs/api
 
 liveapi:
 	PYTHONPATH=$(PWD)/src pdoc --http localhost:8765 apetest

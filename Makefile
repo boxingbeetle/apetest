@@ -1,4 +1,4 @@
-.PHONY: help docs liveapi lint test unittest doctest
+.PHONY: help docs apidocs liveapi lint test unittest doctest
 
 help:
 	@echo "Available targets:"
@@ -10,9 +10,7 @@ help:
 	@echo "  doctest:  Check our documentation using APE."
 	@echo "  help:     Show this overview."
 
-docs:
-	rm -rf docs/api
-	PYTHONPATH=$(PWD)/src pdoc apetest --html --html-dir docs/api
+docs: docs/README.html apidocs
 
 liveapi:
 	PYTHONPATH=$(PWD)/src pdoc --http localhost:8765 apetest
@@ -25,5 +23,12 @@ test: unittest doctest
 unittest:
 	PYTHONPATH=src pytest tests
 
-doctest:
-	@echo "doctest is not implemented yet"
+doctest: apidocs
+	apetest --check launch docs/api/apetest doctest.html
+
+docs/README.html: README.md
+	markdown_py $< -f $@
+
+apidocs:
+	rm -rf docs/api
+	PYTHONPATH=$(PWD)/src pdoc apetest --html --html-dir docs/api

@@ -2,3 +2,7 @@
 docs/README.html
 docs/api/
 doctest.html
+.python-version
+poetry.lock
+src/apetest.egg-info/
+dist/

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Functions for handling robot exclusion files (`robots.txt`).
+"""Functions for handling robot exclusion files ("robots.txt").
 
 There is no official standard for these files: it started with a post
 that was later developed into a draft RFC, but that was never finalized.

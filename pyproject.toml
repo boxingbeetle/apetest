@@ -1,0 +1,39 @@
+[build-system]
+requires = ['poetry>=0.12']
+build-backend = 'poetry.masonry.api'
+
+[tool.poetry]
+name = 'apetest'
+version = "0.1.0"
+description = 'Smarter-than-monkey testing for web apps'
+authors = [
+    'Maarten ter Huurne <maarten@boxingbeetle.com>'
+    ]
+license = 'BSD-3-Clause'
+readme = 'README.md'
+homepage = 'https://boxingbeetle.com/tools/ape/'
+repository = 'https://github.com/boxingbeetle/apetest'
+keywords = ['webapp', 'website', 'test', 'check', 'html']
+classifiers = [
+    'Development Status :: 3 - Alpha',
+    'Intended Audience :: Developers',
+    'Operating System :: OS Independent',
+    'Natural Language :: English',
+    'Topic :: Internet :: WWW/HTTP',
+    'Topic :: Software Development :: Testing'
+    ]
+
+[tool.poetry.dependencies]
+python = '^3.5'
+lxml = '^4.0'
+# Technically we can run without "html5validator", but checking HTML is
+# a core feature.
+html5validator = '^0.3.1'
+
+[tool.poetry.dev-dependencies]
+pdoc3 = '^0.5.1'
+pytest = '^4.0'
+pylint = '^2.0'
+
+[tool.poetry.scripts]
+apetest = 'apetest.cmdline:main'

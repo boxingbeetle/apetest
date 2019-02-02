@@ -13,6 +13,7 @@ license = 'BSD-3-Clause'
 readme = 'README.md'
 homepage = 'https://boxingbeetle.com/tools/ape/'
 repository = 'https://github.com/boxingbeetle/apetest'
+documentation = 'https://apedocs.boxingbeetle.com/'
 keywords = ['webapp', 'website', 'test', 'check', 'html']
 classifiers = [
     'Development Status :: 3 - Alpha',

@@ -32,7 +32,9 @@ So roughly, APE will work if your app supports deep-linking and JavaScript is us
 Installation
 ------------
 
-To install use pip:
+APE requires Python 3.5 or higher.
+
+You can use the package tool "pip" that comes with Python to install APE:
 
     $ pip install apetest
 

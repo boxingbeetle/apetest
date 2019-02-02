@@ -27,6 +27,7 @@ doctest: apidocs
 	apetest --check launch docs/api/apetest doctest.html
 
 docs/README.html: README.md
+	mkdir -p $(@D)
 	markdown_py $< -f $@
 
 apidocs:

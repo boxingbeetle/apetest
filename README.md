@@ -104,10 +104,16 @@ Install APE and its runtime and development dependencies:
 
 Now you should have an `apetest` command available in the Poetry shell that runs APE directly from the source tree. This means that any code you edit is immediately active, for easy testing.
 
-There is a `Makefile` with a few useful developer commands. The target you will probably want to make first is `docs`, which generates the documentation files:
+One of the tools Poetry will install for you is [Invoke](https://www.pyinvoke.org/), which can be used to perform a few useful developer tasks. You can see the full list of tasks by running:
 
-    $ make docs
+    $ inv --list
+
+The task you will probably want to run first is `docs`, which generates the documentation files:
+
+    $ inv docs
 
 Now you can read the API documentation in `docs/api/`. The documentation of the top-level module gives a quick overview of the code.
 
-Before submitting a pull request, please run `make lint` to have PyLint check the code. There should be zero warnings. If PyLint detects any false positives, please add a `pylint: disable=<id>` comment to suppress them. When PyLint is statisfied, use `make test` to run the available tests.
+Before submitting a pull request, please run `inv test` to run all tests. There should be no failing tests and zero warnings from PyLint. If PyLint detects any false positives, please add a `pylint: disable=<id>` comment to suppress them.
+
+Note that APE may find invalid HTML in the API docs, but as long as APE doesn't crash and produces a readable report, that counts as the test passing as far as APE is concerned.

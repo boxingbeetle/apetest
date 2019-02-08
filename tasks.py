@@ -17,6 +17,7 @@ def clean(c):
 @task
 def lint(c):
     """Check sources with PyLint."""
+    print('Checking sources with PyLint...')
     c.run('pylint apetest', env=SRC_ENV)
 
 @task

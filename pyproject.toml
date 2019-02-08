@@ -35,6 +35,7 @@ html5validator = '^0.3.1'
 pdoc3 = '^0.5.1'
 pytest = '^4.0'
 pylint = '^2.0'
+invoke = "^1.2"
 
 [tool.poetry.scripts]
 apetest = 'apetest.cmdline:main'

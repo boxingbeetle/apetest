@@ -19,15 +19,16 @@ from apetest.version import VERSION_STRING
 def detect_url(arg):
     """Attempt to turn a command line argument into a full URL."""
     url = urlparse(arg)
-    if url.scheme:
+    if url.scheme in ('http', 'https'):
         return arg
 
     if arg.startswith('/'):
         # Assume absolute file path.
         return urljoin('file://', arg)
 
-    idx = arg.find(':')
-    if idx != -1 and arg[idx + 1:].isdigit():
+    url = urlparse('http://' + arg)
+    idx = url.netloc.find(':')
+    if idx != -1 and url.netloc[idx + 1:].isdigit():
         # Host and port without scheme, assume HTTP.
         return 'http://' + arg
 

@@ -11,6 +11,7 @@ installed to run it.
 """
 
 from cgi import parse_header
+from http.client import HTTPException
 from logging import ERROR, INFO, WARNING
 from pathlib import Path
 from socket import AF_INET, SOCK_STREAM, socket # pylint: disable=no-name-in-module
@@ -125,8 +126,13 @@ class HTMLValidator(Plugin):
         if content_type not in self.content_types:
             return
 
-        for message in self.client.request(data, content_type_header):
-            _process_message(message, report)
+        try:
+            for message in self.client.request(data, content_type_header):
+                _process_message(message, report)
+        except (HTTPException, OSError) as ex:
+            report.exception('Request to HTML checker failed: %s', ex)
+        except ValueError as ex:
+            report.exception('Parsing reply from HTML checker failed: %s', ex)
 
         report.checked = True
 

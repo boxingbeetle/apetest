@@ -36,6 +36,7 @@ pdoc3 = '^0.5.1'
 pytest = '^4.0'
 pylint = '^2.0'
 invoke = "^1.2"
+isort = {version = "^4.3",extras = ["pyproject"]}
 
 [tool.poetry.scripts]
 apetest = 'apetest.cmdline:main'

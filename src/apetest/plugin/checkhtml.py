@@ -126,52 +126,55 @@ class HTMLValidator(Plugin):
             return
 
         for message in self.client.request(data, content_type_header):
-            msg_type = message.get('type')
-            subtype = message.get('subtype')
-            text = message.get('message', '(no message)')
-
-            if msg_type == 'info':
-                level = WARNING if subtype == 'warning' else INFO
-            elif msg_type == 'error':
-                level = ERROR
-            elif msg_type == 'non-document-error':
-                subtype = subtype or 'general'
-                text = '%s error in checker: %s' % (subtype.capitalize(), text)
-                level = ERROR
-            else:
-                text = 'Undocumented message type "%s": %s' % (msg_type, text)
-                level = ERROR
-
-            lines = '-'.join(
-                str(message[attr])
-                for attr in ('firstLine', 'lastLine')
-                if attr in message
-                )
-            if lines:
-                text = 'line %s: %s' % (lines, text)
-
-            html = text
-
-            if msg_type == 'error' and subtype == 'fatal':
-                html = concat(
-                    html, xml.br,
-                    xml.b['Fatal:'], ' This error blocks further checking.'
-                    )
-
-            extract = message.get('extract')
-            if extract:
-                start = message.get('hiliteStart')
-                length = message.get('hiliteLength')
-                if isinstance(start, int) and isinstance(length, int):
-                    end = start + length
-                    if 0 <= start < end <= len(extract):
-                        extract = (
-                            extract[:start],
-                            xml.span(class_='extract')[extract[start:end]],
-                            extract[end:]
-                            )
-                html = concat(html, xml.br, xml.code[extract])
-
-            report.log(level, text, extra={'html': html})
+            _process_message(message, report)
 
         report.checked = True
+
+def _process_message(message, report):
+    msg_type = message.get('type')
+    subtype = message.get('subtype')
+    text = message.get('message', '(no message)')
+
+    if msg_type == 'info':
+        level = WARNING if subtype == 'warning' else INFO
+    elif msg_type == 'error':
+        level = ERROR
+    elif msg_type == 'non-document-error':
+        subtype = subtype or 'general'
+        text = '%s error in checker: %s' % (subtype.capitalize(), text)
+        level = ERROR
+    else:
+        text = 'Undocumented message type "%s": %s' % (msg_type, text)
+        level = ERROR
+
+    lines = '-'.join(
+        str(message[attr])
+        for attr in ('firstLine', 'lastLine')
+        if attr in message
+        )
+    if lines:
+        text = 'line %s: %s' % (lines, text)
+
+    html = text
+
+    if msg_type == 'error' and subtype == 'fatal':
+        html = concat(
+            html, xml.br,
+            xml.b['Fatal:'], ' This error blocks further checking.'
+            )
+
+    extract = message.get('extract')
+    if extract:
+        start = message.get('hiliteStart')
+        length = message.get('hiliteLength')
+        if isinstance(start, int) and isinstance(length, int):
+            end = start + length
+            if 0 <= start < end <= len(extract):
+                extract = (
+                    extract[:start],
+                    xml.span(class_='extract')[extract[start:end]],
+                    extract[end:]
+                    )
+        html = concat(html, xml.br, xml.code[extract])
+
+    report.log(level, text, extra={'html': html})

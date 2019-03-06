@@ -6,6 +6,8 @@ from invoke import task
 
 SRC_ENV = {'PYTHONPATH': 'src'}
 
+all_sources = 'src/apetest/*.py src/apetest/plugin/*.py'
+
 @task
 def clean(c):
     """Clean up our output."""
@@ -15,10 +17,14 @@ def clean(c):
         remove('doctest.html')
 
 @task
-def lint(c):
+def lint(c, src=all_sources, rule=None):
     """Check sources with PyLint."""
     print('Checking sources with PyLint...')
-    c.run('pylint apetest', env=SRC_ENV)
+    args = []
+    if rule is not None:
+        args += ['--disable=all', '--enable=' + rule]
+    args.append(src)
+    c.run('pylint %s' % ' '.join(args), env=SRC_ENV, pty=True)
 
 @task
 def readme(c):

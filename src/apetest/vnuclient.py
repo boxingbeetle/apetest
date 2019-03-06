@@ -9,7 +9,7 @@ You can find the checker itself at <https://validator.github.io/>
 """
 
 from gzip import GzipFile
-from http.client import HTTPConnection, HTTPException, UnknownProtocol
+from http.client import HTTPConnection, HTTPException
 try:
     from http.client import HTTPSConnection
 except ImportError:
@@ -95,7 +95,8 @@ class VNUClient:
 
     def __connect(self, url):
         """Returns an HTTPConnection instance for the given URL string.
-        Can raise UnknownProtocol or InvalidURL.
+        Raises InvalidURL if the URL string cannot be parsed.
+        Raises OSError if the URL uses an unsupported scheme.
         """
         url_parts = urlsplit(url)
         scheme = url_parts.scheme
@@ -112,8 +113,10 @@ class VNUClient:
             connection_factory = HTTPConnection
         elif scheme == 'https' and HTTPSConnection:
             connection_factory = HTTPSConnection
+        elif scheme:
+            raise OSError('Unsupported URL scheme: %s' % scheme)
         else:
-            raise UnknownProtocol(scheme)
+            raise OSError('URL "%s" lacks a scheme (such as "http:")' % url)
 
         self._connection = connection = connection_factory(netloc)
         self._remote = (scheme, netloc)

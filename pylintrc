@@ -57,6 +57,8 @@ confidence=
 disable=no-else-return,
     # An "if" statement where both the "if" and "else" part return can be more
     # readable due to the symmetry.
+        no-else-raise,
+    # See "no-else-return".
         too-few-public-methods,
     # I'm not sure this is ever useful, but currently it is also generating
     # false positives because methods for operator overloading are not

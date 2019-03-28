@@ -4,7 +4,7 @@ build-backend = 'poetry.masonry.api'
 
 [tool.poetry]
 name = 'apetest'
-version = "0.1.0"
+version = "0.1.1"
 description = 'Smarter-than-monkey testing for web apps'
 authors = [
     'Maarten ter Huurne <maarten@boxingbeetle.com>'

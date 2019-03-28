@@ -62,7 +62,8 @@ def _find_vnujar():
 def _launch_service(jar_path):
     port = _pick_port()
     args = (
-        'java', '-cp', str(jar_path), 'nu.validator.servlet.Main', str(port)
+        'java', '-Xss4m', '-cp', str(jar_path),
+        'nu.validator.servlet.Main', str(port)
         )
     try:
         proc = Popen(args, stdin=DEVNULL)

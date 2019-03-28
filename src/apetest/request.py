@@ -21,6 +21,8 @@ class Request:
         object because it uses non-standard query syntax.
         """
         scheme, host, path, query_str, fragment_ = urlsplit(url)
+        if not path:
+            path = '/'
         page_url = urlunsplit((scheme, host, path, '', ''))
         query = []
         if query_str:

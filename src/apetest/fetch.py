@@ -256,12 +256,21 @@ def encoding_from_bom(data):
         return None
 
 def standard_codec_name(codec):
-    """Map a codec name to the preferred standardized version."""
+    """Map a codec name to the preferred standardized version.
+
+    The preferred names were taken from this list published by IANA:
+      http://www.iana.org/assignments/character-sets/character-sets.xhtml
+    """
     name = codec.name
+    if name.startswith('iso8859'):
+        return 'iso-8859' + name[7:]
     return {
-        # IANA prefers "US-ASCII".
-        #   http://www.iana.org/assignments/character-sets/character-sets.xhtml
         'ascii': 'us-ascii',
+        'euc_jp': 'euc-jp',
+        'euc_kr': 'euc-kr',
+        'iso2022_jp': 'iso-2022-jp',
+        'iso2022_jp_2': 'iso-2022-jp-2',
+        'iso2022_kr': 'iso-2022-kr',
         }.get(name, name)
 
 def try_decode(data, encodings):

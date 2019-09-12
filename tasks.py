@@ -16,22 +16,31 @@ def clean(c):
         remove('doctest.html')
 
 @task
-def lint(c, results=None):
+def lint(c, html=None, results=None):
     """Check sources with PyLint."""
     print('Checking sources with PyLint...')
-    cmd = ['pylint', 'apetest']
     if results is None:
-        json_file = None
+        report_dir = Path('.')
+    else:
+        # We need to output JSON to produce the results file, but we also
+        # need to report the issues, so we have to get those from the JSON
+        # output and the easiest way to do so is to enable the HTML report.
+        report_dir = Path(results).parent.resolve()
+        html = report_dir / 'pylint.html'
+    cmd = ['pylint', 'apetest']
+    if html is None:
         hide = None
     else:
-        report_dir = Path(results).parent.resolve()
         json_file = report_dir / 'pylint.json'
         hide = 'stdout'
         cmd += ['-f', 'json', '>%s' % json_file]
     lint_result = c.run(' '.join(cmd), env=SRC_ENV, warn=True)
+    if html is not None:
+        c.run('pylint-json2html %s >%s' % (json_file, html))
     if results is not None:
         from pylint_json2sfresults import gather_results, write_results
         results_dict = gather_results(json_file, lint_result.exited)
+        results_dict['report'] = str(html)
         write_results(results_dict, results)
 
 @task

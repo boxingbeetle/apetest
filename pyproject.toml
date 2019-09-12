@@ -37,6 +37,7 @@ pytest = '^4.0'
 pylint = '^2.0'
 invoke = "^1.2"
 isort = {version = "^4.3",extras = ["pyproject"]}
+pylint-json2html = "^0.1.0"
 
 [tool.poetry.scripts]
 apetest = 'apetest.cmdline:main'

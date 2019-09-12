@@ -33,10 +33,12 @@ def lint(c, html=None, results=None):
     else:
         json_file = report_dir / 'pylint.json'
         hide = 'stdout'
-        cmd += ['-f', 'json', '>%s' % json_file]
+        cmd += ['--load-plugins=pylint_json2html',
+                '--output-format=jsonextended',
+                '>%s' % json_file]
     lint_result = c.run(' '.join(cmd), env=SRC_ENV, warn=True)
     if html is not None:
-        c.run('pylint-json2html %s >%s' % (json_file, html))
+        c.run('pylint-json2html -f jsonextended -o %s %s' % (html, json_file))
     if results is not None:
         import sys
         sys.path.append(str(Path('src').resolve()))

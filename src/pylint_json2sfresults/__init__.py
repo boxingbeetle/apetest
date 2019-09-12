@@ -56,7 +56,15 @@ def results_from_json(json_path):
     # Count number of issues of each type.
     counts = Counter()
     try:
-        for message in data:
+        if isinstance(data, list):
+            # PyLint's native JSON format.
+            messages = data
+        elif isinstance(data, dict):
+            # Extended JSON format from pylint_json2html.
+            messages = data['messages']
+        else:
+            raise TypeError('Bad top-level type: %s' % type(data).__name__)
+        for message in messages:
             counts[message['type']] += 1
     except Exception as ex:
         return dict(result='error', summary='Error processing JSON: %s' % ex)
@@ -74,6 +82,17 @@ def results_from_json(json_path):
         results['data.%s' % msg_type] = str(count)
         if count:
             issues.append('%d %s%s' % (count, msg_type, '' if count == 1 else 's'))
+
+    # Gather more mid-level data when using extended JSON format.
+    if isinstance(data, dict):
+        try:
+            stats = data['stats']
+            for key in ('module', 'class', 'method', 'function', 'statement',
+                        'undocumented_module', 'undocumented_class',
+                        'undocumented_method', 'undocumented_function'):
+                results['data.%s' % key] = str(stats[key])
+        except Exception as ex:
+            return dict(result='error', summary='Error processing extended JSON: %s' % ex)
 
     # Summarize the findings.
     if issues:

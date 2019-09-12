@@ -1,5 +1,6 @@
 from os import makedirs, remove
 from os.path import isfile
+from pathlib import Path
 from shutil import rmtree
 
 from invoke import task
@@ -15,10 +16,23 @@ def clean(c):
         remove('doctest.html')
 
 @task
-def lint(c):
+def lint(c, results=None):
     """Check sources with PyLint."""
     print('Checking sources with PyLint...')
-    c.run('pylint apetest', env=SRC_ENV)
+    cmd = ['pylint', 'apetest']
+    if results is None:
+        json_file = None
+        hide = None
+    else:
+        report_dir = Path(results).parent.resolve()
+        json_file = report_dir / 'pylint.json'
+        hide = 'stdout'
+        cmd += ['-f', 'json', '>%s' % json_file]
+    lint_result = c.run(' '.join(cmd), env=SRC_ENV, warn=True)
+    if results is not None:
+        from pylint_json2sfresults import gather_results, write_results
+        results_dict = gather_results(json_file, lint_result.exited)
+        write_results(results_dict, results)
 
 @task
 def readme(c):

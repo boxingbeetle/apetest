@@ -38,6 +38,8 @@ def lint(c, html=None, results=None):
     if html is not None:
         c.run('pylint-json2html %s >%s' % (json_file, html))
     if results is not None:
+        import sys
+        sys.path.append(str(Path('src').resolve()))
         from pylint_json2sfresults import gather_results, write_results
         results_dict = gather_results(json_file, lint_result.exited)
         results_dict['report'] = str(html)

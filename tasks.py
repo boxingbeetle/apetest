@@ -7,6 +7,12 @@ from invoke import task
 
 SRC_ENV = {'PYTHONPATH': 'src'}
 
+def write_results(results, results_path):
+    """Write a results dictionary to file."""
+    with open(str(results_path), 'w', encoding='utf-8') as out:
+        for key, value in results.items():
+            out.write('%s=%s\n' % (key, value.replace('\\', '\\\\')))
+
 @task
 def clean(c):
     """Clean up our output."""
@@ -42,7 +48,7 @@ def lint(c, html=None, results=None):
     if results is not None:
         import sys
         sys.path.append(str(Path('src').resolve()))
-        from pylint_json2sfresults import gather_results, write_results
+        from pylint_json2sfresults import gather_results
         results_dict = gather_results(json_file, lint_result.exited)
         results_dict['report'] = str(html)
         write_results(results_dict, results)

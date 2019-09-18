@@ -113,10 +113,3 @@ def gather_results(json_path, exit_code=0):
     if results['result'] != 'error':
         results = results_from_json(json_path)
     return results
-
-def write_results(results, results_path='results.properties'):
-    """Write a results dictionary to file."""
-
-    with open(str(results_path), 'w', encoding='utf-8') as out:
-        for key, value in results.items():
-            out.write('%s=%s\n' % (key, value.replace('\\', '\\\\')))

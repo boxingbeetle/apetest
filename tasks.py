@@ -90,7 +90,7 @@ def unittest(c, junit_xml=None, results=None):
     if junit_xml is not None:
         args.append('--junit-xml=%s' % junit_xml)
     args.append('tests')
-    c.run(' '.join(args), env=SRC_ENV, pty=True)
+    c.run(' '.join(args), env=SRC_ENV, pty=results is None)
     if results is not None:
         results_dict = dict(report=str(junit_xml))
         write_results(results_dict, results)

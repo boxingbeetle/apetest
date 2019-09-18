@@ -81,9 +81,19 @@ def doctest(c):
     c.run('apetest --check launch docs/api/apetest doctest.html')
 
 @task
-def unittest(c):
+def unittest(c, junit_xml=None, results=None):
     """Run unit tests."""
-    c.run('pytest tests', env=SRC_ENV, pty=True)
+    if results is not None:
+        report_dir = Path(results).parent.resolve()
+        junit_xml = report_dir / 'pytest-report.xml'
+    args = ['pytest']
+    if junit_xml is not None:
+        args.append('--junit-xml=%s' % junit_xml)
+    args.append('tests')
+    c.run(' '.join(args), env=SRC_ENV, pty=True)
+    if results is not None:
+        results_dict = dict(report=str(junit_xml))
+        write_results(results_dict, results)
 
 @task(post=[doctest, unittest, lint])
 def test(c):

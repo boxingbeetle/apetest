@@ -46,7 +46,7 @@ def _find_vnujar():
     Raises PluginError if "vnu.jar" cannot be found.
     """
     try:
-        import vnujar
+        import vnujar # pylint: disable=import-outside-toplevel
     except ImportError:
         raise PluginError(
             'Please install the "vnujar" module, for example using '

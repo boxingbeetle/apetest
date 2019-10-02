@@ -64,6 +64,13 @@ def lint(c, src=None, html=None, results=None):
         write_results(results_dict, results)
 
 @task
+def isort(c, src=None):
+    """Sort imports."""
+    print('Sorting imports...')
+    with c.cd(str(TOP_DIR)):
+        c.run(f'isort {source_arg(src)}', pty=True)
+
+@task
 def readme(c):
     """Render README.md to HTML."""
     print('Rendering README...')

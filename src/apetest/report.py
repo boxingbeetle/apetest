@@ -15,10 +15,14 @@ a combined report from them.
 """
 
 from collections import defaultdict
+from datetime import datetime, timezone
+from typing import DefaultDict, Optional
 from urllib.parse import unquote_plus, urlsplit
 import logging
 
+from apetest.plugin import PluginCollection
 from apetest.request import Request
+from apetest.spider import Spider
 from apetest.xmlgen import raw, xml
 
 _STYLE_SHEET = raw('''
@@ -255,10 +259,19 @@ class Page:
                 ]
             yield report.present(scribe)
 
+def now_local() -> datetime:
+    """Return the current time, in the local time zone."""
+    return datetime.now(timezone.utc).astimezone()
+
 class Scribe:
     """Collects reports for multiple pages."""
 
-    def __init__(self, base_url, spider, plugins):
+    def __init__(
+            self,
+            base_url: str,
+            spider: Spider,
+            plugins: PluginCollection
+            ):
         """Initialize scribe.
 
         Parameters:
@@ -268,11 +281,9 @@ class Scribe:
             The root URL will be computed from this by dropping the path
             element after the last directory level, if any.
         spider
-            `apetest.spider.Spider` instance from which links between pages
-            can be looked up.
+            Spider from which links between pages can be looked up.
         plugins
-            Collection of `apetest.plugin.Plugin` instances that will receive
-            notifications from this scribe.
+            Plugins that will receive notifications from this scribe.
         """
         scheme_, host_, base_path, query, fragment = urlsplit(base_url)
         assert query == ''
@@ -284,7 +295,21 @@ class Scribe:
 
         self._spider = spider
         self._plugins = plugins
-        self._pages = defaultdict(Page)
+        self._pages: DefaultDict[str, Page] = defaultdict(Page)
+        self._start_time = now_local()
+        self._end_time: Optional[datetime] = None
+
+    @property
+    def start_time(self) -> datetime:
+        """The local time at which this test run started."""
+        return self._start_time
+
+    @property
+    def end_time(self) -> Optional[datetime]:
+        """The local time at which this test run ended,
+        or None if it did not end yet.
+        """
+        return self._end_time
 
     def __url_to_name(self, url):
         path = urlsplit(url).path or '/'
@@ -324,8 +349,9 @@ class Scribe:
             total, total - num_failed_pages, num_failed_pages
             )
 
-    def postprocess(self):
+    def postprocess(self) -> None:
         """Instruct the plugins to do their final processing."""
+        self._end_time = now_local()
         self._plugins.postprocess(self)
 
     def present(self):

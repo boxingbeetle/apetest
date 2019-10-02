@@ -78,6 +78,7 @@ encoding. For example:
 
 from html import escape
 
+
 def _join(separator, nodes):
     iterator = iter(nodes)
     try:

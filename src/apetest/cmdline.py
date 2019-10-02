@@ -3,18 +3,19 @@
 """Command line interface."""
 
 from argparse import ArgumentParser
-import logging
 from os import getcwd
 from urllib.parse import urljoin, urlparse
+import logging
 
 from apetest.checker import Accept, PageChecker
 from apetest.plugin import (
     PluginCollection, add_plugin_arguments, create_plugins, load_plugins
-    )
+)
 from apetest.report import Scribe
 from apetest.request import Request
 from apetest.spider import spider_req
 from apetest.version import VERSION_STRING
+
 
 def detect_url(arg):
     """Attempt to turn a command line argument into a full URL."""

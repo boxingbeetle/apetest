@@ -16,7 +16,8 @@ from urllib.parse import urljoin, urlsplit
 from apetest.fetch import USER_AGENT_PREFIX, load_text
 from apetest.robots import (
     lookup_robots_rules, parse_robots_txt, path_allowed, scan_robots_txt
-    )
+)
+
 
 class Spider:
     """Web crawler that remembers which requests have been discovered,

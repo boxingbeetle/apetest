@@ -12,6 +12,7 @@ import os
 
 from apetest.plugin import Plugin
 
+
 def plugin_arguments(parser):
     parser.add_argument(
         '--cclog',

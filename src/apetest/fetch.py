@@ -14,20 +14,20 @@ a document's encoding by looking for a Unicode byte-order-marker.
 from codecs import (
     BOM_UTF8, BOM_UTF16_BE, BOM_UTF16_LE, BOM_UTF32_BE, BOM_UTF32_LE,
     lookup as lookup_codec
-    )
+)
 from collections import OrderedDict
 from email import message_from_string
 from io import BytesIO
 from logging import getLogger
 from os.path import isdir
-import re
 from time import sleep
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import (
-    FileHandler, HTTPRedirectHandler, Request as URLRequest,
-    build_opener, url2pathname
-    )
+    FileHandler, HTTPRedirectHandler, Request as URLRequest, build_opener,
+    url2pathname
+)
+import re
 
 from apetest.report import FetchFailure, Report
 from apetest.version import VERSION_STRING

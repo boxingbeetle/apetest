@@ -8,19 +8,20 @@ The `PageChecker` class is where the work is done.
 from collections import defaultdict
 from enum import Enum
 from logging import getLogger
-import re
 from urllib.parse import urljoin, urlsplit, urlunsplit
+import re
 
 from lxml import etree
 
 from apetest.control import (
     Checkbox, FileInput, HiddenInput, RadioButton, RadioButtonGroup,
-    SelectSingle, SelectMultiple, SubmitButton, SubmitButtons,
-    TextArea, TextField
-    )
+    SelectMultiple, SelectSingle, SubmitButton, SubmitButtons, TextArea,
+    TextField
+)
 from apetest.fetch import decode_and_report, encoding_from_bom, load_page
 from apetest.referrer import Form, LinkSet, Redirect
 from apetest.request import Request
+
 
 class Accept(Enum):
     """The types of documents that we tell the server we accept."""

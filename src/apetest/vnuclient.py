@@ -10,16 +10,17 @@ You can find the checker itself at <https://validator.github.io/>
 
 from gzip import GzipFile
 from http.client import HTTPConnection, HTTPException
-try:
-    from http.client import HTTPSConnection
-except ImportError:
-    HTTPSConnection = None
 from io import BytesIO
 from logging import getLogger
 from time import sleep
 from urllib.parse import urlsplit
-
 import json
+
+try:
+    from http.client import HTTPSConnection
+except ImportError:
+    HTTPSConnection = None
+
 
 _LOG = getLogger(__name__)
 

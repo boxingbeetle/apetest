@@ -10,6 +10,7 @@ key-value pair per line, with `=` as the separator.
 
 from apetest.plugin import Plugin
 
+
 def plugin_arguments(parser):
     parser.add_argument(
         '--result',

@@ -15,8 +15,8 @@ a combined report from them.
 """
 
 from collections import defaultdict
-import logging
 from urllib.parse import unquote_plus, urlsplit
+import logging
 
 from apetest.request import Request
 from apetest.xmlgen import raw, xml

@@ -3,8 +3,8 @@
 """Home of the `apetest.request.Request` class."""
 
 from functools import total_ordering
-
 from urllib.parse import quote_plus, unquote_plus, urlsplit, urlunsplit
+
 
 @total_ordering
 class Request:

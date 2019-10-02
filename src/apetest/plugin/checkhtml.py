@@ -14,12 +14,15 @@ from cgi import parse_header
 from http.client import HTTPException
 from logging import ERROR, INFO, WARNING
 from pathlib import Path
-from socket import AF_INET, SOCK_STREAM, socket # pylint: disable=no-name-in-module
+from socket import (  # pylint: disable=no-name-in-module
+    AF_INET, SOCK_STREAM, socket
+)
 from subprocess import DEVNULL, Popen
 
 from apetest.plugin import Plugin, PluginError
 from apetest.vnuclient import VNUClient
 from apetest.xmlgen import concat, xml
+
 
 def plugin_arguments(parser):
     parser.add_argument(

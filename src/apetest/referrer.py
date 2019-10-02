@@ -10,6 +10,7 @@ when submitted.
 
 from apetest.request import Request
 
+
 class Referrer:
     """Models an entity that can generate requests.
     Examples of Referrers are hyperlinks, which generate one fixed request, and

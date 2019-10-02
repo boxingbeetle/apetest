@@ -5,7 +5,17 @@ from shutil import rmtree
 
 from invoke import task
 
-SRC_ENV = {'PYTHONPATH': 'src'}
+
+TOP_DIR = Path(__file__).parent
+SRC_ENV = {'PYTHONPATH': str(TOP_DIR / 'src')}
+
+def source_arg(pattern):
+    """Converts a source pattern to a command line argument."""
+    if pattern is None:
+        paths = (TOP_DIR / 'src' / 'apetest').glob('**/*.py')
+    else:
+        paths = Path.cwd().glob(pattern)
+    return ' '.join(str(path) for path in paths)
 
 def write_results(results, results_path):
     """Write a results dictionary to file."""
@@ -22,18 +32,18 @@ def clean(c):
         remove('doctest.html')
 
 @task
-def lint(c, html=None, results=None):
+def lint(c, src=None, html=None, results=None):
     """Check sources with PyLint."""
     print('Checking sources with PyLint...')
     if results is None:
-        report_dir = Path('.')
+        report_dir = TOP_DIR
     else:
         # We need to output JSON to produce the results file, but we also
         # need to report the issues, so we have to get those from the JSON
         # output and the easiest way to do so is to enable the HTML report.
         report_dir = Path(results).parent.resolve()
         html = report_dir / 'pylint.html'
-    cmd = ['pylint', 'apetest']
+    cmd = ['pylint', source_arg(src)]
     if html is None:
         hide = None
     else:
@@ -47,7 +57,7 @@ def lint(c, html=None, results=None):
         c.run('pylint-json2html -f jsonextended -o %s %s' % (html, json_file))
     if results is not None:
         import sys
-        sys.path.append(str(Path('src').resolve()))
+        sys.path.append(f'{TOP_DIR}/src')
         from pylint_json2sfresults import gather_results
         results_dict = gather_results(json_file, lint_result.exited)
         results_dict['report'] = str(html)

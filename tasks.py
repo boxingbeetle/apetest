@@ -63,13 +63,7 @@ def readme(c):
 @task
 def apidocs(c):
     """Generate documentation as HTML files."""
-    print('Generating API docs...')
-    c.run('pdoc apetest --html --html-dir docs/api --overwrite', env=SRC_ENV)
-
-@task
-def liveapi(c):
-    """Serve live API documentation through HTTP."""
-    c.run('pdoc --http localhost:8765 apetest', env=SRC_ENV, pty=True)
+    print('Not generating API docs.')
 
 @task(post=[apidocs, readme])
 def docs(c):

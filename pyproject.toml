@@ -32,12 +32,12 @@ lxml = '^4.0'
 html5validator = '^0.3.1'
 
 [tool.poetry.dev-dependencies]
-pdoc3 = '^0.5.1'
 pytest = '^4.0'
 pylint = '^2.0'
 invoke = "^1.2"
 isort = {version = "^4.3",extras = ["pyproject"]}
 pylint-json2html = "^0.1.0"
+markdown = "^3.1"
 
 [tool.poetry.scripts]
 apetest = 'apetest.cmdline:main'

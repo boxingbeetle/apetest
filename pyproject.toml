@@ -4,7 +4,7 @@ build-backend = 'poetry.masonry.api'
 
 [tool.poetry]
 name = 'apetest'
-version = "0.1.1"
+version = "0.2.0"
 description = 'Smarter-than-monkey testing for web apps'
 authors = [
     'Maarten ter Huurne <maarten@boxingbeetle.com>'
@@ -25,7 +25,7 @@ classifiers = [
     ]
 
 [tool.poetry.dependencies]
-python = '^3.5'
+python = '^3.6'
 lxml = '^4.0'
 # Technically we can run without "html5validator", but checking HTML is
 # a core feature.

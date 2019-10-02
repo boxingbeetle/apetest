@@ -2,10 +2,13 @@
 
 """Package version info."""
 
+from typing import TYPE_CHECKING
+
 # On Python 3.8+, use importlib.metadata from the standard library.
 # On older versions, a compatibility package can be installed from PyPI.
 try:
-    import importlib.metadata as importlib_metadata
+    if not TYPE_CHECKING:
+        import importlib.metadata as importlib_metadata
 except ImportError:
     import importlib_metadata
 

@@ -13,13 +13,16 @@ from http.client import HTTPConnection, HTTPException
 from io import BytesIO
 from logging import getLogger
 from time import sleep
+from typing import Callable, Optional
 from urllib.parse import urlsplit
 import json
 
 try:
     from http.client import HTTPSConnection
+    https_connection_factory: Optional[Callable[[str], HTTPSConnection]]
+    https_connection_factory = HTTPSConnection
 except ImportError:
-    HTTPSConnection = None
+    https_connection_factory = None
 
 
 _LOG = getLogger(__name__)
@@ -112,8 +115,8 @@ class VNUClient:
 
         if scheme == 'http':
             connection_factory = HTTPConnection
-        elif scheme == 'https' and HTTPSConnection:
-            connection_factory = HTTPSConnection
+        elif scheme == 'https' and https_connection_factory:
+            connection_factory = https_connection_factory
         elif scheme:
             raise OSError('Unsupported URL scheme: %s' % scheme)
         else:

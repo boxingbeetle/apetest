@@ -30,6 +30,7 @@ lxml = '^4.0'
 # Technically we can run without "html5validator", but checking HTML is
 # a core feature.
 html5validator = '^0.3.1'
+importlib_metadata = "^0.23.0"
 
 [tool.poetry.dev-dependencies]
 pytest = '^4.0'

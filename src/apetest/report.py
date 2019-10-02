@@ -25,6 +25,7 @@ from apetest.request import Request
 from apetest.xmlgen import raw, xml
 
 if TYPE_CHECKING:
+    # pylint: disable=cyclic-import
     from apetest.spider import Spider
 else:
     Spider = object

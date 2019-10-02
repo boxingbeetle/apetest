@@ -18,11 +18,11 @@ from urllib.parse import urlsplit
 import json
 
 try:
-    from http.client import HTTPSConnection
+    from http.client import HTTPSConnection # pylint: disable=ungrouped-imports
     https_connection_factory: Optional[Callable[[str], HTTPSConnection]]
-    https_connection_factory = HTTPSConnection
+    https_connection_factory = HTTPSConnection # pylint: disable=invalid-name
 except ImportError:
-    https_connection_factory = None
+    https_connection_factory = None # pylint: disable=invalid-name
 
 
 _LOG = getLogger(__name__)

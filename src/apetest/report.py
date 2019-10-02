@@ -16,14 +16,19 @@ a combined report from them.
 
 from collections import defaultdict
 from datetime import datetime, timezone
-from typing import DefaultDict, Optional
+from typing import TYPE_CHECKING, DefaultDict, Optional
 from urllib.parse import unquote_plus, urlsplit
 import logging
 
 from apetest.plugin import PluginCollection
 from apetest.request import Request
-from apetest.spider import Spider
 from apetest.xmlgen import raw, xml
+
+if TYPE_CHECKING:
+    from apetest.spider import Spider
+else:
+    Spider = object
+
 
 _STYLE_SHEET = raw('''
 body {
@@ -271,7 +276,7 @@ class Scribe:
             base_url: str,
             spider: Spider,
             plugins: PluginCollection
-            ):
+        ):
         """Initialize scribe.
 
         Parameters:

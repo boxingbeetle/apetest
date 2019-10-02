@@ -6,3 +6,4 @@ doctest.html
 poetry.lock
 src/apetest.egg-info/
 dist/
+.mypy_cache/

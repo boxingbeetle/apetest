@@ -3,7 +3,7 @@ from os.path import isfile
 from pathlib import Path
 from shutil import rmtree
 
-from invoke import task
+from invoke import UnexpectedExit, task
 
 
 TOP_DIR = Path(__file__).parent
@@ -62,6 +62,50 @@ def lint(c, src=None, html=None, results=None):
         results_dict = gather_results(json_file, lint_result.exited)
         results_dict['report'] = str(html)
         write_results(results_dict, results)
+
+@task
+def types(c, src=None, clean=False, report=False, results=None):
+    """Check sources with mypy."""
+    if clean:
+        print('Clearing mypy cache...')
+        remove_dir(TOP_DIR / '.mypy_cache')
+    print('Checking sources with mypy...')
+    report_dir = None if results is None else Path(results).parent.resolve()
+    cmd = ['mypy']
+    if report:
+        if report_dir is None:
+            mypy_report = TOP_DIR / 'mypy-report'
+        else:
+            mypy_report = report_dir / 'mypy-coverage'
+        remove_dir(mypy_report)
+        cmd.append(f'--html-report {mypy_report}')
+    cmd.append(source_arg(src))
+    out_path = None if report_dir is None else report_dir / 'mypy-log.txt'
+    out_stream = None if out_path is None \
+                      else open(out_path, 'w', encoding='utf-8')
+    try:
+        with c.cd(str(TOP_DIR)):
+            try:
+                c.run(' '.join(cmd), env=SRC_ENV, out_stream=out_stream,
+                                     pty=True)
+            except UnexpectedExit as ex:
+                if ex.result.exited < 0:
+                    print(ex)
+    finally:
+        if out_stream is not None:
+            out_stream.close()
+    if results is not None:
+        errors = 0
+        with open(out_path, 'r', encoding='utf-8') as log:
+            for line in log:
+                if ' error: ' in line:
+                    errors += 1
+        with open(results, 'w', encoding='utf-8') as out:
+            out.write(f'result={"warning" if errors else "ok"}\n')
+            out.write(f'summary=mypy found {errors} errors\n')
+            out.write(f'report.{0 if errors else 2}={out_path}\n')
+            if report:
+                out.write(f'report.1={report_dir}/mypy-coverage\n')
 
 @task
 def isort(c, src=None):

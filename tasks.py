@@ -52,7 +52,9 @@ def lint(c, src=None, html=None, results=None):
         cmd += ['--load-plugins=pylint_json2html',
                 '--output-format=jsonextended',
                 '>%s' % json_file]
-    lint_result = c.run(' '.join(cmd), env=SRC_ENV, warn=True)
+    with c.cd(str(TOP_DIR)):
+        lint_result = c.run(' '.join(cmd), env=SRC_ENV, warn=True,
+                                           pty=results is None)
     if html is not None:
         c.run('pylint-json2html -f jsonextended -o %s %s' % (html, json_file))
     if results is not None:

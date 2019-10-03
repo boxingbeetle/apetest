@@ -45,7 +45,7 @@ class Spider:
         """
         self._base_url = first_req.page_url
         self._rules = rules
-        self._requests_to_check = set([first_req])
+        self._requests_to_check = {first_req}
         self._requests_checked = set()
         self._queries_per_page = defaultdict(int)
         # Maps source request to referrers (destination).

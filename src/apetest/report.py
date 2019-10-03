@@ -396,9 +396,9 @@ class Scribe:
     def _present_referrers(self, req):
         # Note: Currently we only list the pages a request is referred from,
         #       but we know the exact requests.
-        page_names = set(
+        page_names = {
             self.__url_to_name(source_req.page_url)
             for source_req in self._spider.iter_referring_requests(req)
-            )
+            }
         for name in sorted(page_names):
             yield xml.li[xml.a(href='#' + (name or 'base'))[name or '(base)']]

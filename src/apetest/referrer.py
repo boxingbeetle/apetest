@@ -129,11 +129,11 @@ class Form(Referrer):
         combinations = 1
         for control in controls:
             # Filter out duplicates.
-            alternatives = set(
+            alternatives = {
                 (None, None) if name is None or value is None
                 else (name, value)
                 for name, value in control.alternatives()
-                )
+                }
             if len(alternatives) == 1:
                 # If there is only once choice, make that choice now.
                 name, value = alternatives.pop()

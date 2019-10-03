@@ -17,6 +17,11 @@ def source_arg(pattern):
         paths = Path.cwd().glob(pattern)
     return ' '.join(str(path) for path in paths)
 
+def remove_dir(path):
+    """Recursively removes a directory."""
+    if path.exists():
+        rmtree(path)
+
 def write_results(results, results_path):
     """Write a results dictionary to file."""
     with open(str(results_path), 'w', encoding='utf-8') as out:
@@ -27,9 +32,10 @@ def write_results(results, results_path):
 def clean(c):
     """Clean up our output."""
     print('Cleaning up...')
-    rmtree('docs/')
-    if isfile('doctest.html'):
-        remove('doctest.html')
+    remove_dir(TOP_DIR / 'docs')
+    doctest_report = TOP_DIR / 'doctest.html'
+    if doctest_report.is_file():
+        doctest_report.unlink()
 
 @task
 def lint(c, src=None, html=None, results=None):

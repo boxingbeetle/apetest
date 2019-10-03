@@ -293,61 +293,53 @@ class PageChecker:
                     content_type
                     )
 
-        if not is_xml and not content_type.startswith('text/'):
-            self.plugins.resource_loaded(
-                content_bytes, content_type_header, report
-                )
-            message = (
-                f'Document of type "{content_type}" is probably not text; '
-                f'skipping.'
-                )
-            _LOG.info(message)
-            report.info(message)
-            report.checked = True # not really, but we just logged why not
-            self.scribe.add_report(report)
-            return referrers
-
         if is_html and is_xml and accept is Accept.HTML:
             report.warning(
                 'HTML document is serialized as XML, while the HTTP Accept '
                 'header did not include "application/xhtml+xml"'
                 )
 
-        # Look for encoding in XML declaration.
-        decl_encoding = encoding_from_xml_decl(content_head)
+        if is_xml or content_type.startswith('text/'):
+            # This looks like a text document, now figure out the encoding.
 
-        # TODO: Also look at HTML <meta> tags.
+            # Look for encoding in XML declaration (if any).
+            decl_encoding = encoding_from_xml_decl(content_head)
 
-        # Try possible encodings in order of precedence.
-        # W3C recommends giving the BOM, if present, precedence over HTTP.
-        #   http://www.w3.org/International/questions/qa-byte-order-mark
-        try:
-            content, used_encoding = decode_and_report(
-                content_bytes,
-                ((bom_encoding, 'Byte Order Mark'),
-                 (decl_encoding, 'XML declaration'),
-                 (http_encoding, 'HTTP header')),
-                report
-                )
-        except UnicodeDecodeError as ex:
-            # All likely encodings failed.
-            report.error('Failed to decode contents')
-            self.scribe.add_report(report)
-            return referrers
+            # TODO: Also look at HTML <meta> tags.
 
-        if req_url.startswith('file:'):
-            # Construct a new header that is likely more accurate.
-            content_type_header = f'{content_type}; charset={used_encoding}'
+            # Try possible encodings in order of precedence.
+            # W3C recommends giving the BOM, if present, precedence over HTTP.
+            #   http://www.w3.org/International/questions/qa-byte-order-mark
+            try:
+                content, used_encoding = decode_and_report(
+                    content_bytes,
+                    ((bom_encoding, 'Byte Order Mark'),
+                     (decl_encoding, 'XML declaration'),
+                     (http_encoding, 'HTTP header')),
+                    report
+                    )
+            except UnicodeDecodeError as ex:
+                # All likely encodings failed.
+                report.error('Failed to decode contents')
+            else:
+                if req_url.startswith('file:'):
+                    # Construct a new header that is likely more accurate.
+                    content_type_header = \
+                            f'{content_type}; charset={used_encoding}'
+
+                if is_html or is_xml:
+                    tree = parse_document(content, is_xml, report)
+                    if tree is not None:
+                        # Find links to other documents.
+                        referrers += self.find_referrers_in_xml(
+                            tree, req_url, report
+                            )
+                        if is_html:
+                            referrers += self.find_referrers_in_html(
+                                tree, req_url
+                                )
+
         self.plugins.resource_loaded(content_bytes, content_type_header, report)
-
-        if is_html or is_xml:
-            tree = parse_document(content, is_xml, report)
-            if tree is not None:
-                # Find links to other documents.
-                referrers += self.find_referrers_in_xml(tree, req_url, report)
-                if is_html:
-                    referrers += self.find_referrers_in_html(tree, req_url)
-
         self.scribe.add_report(report)
         return referrers
 

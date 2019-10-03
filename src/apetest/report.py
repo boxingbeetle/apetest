@@ -16,13 +16,17 @@ a combined report from them.
 
 from collections import defaultdict
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, DefaultDict, Optional
+from logging import INFO, Handler, LogRecord, LoggerAdapter, getLogger
+from typing import (
+    TYPE_CHECKING, Any, Collection, DefaultDict, Dict, List, MutableMapping,
+    Optional, Tuple
+)
+from urllib.error import HTTPError
 from urllib.parse import unquote_plus, urlsplit
-import logging
 
 from apetest.plugin import PluginCollection
 from apetest.request import Request
-from apetest.xmlgen import raw, xml
+from apetest.xmlgen import XMLContent, raw, xml
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
@@ -85,7 +89,7 @@ code {
 }
 ''')
 
-class StoreHandler(logging.Handler):
+class StoreHandler(Handler):
     """A log handler that stores all logged records in a list.
 
     Used internally to store messages logged to reports.
@@ -94,30 +98,32 @@ class StoreHandler(logging.Handler):
     that contains the URL that the record applies to.
     """
 
-    def __init__(self):
-        logging.Handler.__init__(self)
-        self.records = defaultdict(list)
+    def __init__(self) -> None:
+        super().__init__()
+        self.records: DefaultDict[str, List[LogRecord]] = defaultdict(list)
         """Maps a URL to a collection of reports for that URL."""
 
-    def emit(self, record):
+    def emit(self, record: LogRecord) -> None:
         """Store a log record in our `records`."""
         self.format(record)
-        self.records[record.url].append(record)
+        # The 'url' attribute is defined via the 'extra' mechanism.
+        url: str = record.url # type: ignore[attr-defined]
+        self.records[url].append(record)
 
-_LOG = logging.getLogger(__name__)
-_LOG.setLevel(logging.INFO)
+_LOG = getLogger(__name__)
+_LOG.setLevel(INFO)
 _HANDLER = StoreHandler()
 _LOG.addHandler(_HANDLER)
 _LOG.propagate = False
 
-class Report(logging.LoggerAdapter):
+class Report(LoggerAdapter):
     """Gathers check results for a document produced by one request."""
 
-    def __init__(self, url):
+    def __init__(self, url: str):
         """Initialize a report that will be collecting results
         for the document at `url`.
         """
-        logging.LoggerAdapter.__init__(self, _LOG, dict(url=url))
+        super().__init__(_LOG, dict(url=url))
 
         self.url = url
         """The request URL to which this report applies."""
@@ -137,12 +143,16 @@ class Report(logging.LoggerAdapter):
         `True` when it has checked the document.
         """
 
-    def log(self, level, msg, *args, **kwargs):
-        if level > logging.INFO:
+    def log(self, level: int, msg: Any, *args: Any, **kwargs: Any) -> None:
+        if level > INFO:
             self.ok = False
         super().log(level, msg, *args, **kwargs)
 
-    def process(self, msg, kwargs):
+    def process(
+            self,
+            msg: Any,
+            kwargs: MutableMapping[str, Any]
+        ) -> Tuple[Any, MutableMapping[str, Any]]:
         """Process contextual information for a logged message.
 
         Our `url` will be inserted into the log record.
@@ -157,7 +167,7 @@ class Report(logging.LoggerAdapter):
 
         return msg, kwargs
 
-    def present(self, scribe):
+    def present(self, scribe: 'Scribe') -> XMLContent:
         """Yield an XHTML rendering of this report."""
 
         present_record = self.present_record
@@ -178,7 +188,7 @@ class Report(logging.LoggerAdapter):
                 ]
 
     @staticmethod
-    def present_record(record):
+    def present_record(record: LogRecord) -> XMLContent:
         """Return an XHTML rendering of one log record."""
 
         level = record.levelname.lower()
@@ -192,16 +202,18 @@ class FetchFailure(Report, Exception):
     where that is appropriate.
     """
 
-    def __init__(self, url, message, http_error=None):
-        """Initialize the report and log `message` as an error.
-        """
+    def __init__(
+            self,
+            url: str,
+            message: str,
+            http_error: Optional[HTTPError] = None
+        ):
+        """Initialize the report and log `message` as an error."""
         Report.__init__(self, url)
         Exception.__init__(self, message)
 
         self.http_error = http_error
-        """Optional `urllib.error.HTTPError` that caused this fetch
-        failure.
-        """
+        """Optional error that caused this fetch failure."""
 
         self.error('Failed to fetch: %s', message)
 
@@ -211,16 +223,16 @@ class Page:
     A page is identified by a URL minus query.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize page with no reports."""
 
-        self.query_to_report = {}
+        self.query_to_report: Dict[str, Report] = {}
         """Maps a query string to the report for that query."""
 
         self.failures = 0
         """Number of reports that contain warnings or errors."""
 
-    def add_report(self, report):
+    def add_report(self, report: Report) -> None:
         """Add `Report` for this page.
 
         For each unique query, only one report can be added.
@@ -234,7 +246,7 @@ class Page:
         if not report.ok:
             self.failures += 1
 
-    def present(self, scribe):
+    def present(self, scribe: 'Scribe') -> XMLContent:
         """Yield an XHTML rendering of all reports for this page."""
 
         # Use more compact presentation for local files.
@@ -319,13 +331,13 @@ class Scribe:
         """
         return self._end_time
 
-    def __url_to_name(self, url):
+    def __url_to_name(self, url: str) -> str:
         path = urlsplit(url).path or '/'
         assert path.startswith(self._base_path)
         return path[len(self._base_path) : ]
 
-    def add_report(self, report):
-        """Add a `Report` to this scribe.
+    def add_report(self, report: Report) -> None:
+        """Add a report to this scribe.
 
         Plugins are notified of the new report.
         """
@@ -335,13 +347,11 @@ class Scribe:
         page = self._pages[self.__url_to_name(url)]
         page.add_report(report)
 
-    def get_pages(self):
-        """Return a collection of `Page` objects describing the pages
-        for which reports were added to this scribe.
-        """
+    def get_pages(self) -> Collection[Page]:
+        """Return the pages for which reports were added to this scribe."""
         return self._pages.values()
 
-    def get_failed_pages(self):
+    def get_failed_pages(self) -> Collection[Page]:
         """Like `Scribe.get_pages`, but only pages for which warnings
         or error were reported are returned.
         """
@@ -349,7 +359,7 @@ class Scribe:
             page for page in self._pages.values() if page.failures != 0
             ]
 
-    def get_summary(self):
+    def get_summary(self) -> str:
         """Return a short string summarizing the check results."""
         total = len(self._pages)
         num_failed_pages = len(self.get_failed_pages())
@@ -364,7 +374,7 @@ class Scribe:
         self._end_time = now_local()
         self._plugins.postprocess(self)
 
-    def present(self):
+    def present(self) -> XMLContent:
         """Yield an XHTML rendering of a combined report for all
         checked pages.
         """
@@ -384,7 +394,7 @@ class Scribe:
                 ]
             ]
 
-    def _present_failed_index(self):
+    def _present_failed_index(self) -> XMLContent:
         failed_page_names = [
             name for name, page in self._pages.items() if page.failures != 0
             ]
@@ -397,7 +407,7 @@ class Scribe:
                 for name in sorted(failed_page_names)
                 )]
 
-    def _present_referrers(self, req):
+    def _present_referrers(self, req: Request) -> XMLContent:
         # Note: Currently we only list the pages a request is referred from,
         #       but we know the exact requests.
         page_names = {

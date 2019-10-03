@@ -39,7 +39,7 @@ class PropertiesPlugin(Plugin):
             'data.pages_fail': num_failed_pages,
             }
         path = self.properties_file
-        print('Writing metadata to "%s"...' % path)
+        print(f'Writing metadata to "{path}"...')
         with open(path, 'w') as out:
             for key in sorted(data.keys()):
-                print('%s=%s' % (key, data[key]), file=out)
+                print(f'{key}={data[key]}', file=out)

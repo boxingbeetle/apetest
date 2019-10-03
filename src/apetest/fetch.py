@@ -33,7 +33,7 @@ from apetest.report import FetchFailure, Report
 from apetest.version import VERSION_STRING
 
 USER_AGENT_PREFIX = 'APE-Test'
-USER_AGENT = '%s/%s' % (USER_AGENT_PREFIX, VERSION_STRING)
+USER_AGENT = f'{USER_AGENT_PREFIX}/{VERSION_STRING}'
 
 _LOG = getLogger(__name__)
 
@@ -53,7 +53,7 @@ class _CustomFileHandler(FileHandler):
                 local_path += 'index.html'
             else:
                 raise HTTPError(
-                    'file://%s/' % local_path, 301, 'Path is a directory',
+                    f'file://{local_path}/', 301, 'Path is a directory',
                     message_from_string('content-type: text/plain'), BytesIO()
                     )
 
@@ -133,7 +133,7 @@ def open_page(url, ignore_client_error=False, accept_header='*/*'):
                 # request and 400 can be the correct response to that.
                 return ex
             else:
-                message = 'HTTP error %d: %s' % (ex.code, ex.msg)
+                message = f'HTTP error {ex.code:d}: {ex.msg}'
                 raise FetchFailure(url, message, http_error=ex)
         except URLError as ex:
             raise FetchFailure(url, str(ex.reason))

@@ -203,8 +203,8 @@ def unescape_path(path):
 
             if idx == len(path) or path[idx] != '%':
                 raise ValueError(
-                    'incomplete escaped UTF8 character, '
-                    'expected %d more escaped bytes' % remaining
+                    f'incomplete escaped UTF8 character, '
+                    f'expected {remaining:d} more escaped bytes'
                     )
 
 def lookup_robots_rules(rules_map, user_agent):

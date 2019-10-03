@@ -36,8 +36,7 @@ class Request:
                     #       which is what a typical web framework will expect
                     #       to receive.
                     raise ValueError(
-                        'Query of URL "%s" contains invalid part "%s"'
-                        % (url, elem)
+                        f'Query of URL "{url}" contains invalid part "{elem}"'
                         )
         return Request(page_url, query)
 
@@ -88,7 +87,7 @@ class Request:
     def __str__(self):
         if self.query:
             return self.page_url + '?' + '&'.join(
-                '%s=%s' % (quote_plus(key), quote_plus(value))
+                f'{quote_plus(key)}={quote_plus(value)}'
                 for key, value in self.query
                 )
         else:

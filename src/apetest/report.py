@@ -248,9 +248,11 @@ class Page:
 
         # Use detailed presentation for pages served over HTTP.
         total = len(self.query_to_report)
+        failures = self.failures
         yield xml.p[
-            '%d queries checked, %d passed, %d failed'
-            % (total, total - self.failures, self.failures)
+            f'{total:d} queries checked, '
+            f'{total - failures:d} passed, '
+            f'{failures:d} failed'
             ]
         for query, report in sorted(self.query_to_report.items()):
             yield xml.h3(class_='pass' if report.ok else 'fail')[
@@ -351,8 +353,10 @@ class Scribe:
         """Return a short string summarizing the check results."""
         total = len(self._pages)
         num_failed_pages = len(self.get_failed_pages())
-        return '%d pages checked, %d passed, %d failed' % (
-            total, total - num_failed_pages, num_failed_pages
+        return (
+            f'{total:d} pages checked, '
+            f'{total - num_failed_pages:d} passed, '
+            f'{num_failed_pages:d} failed'
             )
 
     def postprocess(self) -> None:

@@ -57,7 +57,7 @@ class Spider:
         checked = self._requests_checked
         to_check = self._requests_to_check
         while to_check:
-            print('checked: %d, to check: %d' % (len(checked), len(to_check)))
+            print(f'checked: {len(checked):d}, to check: {len(to_check):d}')
             request = min(to_check)
             to_check.remove(request)
             checked.add(request)
@@ -112,7 +112,7 @@ class Spider:
                 or request in self._requests_to_check:
                     continue
                 if self._queries_per_page[url] >= self.max_queries_per_page:
-                    print('maximum number of queries reached for "%s"' % url)
+                    print(f'maximum number of queries reached for "{url}"')
                     break
                 self._queries_per_page[url] += 1
                 self._requests_to_check.add(request)

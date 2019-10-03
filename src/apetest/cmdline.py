@@ -34,7 +34,7 @@ def detect_url(arg):
         return 'http://' + arg
 
     # Assume relative file path.
-    return urljoin('file://%s/' % getcwd(), arg)
+    return urljoin(f'file://{getcwd()}/', arg)
 
 def run(url, report_file_name, accept, plugins=()):
     """Runs APE with the given arguments.
@@ -71,13 +71,13 @@ def run(url, report_file_name, accept, plugins=()):
             scribe.add_report(robots_report)
         checker = PageChecker(base_url, accept, scribe, plugins)
 
-        print('Checking "%s" and below...' % base_url)
+        print(f'Checking "{base_url}" and below...')
         for request in spider:
             referrers = checker.check(request)
             spider.add_requests(request, referrers)
         print('Done checking')
 
-        print('Writing report to "%s"...' % report_file_name)
+        print(f'Writing report to "{report_file_name}"...')
         with open(report_file_name, 'w',
                   encoding='ascii', errors='xmlcharrefreplace') as out:
             for node in scribe.present():
@@ -120,7 +120,7 @@ def main():
         help='increase amount of logging, can be passed multiple times'
         )
     parser.add_argument(
-        '-V', '--version', action='version', version='APE %s' % VERSION_STRING
+        '-V', '--version', action='version', version=f'APE {VERSION_STRING}'
         )
 
     # Let plugins register their arguments.

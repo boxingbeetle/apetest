@@ -134,10 +134,10 @@ class RadioButton(SingleValueControl):
     """
 
     def has_alternative(self, name, value):
-        assert False, 'radio button "%s" was not merged' % self.name
+        assert False, f'radio button "{self.name}" was not merged'
 
     def alternatives(self):
-        assert False, 'radio button "%s" was not merged' % self.name
+        assert False, f'radio button "{self.name}" was not merged'
 
 class RadioButtonGroup(Control):
     """Multiple-choice control containing one or more radio buttons."""
@@ -152,12 +152,13 @@ class RadioButtonGroup(Control):
         values = []
         for button in buttons:
             if not isinstance(button, RadioButton):
-                raise TypeError('expected RadioButton, got %s' % type(button))
+                raise TypeError(
+                    f'expected RadioButton, got {type(button).__name__}'
+                    )
             if button.name != name:
                 raise ValueError(
-                    'radio button name "%s" differs from '
-                    'first radio button name "%s"'
-                    % (button.name, name)
+                    f'radio button name "{button.name}" differs from '
+                    f'first radio button name "{name}"'
                     )
             values.append(button.value)
 

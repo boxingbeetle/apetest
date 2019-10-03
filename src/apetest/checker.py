@@ -131,7 +131,7 @@ def parse_document(content, is_xml, report):
 
             message = error.message
             if line is not None:
-                message += ' (line %d)' % line
+                message += f' (line {line:d})'
 
             report.error(message)
 
@@ -297,8 +297,10 @@ class PageChecker:
             self.plugins.resource_loaded(
                 content_bytes, content_type_header, report
                 )
-            message = 'Document of type "%s" is probably not text; ' \
-                'skipping.' % content_type
+            message = (
+                f'Document of type "{content_type}" is probably not text; '
+                f'skipping.'
+                )
             _LOG.info(message)
             report.info(message)
             report.checked = True # not really, but we just logged why not
@@ -335,9 +337,7 @@ class PageChecker:
 
         if req_url.startswith('file:'):
             # Construct a new header that is likely more accurate.
-            content_type_header = '%s; charset=%s' % (
-                content_type, used_encoding
-                )
+            content_type_header = f'{content_type}; charset={used_encoding}'
         self.plugins.resource_loaded(content_bytes, content_type_header, report)
 
         if is_html or is_xml:

@@ -118,9 +118,9 @@ class VNUClient:
         elif scheme == 'https' and https_connection_factory:
             connection_factory = https_connection_factory
         elif scheme:
-            raise OSError('Unsupported URL scheme: %s' % scheme)
+            raise OSError(f'Unsupported URL scheme: {scheme}')
         else:
-            raise OSError('URL "%s" lacks a scheme (such as "http:")' % url)
+            raise OSError(f'URL "{url}" lacks a scheme (such as "http:")')
 
         self._connection = connection = connection_factory(netloc)
         self._remote = (scheme, netloc)
@@ -226,7 +226,7 @@ class VNUClient:
                 new_url = response.getheader('Location')
                 if new_url is None:
                     raise RedirectError(
-                        'Redirect (%d) without Location' % status, url
+                        f'Redirect ({status:d}) without Location', url
                         )
                 if new_url == url:
                     raise RedirectError('Redirect loop', url)

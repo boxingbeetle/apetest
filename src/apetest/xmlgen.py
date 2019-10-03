@@ -194,11 +194,11 @@ class _XMLElement(_XMLSerializable):
             )
         children = self.__children
         if children is None:
-            yield '<%s%s />' % (self.__name, attrib_str)
+            yield f'<{self.__name}{attrib_str} />'
         else:
-            yield '<%s%s>' % (self.__name, attrib_str)
+            yield f'<{self.__name}{attrib_str}>'
             yield from children._to_fragments() # pylint: disable=protected-access
-            yield '</%s>' % self.__name
+            yield f'</{self.__name}>'
 
 class _XMLElementFactory:
     """Automatically creates _XMLElement instances for any tag that is
@@ -229,7 +229,7 @@ def _adapt(node):
     elif node is None:
         pass
     else:
-        raise TypeError('cannot handle node of type %s' % type(node))
+        raise TypeError(f'cannot handle node of type {type(node).__name__}')
 
 def concat(*siblings):
     """Creates an XML sequence by concatenating `siblings`.

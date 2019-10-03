@@ -71,8 +71,8 @@ def _launch_service(jar_path):
     try:
         proc = Popen(args, stdin=DEVNULL)
     except OSError as ex:
-        raise PluginError('Failed to launch v.Nu checker servlet: %s' % ex)
-    return proc, 'http://localhost:%d' % port
+        raise PluginError(f'Failed to launch v.Nu checker servlet: {ex}')
+    return proc, f'http://localhost:{port:d}'
 
 def plugin_create(args):
     content_types = {
@@ -151,10 +151,10 @@ def _process_message(message, report):
         level = ERROR
     elif msg_type == 'non-document-error':
         subtype = subtype or 'general'
-        text = '%s error in checker: %s' % (subtype.capitalize(), text)
+        text = f'{subtype.capitalize()} error in checker: {text}'
         level = ERROR
     else:
-        text = 'Undocumented message type "%s": %s' % (msg_type, text)
+        text = f'Undocumented message type "{msg_type}": {text}'
         level = ERROR
 
     lines = '-'.join(
@@ -163,7 +163,7 @@ def _process_message(message, report):
         if attr in message
         )
     if lines:
-        text = 'line %s: %s' % (lines, text)
+        text = f'line {lines}: {text}'
 
     html = text
 

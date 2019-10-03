@@ -77,9 +77,43 @@ encoding. For example:
 """
 
 from html import escape
+from typing import Iterable, Iterator, Mapping, Optional, Union
 
 
-def _join(separator, nodes):
+class _XMLSerializable:
+    """Base class for objects that can be serialized to XML."""
+
+    def __str__(self) -> str:
+        return self.flatten()
+
+    def __add__(self, other: 'XMLContent') -> '_XMLSequence':
+        return concat(self, other)
+
+    def __radd__(self, other: 'XMLContent') -> '_XMLSequence':
+        return concat(other, self)
+
+    def _to_fragments(self) -> Iterator[str]:
+        """Iterates through the fragments (strings) forming the XML
+        serialization of this object: the XML serialization is the
+        concatenation of all the fragments.
+        """
+        raise NotImplementedError
+
+    def flatten(self) -> str:
+        """Creates the XML string for this object."""
+        return ''.join(self._to_fragments())
+
+    def join(self, siblings: Iterable['XMLContent']) -> '_XMLSequence':
+        """Creates an XML sequence containing the given XML objects,
+        with itself inserted between each sibling, similar to
+        `str.join()`.
+        """
+        return _XMLSequence(_join(self, _adapt(siblings)))
+
+XML = _XMLSerializable
+XMLContent = Union[str, None, XML, Iterable]
+
+def _join(separator: XML, nodes: Iterable[XML]) -> Iterator[XML]:
     iterator = iter(nodes)
     try:
         yield next(iterator)
@@ -89,59 +123,29 @@ def _join(separator, nodes):
         yield separator
         yield node
 
-class _XMLSerializable:
-    """Base class for objects that can be serialized to XML."""
-
-    def __str__(self):
-        return self.flatten()
-
-    def __add__(self, other):
-        return concat(self, other)
-
-    def __radd__(self, other):
-        return concat(other, self)
-
-    def _to_fragments(self):
-        """Iterates through the fragments (strings) forming the XML
-        serialization of this object: the XML serialization is the
-        concatenation of all the fragments.
-        """
-        raise NotImplementedError
-
-    def flatten(self):
-        """Creates the XML string for this object."""
-        return ''.join(self._to_fragments())
-
-    def join(self, siblings):
-        """Creates an XML sequence containing the given XML objects,
-        with itself inserted between each sibling, similar to
-        `str.join()`.
-        """
-        return _XMLSequence(_join(self, _adapt(siblings)))
-
 class _Text(_XMLSerializable):
 
-    def __init__(self, text):
+    def __init__(self, text: str):
         _XMLSerializable.__init__(self)
         self.__text = escape(text, quote=False)
 
-    def _to_fragments(self):
+    def _to_fragments(self) -> Iterator[str]:
         yield self.__text
 
-def txt(text):
+def txt(text: str) -> XML:
     """Creates an XML character data object containing `text`."""
     return _Text(text)
 
 class _Raw(_XMLSerializable):
 
-    def __init__(self, text):
+    def __init__(self, text: str):
         _XMLSerializable.__init__(self)
         self.__text = text
 
-    def _to_fragments(self):
+    def _to_fragments(self) -> Iterator[str]:
         yield self.__text
 
-def raw(text):
+def raw(text: str) -> XML:
     """Creates a segment that will appear in the output without escaping.
 
     This is useful to insert CDATA sections or CSS and JavaScript when
@@ -151,7 +155,7 @@ def raw(text):
 
 class _XMLSequence(_XMLSerializable):
 
-    def __init__(self, children):
+    def __init__(self, children: Iterable[XML]):
         """Creates an XML sequence.
         The given children, must all be _XMLSerializable instances;
         if that is not guaranteed, use _adapt() to convert.
@@ -159,7 +163,7 @@ class _XMLSequence(_XMLSerializable):
         _XMLSerializable.__init__(self)
         self.__children = tuple(children)
 
-    def _to_fragments(self):
+    def _to_fragments(self) -> Iterator[str]:
         for content in self.__children:
             # pylint: disable=protected-access
             # "content" is an instance of _XMLSerializable, so we are
@@ -168,13 +172,18 @@ class _XMLSequence(_XMLSerializable):
 
 class _XMLElement(_XMLSerializable):
 
-    def __init__(self, name, attrs, children):
+    def __init__(
+            self,
+            name: str,
+            attrs: Mapping[str, str],
+            children: Optional[_XMLSequence]
+        ):
         _XMLSerializable.__init__(self)
         self.__name = name
         self.__attributes = attrs
         self.__children = children
 
-    def __call__(self, **attributes):
+    def __call__(self, **attributes: Optional[str]) -> '_XMLElement':
         attrs = dict(self.__attributes)
         attrs.update(
             (key.rstrip('_'), escape(str(value)))
@@ -183,11 +192,11 @@ class _XMLElement(_XMLSerializable):
             )
         return _XMLElement(self.__name, attrs, self.__children)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: XMLContent) -> '_XMLElement':
         children = concat(self.__children, index)
         return _XMLElement(self.__name, self.__attributes, children)
 
-    def _to_fragments(self):
+    def _to_fragments(self) -> Iterator[str]:
         attribs = self.__attributes
         attrib_str = '' if attribs is None else ''.join(
             ' %s="%s"' % item for item in attribs.items()
@@ -206,10 +215,10 @@ class _XMLElementFactory:
     _XMLElement with that same name is returned.
     """
 
-    def __getattribute__(self, key):
+    def __getattribute__(self, key: str) -> _XMLElement:
         return _XMLElement(key, {}, None)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> _XMLElement:
         return _XMLElement(key, {}, None)
 
 xml = _XMLElementFactory() # pylint: disable=invalid-name
@@ -218,20 +227,20 @@ xml = _XMLElementFactory() # pylint: disable=invalid-name
 See the module level documentation for usage instructions.
 """
 
-def _adapt(node):
+def _adapt(node: XMLContent) -> Iterator[XML]:
     if isinstance(node, _XMLSerializable):
         yield node
     elif isinstance(node, str):
         yield _Text(node)
+    elif node is None:
+        pass
     elif hasattr(node, '__iter__'):
         for child in node:
             yield from _adapt(child)
-    elif node is None:
-        pass
     else:
         raise TypeError(f'cannot handle node of type {type(node).__name__}')
 
-def concat(*siblings):
+def concat(*siblings: XMLContent) -> _XMLSequence:
     """Creates an XML sequence by concatenating `siblings`.
 
     Siblings must be XML objects or convertible to XML objects,

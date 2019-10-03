@@ -32,7 +32,7 @@ So roughly, APE will work if your app supports deep-linking and JavaScript is us
 Installation
 ------------
 
-APE requires Python 3.5 or higher.
+APE requires Python 3.6 or higher.
 
 You can use the package tool "pip" that comes with Python to install APE:
 
@@ -90,7 +90,7 @@ If you want to modify APE, start by cloning the Git repository:
 
     $ git clone https://github.com/boxingbeetle/apetest.git
 
-Make sure the `python` command starts Python version 3.5 or later. If this is not the default on your system, you can use for example [pyenv](https://github.com/pyenv/pyenv) or [virtualenv](https://virtualenv.pypa.io/) to set up an environment with the right Python version.
+Make sure the `python` command starts Python version 3.6 or later. If this is not the default on your system, you can use for example [pyenv](https://github.com/pyenv/pyenv) or [virtualenv](https://virtualenv.pypa.io/) to set up an environment with the right Python version.
 
 APE uses the [Poetry build system](https://poetry.eustace.io/) for managing its development environment. Using the [recommended installation procedure](https://github.com/sdispater/poetry#installation) instead of pip helps separate Poetry's dependencies from those of the software it manages, like APE.
 

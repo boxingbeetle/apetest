@@ -223,14 +223,21 @@ class Page:
     A page is identified by a URL minus query.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, name: str):
         """Initialize page with no reports."""
+
+        self._name = name
 
         self.query_to_report: Dict[str, Report] = {}
         """Maps a query string to the report for that query."""
 
         self.failures = 0
         """Number of reports that contain warnings or errors."""
+
+    @property
+    def name(self) -> str:
+        """The name (slug) of this page."""
+        return self._name
 
     def add_report(self, report: Report) -> None:
         """Add `Report` for this page.
@@ -315,7 +322,7 @@ class Scribe:
 
         self._spider = spider
         self._plugins = plugins
-        self._pages: DefaultDict[str, Page] = defaultdict(Page)
+        self._pages: Dict[str, Page] = {}
         self._start_time = now_local()
         self._end_time: Optional[datetime] = None
 
@@ -344,7 +351,11 @@ class Scribe:
         self._plugins.report_added(report)
 
         url = report.url
-        page = self._pages[self.__url_to_name(url)]
+        name = self.__url_to_name(url)
+        page = self._pages.get(name)
+        if page is None:
+            page = Page(name)
+            self._pages[name] = page
         page.add_report(report)
 
     def get_pages(self) -> Collection[Page]:

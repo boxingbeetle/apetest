@@ -179,7 +179,7 @@ def load_page(url, ignore_client_error=False, accept_header='*/*'):
 
     try:
         content = response.read()
-    except IOError as ex:
+    except OSError as ex:
         _LOG.info('Failed to read "%s" contents: %s', url, ex)
         report.error('Failed to read contents: %s', ex)
         return report, response, None

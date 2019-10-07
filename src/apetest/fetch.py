@@ -19,13 +19,11 @@ from collections import OrderedDict
 from email import message_from_string
 from io import BytesIO
 from logging import getLogger
-from os.path import isdir
 from time import sleep
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import (
-    FileHandler, HTTPRedirectHandler, Request as URLRequest, build_opener,
-    url2pathname
+    FileHandler, HTTPRedirectHandler, Request as URLRequest, build_opener
 )
 import re
 
@@ -44,31 +42,33 @@ class _CustomRedirectHandler(HTTPRedirectHandler):
 
 class _CustomFileHandler(FileHandler):
 
-    def open_local_file(self, req):
-        local_path = url2pathname(urlsplit(req.full_url).path)
+    def file_open(self, req):
+        path = urlsplit(req.full_url).path
 
-        # Emulate the way a web server handles directories.
-        if isdir(local_path):
-            if local_path.endswith('/'):
-                local_path += 'index.html'
-            else:
-                raise HTTPError(
-                    f'file://{local_path}/', 301, 'Path is a directory',
-                    message_from_string('content-type: text/plain'), BytesIO()
-                    )
-
-        # Ignore queries and fragments on local files.
-        req.full_url = 'file://' + local_path
+        # Drop queries and fragments on local files.
+        req.full_url = f'file://{path}'
 
         try:
-            return super().open_local_file(req)
+            return super().file_open(req)
         except URLError as ex:
-            # Report file-not-found as an HTTP 404 status.
             reason = ex.reason
             if isinstance(reason, FileNotFoundError):
+                # Report file-not-found as an HTTP 404 status.
                 raise HTTPError(
                     req.full_url, 404, str(reason),
-                    message_from_string('content-type: text/plain'), BytesIO()
+                    message_from_string('content-type: text/plain'),
+                    BytesIO()
+                    )
+            elif isinstance(reason, IsADirectoryError):
+                # Emulate the way a web server handles directories.
+                if path.endswith('/'):
+                    req.full_url = f'file://{path}index.html'
+                    return self.file_open(req)
+                # Redirect to add trailing slash.
+                raise HTTPError(
+                    req.full_url + '/', 301, 'Path is a directory',
+                    message_from_string('content-type: text/plain'),
+                    BytesIO()
                     )
             else:
                 raise

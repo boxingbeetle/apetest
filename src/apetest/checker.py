@@ -408,7 +408,7 @@ class PageChecker:
         root = tree.getroot()
         ns_prefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''
 
-        for form_node in root.getiterator(ns_prefix + 'form'):
+        for form_node in root.iter(ns_prefix + 'form'):
             # TODO: How to handle an empty action?
             #       1. take current path, erase query (current impl)
             #       2. take current path, merge query
@@ -434,7 +434,7 @@ class PageChecker:
             controls = []
             radio_buttons = defaultdict(list)
             submit_buttons = []
-            for inp in form_node.getiterator(ns_prefix + 'input'):
+            for inp in form_node.iter(ns_prefix + 'input'):
                 control = _parse_input_control(inp.attrib)
                 if control is None:
                     pass
@@ -444,7 +444,7 @@ class PageChecker:
                     submit_buttons.append(control)
                 else:
                     controls.append(control)
-            for control in form_node.getiterator(ns_prefix + 'select'):
+            for control in form_node.iter(ns_prefix + 'select'):
                 name = control.attrib.get('name')
                 multiple = control.attrib.get('multiple')
                 disabled = 'disabled' in control.attrib
@@ -452,14 +452,14 @@ class PageChecker:
                     continue
                 options = [
                     option.attrib.get('value', option.text)
-                    for option in control.getiterator(ns_prefix + 'option')
+                    for option in control.iter(ns_prefix + 'option')
                     ]
                 if multiple:
                     for option in options:
                         controls.append(SelectMultiple(name, option))
                 else:
                     controls.append(SelectSingle(name, options))
-            for control in form_node.getiterator(ns_prefix + 'textarea'):
+            for control in form_node.iter(ns_prefix + 'textarea'):
                 name = control.attrib.get('name')
                 value = control.text
                 disabled = 'disabled' in control.attrib

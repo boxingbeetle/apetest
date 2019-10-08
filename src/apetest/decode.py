@@ -85,7 +85,7 @@ def try_decode(data, encodings):
             return text, name
     raise ValueError('Unable to determine document encoding')
 
-def decode_and_report(data, encoding_options, report):
+def decode_and_report(data, encoding_options, logger):
     """Attempt to decode text using several encoding options in order.
 
     Parameters:
@@ -96,7 +96,7 @@ def decode_and_report(data, encoding_options, report):
         Each option is a pair of encoding name and a description of
         where this encoding suggestion originated.
         If the encoding name is `None`, the option is skipped.
-    report
+    logger
         Non-fatal problems are logged here.
         Such problems include an unknown or differing encodings
         among the options.
@@ -128,7 +128,7 @@ def decode_and_report(data, encoding_options, report):
         try:
             codec = lookup_codec(encoding)
         except LookupError:
-            report.warning(
+            logger.warning(
                 '%s specifies encoding "%s", which is unknown to Python',
                 source, encoding
                 )
@@ -136,13 +136,13 @@ def decode_and_report(data, encoding_options, report):
 
         std_name = standard_codec_name(codec.name)
         if std_name != used_encoding:
-            report.warning(
+            logger.warning(
                 '%s specifies encoding "%s", '
                 'while actual encoding seems to be "%s"',
                 source, encoding, used_encoding
                 )
         elif std_name != encoding:
-            report.info(
+            logger.info(
                 '%s specifies encoding "%s", '
                 'which is not the standard name "%s"',
                 source, encoding, used_encoding

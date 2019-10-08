@@ -49,14 +49,15 @@ def try_decode(data, encodings):
 
     data: bytes
         Encoded version of the text.
-    encodings: (encoding | None)*
+    encodings:
         Names of the encodings to try.
-        Duplicate and `None` entries are skipped.
 
     Returns:
 
     text, encoding
         The decoded string and the encoding used to decode it.
+        The returned encoding is name the preferred name, which could differ
+        from the name used in the `encodings` argument.
 
     Raises:
 
@@ -67,13 +68,12 @@ def try_decode(data, encodings):
     # Build sequence of codecs to try.
     codecs = OrderedDict()
     for encoding in encodings:
-        if encoding is not None:
-            try:
-                codec = lookup_codec(encoding)
-            except LookupError:
-                pass
-            else:
-                codecs[standard_codec_name(codec.name)] = codec
+        try:
+            codec = lookup_codec(encoding)
+        except LookupError:
+            pass
+        else:
+            codecs[standard_codec_name(codec.name)] = codec
 
     # Apply decoders to the document.
     for name, codec in codecs.items():

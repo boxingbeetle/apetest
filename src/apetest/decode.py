@@ -60,7 +60,7 @@ def try_decode(data, encodings):
 
     Raises:
 
-    UnicodeDecodeError
+    ValueError
         If the text could not be decoded.
     """
 
@@ -83,10 +83,7 @@ def try_decode(data, encodings):
             continue
         if consumed == len(data):
             return text, name
-    raise UnicodeDecodeError(
-        'Unable to determine document encoding; tried: '
-        + ', '.join(codecs.keys())
-        )
+    raise ValueError('Unable to determine document encoding')
 
 def decode_and_report(data, encoding_options, report):
     """Attempt to decode text using several encoding options in order.
@@ -111,7 +108,7 @@ def decode_and_report(data, encoding_options, report):
 
     Raises:
 
-    UnicodeDecodeError
+    ValueError
         If the text could not be decoded.
     """
 

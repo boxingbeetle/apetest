@@ -319,9 +319,9 @@ class PageChecker:
                      (http_encoding, 'HTTP header')),
                     report
                     )
-            except UnicodeDecodeError as ex:
+            except ValueError as ex:
                 # All likely encodings failed.
-                report.error('Failed to decode contents')
+                report.error('Failed to decode contents: %s', ex)
             else:
                 if req_url.startswith('file:'):
                     # Construct a new header that is likely more accurate.

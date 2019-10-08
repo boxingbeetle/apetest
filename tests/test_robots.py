@@ -5,28 +5,10 @@ from apetest.robots import (
     lookup_robots_rules, parse_robots_txt, path_allowed, scan_robots_txt
     )
 
+from utils import no_log
+
+
 logger = logging.getLogger(__name__)
-
-class NoLogHandler(logging.Handler):
-    """Log handler that asserts if anything is logged.
-    """
-    LOGGING_FORMAT = '%(levelname)s: %(message)s'
-
-    def __init__(self):
-        logging.Handler.__init__(self)
-        self.setFormatter(logging.Formatter(self.LOGGING_FORMAT))
-
-    def __enter__(self):
-        logger.addHandler(self)
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        logger.removeHandler(self)
-
-    def emit(self, record):
-        message = self.format(record)
-        assert False, 'Unexpected logging: %s' % message
-
-no_log = NoLogHandler()
 
 # Modified example from the Internet-Draft.
 
@@ -82,7 +64,7 @@ class TestScanRobots(unittest.TestCase):
 
     def test_0100_empty(self):
         """Test scanning of files that contain no records."""
-        with no_log:
+        with no_log(logger):
             self.assertCountEqual(scan_robots_txt([], logger), ())
             self.assertCountEqual(scan_robots_txt([''], logger), ())
             self.assertCountEqual(scan_robots_txt(['', ''], logger), ())
@@ -91,7 +73,7 @@ class TestScanRobots(unittest.TestCase):
 
     def test_0200_example(self):
         """Test scanning of example file."""
-        with no_log:
+        with no_log(logger):
             self.assertEqual(
                 list(scan_robots_txt(EXAMPLE_LINES, logger)),
                 EXAMPLE_RECORDS
@@ -120,12 +102,12 @@ class TestParseRobots(unittest.TestCase):
 
     def test_0100_empty(self):
         """Test parsing of empty record set."""
-        with no_log:
+        with no_log(logger):
             self.assertEqual(parse_robots_txt((), logger), {})
 
     def test_0200_example(self):
         """Test parsing of example records."""
-        with no_log:
+        with no_log(logger):
             self.assertEqual(
                 parse_robots_txt(EXAMPLE_RECORDS, logger),
                 EXAMPLE_MAP
@@ -197,7 +179,7 @@ class TestParseRobots(unittest.TestCase):
              (6, 'disallow', '/%e2%82%ac'),
              (7, 'disallow', '/%F0%90%8d%88')]
             ]
-        with no_log:
+        with no_log(logger):
             self.assertEqual(parse_robots_txt(records, logger), {
                 '*': [
                     (False, '/a<d.html'),

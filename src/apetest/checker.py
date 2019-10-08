@@ -18,7 +18,8 @@ from apetest.control import (
     SelectMultiple, SelectSingle, SubmitButton, SubmitButtons, TextArea,
     TextField
 )
-from apetest.fetch import decode_and_report, encoding_from_bom, load_page
+from apetest.decode import decode_and_report, encoding_from_bom
+from apetest.fetch import load_page
 from apetest.referrer import Form, LinkSet, Redirect
 from apetest.request import Request
 

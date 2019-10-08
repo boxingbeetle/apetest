@@ -224,11 +224,15 @@ def load_text(url, accept_header='text/plain'):
 
     bom_encoding = encoding_from_bom(content_bytes)
     http_encoding = response.headers.get_content_charset()
-    content, used_encoding_ = decode_and_report(
-        content_bytes,
-        ((bom_encoding, 'Byte Order Mark'),
-         (http_encoding, 'HTTP header')),
-        report
-        )
-
-    return report, response, _RE_EOLN.split(content)
+    try:
+        content, used_encoding_ = decode_and_report(
+            content_bytes,
+            ((bom_encoding, 'Byte Order Mark'),
+             (http_encoding, 'HTTP header')),
+            report
+            )
+    except ValueError as ex:
+        report.error('Failed to decode text document: %s', ex)
+        return report, response, None
+    else:
+        return report, response, _RE_EOLN.split(content)

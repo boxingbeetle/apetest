@@ -112,7 +112,14 @@ def decode_and_report(data, encoding_options, logger):
         If the text could not be decoded.
     """
 
-    encodings = [encoding for encoding, source in encoding_options]
+    # Filter and remember encoding options.
+    options = [
+        (encoding, source)
+        for encoding, source in encoding_options
+        if encoding is not None
+        ]
+
+    encodings = [encoding for encoding, source in options]
     # Always try to decode as UTF-8, since that is the most common encoding
     # these days, plus it's a superset of ASCII so it also works for old or
     # simple documents.
@@ -121,10 +128,7 @@ def decode_and_report(data, encoding_options, logger):
 
     # Report differences between suggested encodings and the one we
     # settled on.
-    for encoding, source in encoding_options:
-        if encoding is None:
-            continue
-
+    for encoding, source in options:
         try:
             codec = lookup_codec(encoding)
         except LookupError:

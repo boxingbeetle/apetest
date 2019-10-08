@@ -7,12 +7,14 @@ These functions can be used to get Unicode strings from a series of bytes.
 
 from codecs import (
     BOM_UTF8, BOM_UTF16_BE, BOM_UTF16_LE, BOM_UTF32_BE, BOM_UTF32_LE,
-    lookup as lookup_codec
+    CodecInfo, lookup as lookup_codec
 )
 from collections import OrderedDict
+from logging import LoggerAdapter
+from typing import Dict, Iterable, Optional, Tuple
 
 
-def encoding_from_bom(data):
+def encoding_from_bom(data: bytes) -> Optional[str]:
     """Look for a byte-order-marker at the start of the given `bytes`.
     If found, return the encoding matching that BOM, otherwise return `None`.
     """
@@ -25,7 +27,7 @@ def encoding_from_bom(data):
     else:
         return None
 
-def standard_codec_name(name):
+def standard_codec_name(name: str) -> str:
     """Map a codec name to the preferred standardized version.
 
     The preferred names were taken from this list published by IANA:
@@ -42,7 +44,7 @@ def standard_codec_name(name):
         'iso2022_kr': 'iso-2022-kr',
         }.get(name, name)
 
-def try_decode(data, encodings):
+def try_decode(data: bytes, encodings: Iterable[str]) -> Tuple[str, str]:
     """Attempt to decode text using the given encodings in order.
 
     Parameters:
@@ -66,7 +68,7 @@ def try_decode(data, encodings):
     """
 
     # Build sequence of codecs to try.
-    codecs = OrderedDict()
+    codecs: Dict[str, CodecInfo] = OrderedDict()
     for encoding in encodings:
         try:
             codec = lookup_codec(encoding)
@@ -85,12 +87,16 @@ def try_decode(data, encodings):
             return text, name
     raise ValueError('Unable to determine document encoding')
 
-def decode_and_report(data, encoding_options, logger):
+def decode_and_report(
+        data: bytes,
+        encoding_options: Iterable[Tuple[Optional[str], str]],
+        logger: LoggerAdapter
+    ) -> Tuple[str, str]:
     """Attempt to decode text using several encoding options in order.
 
     Parameters:
 
-    data: bytes
+    data
         Encoded version of the text.
     encoding_options: (encoding | None, source)*
         Each option is a pair of encoding name and a description of

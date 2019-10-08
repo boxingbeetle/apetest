@@ -25,13 +25,12 @@ def encoding_from_bom(data):
     else:
         return None
 
-def standard_codec_name(codec):
+def standard_codec_name(name):
     """Map a codec name to the preferred standardized version.
 
     The preferred names were taken from this list published by IANA:
       http://www.iana.org/assignments/character-sets/character-sets.xhtml
     """
-    name = codec.name
     if name.startswith('iso8859'):
         return 'iso-8859' + name[7:]
     return {
@@ -74,7 +73,7 @@ def try_decode(data, encodings):
             except LookupError:
                 pass
             else:
-                codecs[standard_codec_name(codec)] = codec
+                codecs[standard_codec_name(codec.name)] = codec
 
     # Apply decoders to the document.
     for name, codec in codecs.items():
@@ -138,7 +137,7 @@ def decode_and_report(data, encoding_options, report):
                 )
             continue
 
-        std_name = standard_codec_name(codec)
+        std_name = standard_codec_name(codec.name)
         if std_name != used_encoding:
             report.warning(
                 '%s specifies encoding "%s", '

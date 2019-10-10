@@ -32,6 +32,11 @@ def standard_codec_name(name: str) -> str:
 
     The preferred names were taken from this list published by IANA:
       http://www.iana.org/assignments/character-sets/character-sets.xhtml
+
+    Parameters:
+
+    name:
+        Text encoding name, in lower case.
     """
     if name.startswith('iso8859'):
         return 'iso-8859' + name[7:]
@@ -49,10 +54,10 @@ def try_decode(data: bytes, encodings: Iterable[str]) -> Tuple[str, str]:
 
     Parameters:
 
-    data: bytes
+    data:
         Encoded version of the text.
     encodings:
-        Names of the encodings to try.
+        Names of the encodings to try. Must all be lower case.
 
     Returns:
 

@@ -14,6 +14,7 @@ from collections import defaultdict
 from urllib.parse import urljoin, urlsplit
 
 from apetest.fetch import USER_AGENT_PREFIX, load_text
+from apetest.report import Checked
 from apetest.robots import (
     lookup_robots_rules, parse_robots_txt, path_allowed, scan_robots_txt
 )
@@ -150,6 +151,6 @@ def spider_req(first_req):
         robots_records = scan_robots_txt(robots_lines, report)
         rules_map = parse_robots_txt(robots_records, report)
         rules = lookup_robots_rules(rules_map, USER_AGENT_PREFIX)
-        report.checked = True
+        report.checked = Checked.CHECKED
 
     return Spider(first_req, rules), report

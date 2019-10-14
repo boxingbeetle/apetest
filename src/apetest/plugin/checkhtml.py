@@ -20,6 +20,7 @@ from socket import (  # pylint: disable=no-name-in-module
 from subprocess import DEVNULL, Popen
 
 from apetest.plugin import Plugin, PluginError
+from apetest.report import Checked
 from apetest.vnuclient import VNUClient
 from apetest.xmlgen import concat, xml
 
@@ -138,7 +139,7 @@ class HTMLValidator(Plugin):
         except ValueError as ex:
             report.exception('Parsing reply from HTML checker failed: %s', ex)
 
-        report.checked = True
+        report.checked = Checked.CHECKED
 
 def _process_message(message, report):
     msg_type = message.get('type')

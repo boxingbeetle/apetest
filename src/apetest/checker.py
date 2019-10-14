@@ -26,7 +26,7 @@ from apetest.decode import decode_and_report, encoding_from_bom
 from apetest.fetch import load_page
 from apetest.plugin import PluginCollection
 from apetest.referrer import Form, LinkSet, Redirect, Referrer
-from apetest.report import Report, Scribe
+from apetest.report import Checked, Report, Scribe
 from apetest.request import Request
 
 
@@ -255,10 +255,13 @@ class PageChecker:
 
         if content_bytes is None:
             report.info('Could not get any content to check')
-            skip_content = True
-        elif code in (200, None):
-            skip_content = False
-        else:
+            report.checked = Checked.NO_CONTENT
+            self.scribe.add_report(report)
+            return referrers
+        # If response is None, content_bytes is also None.
+        assert response is not None
+
+        if code not in (200, None):
             # TODO: This should probably be user-selectable.
             #       A lot of web servers produce error and redirection
             #       notices that are not HTML5 compliant. Checking the
@@ -267,16 +270,9 @@ class PageChecker:
             report.info(
                 'Skipping content check because of HTTP status %d', code
                 )
-            skip_content = True
-
-        if skip_content:
-            report.checked = True
+            report.checked = Checked.HTTP_STATUS_SKIP
             self.scribe.add_report(report)
             return referrers
-        # If content_bytes is None, skip_content is True, so we don't get here.
-        assert content_bytes is not None
-        # If response is None, content_bytes is also None.
-        assert response is not None
 
         # This type has been fixed in typeshed; the workaround can be removed
         # once mypy updates (0.730 stil has the problem).

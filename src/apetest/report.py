@@ -16,6 +16,7 @@ a combined report from them.
 
 from collections import defaultdict
 from datetime import datetime, timezone
+from enum import Enum, auto
 from logging import INFO, Handler, LogRecord, LoggerAdapter, getLogger
 from typing import (
     TYPE_CHECKING, Any, Collection, DefaultDict, Dict, List, MutableMapping,
@@ -122,6 +123,21 @@ _HANDLER = StoreHandler()
 _LOG.addHandler(_HANDLER)
 _LOG.propagate = False
 
+class Checked(Enum):
+    """The content check status of a document."""
+
+    NOT_CHECKED = auto()
+    """The content has not been checked yet."""
+
+    NO_CONTENT = auto()
+    """No content was available for checking."""
+
+    HTTP_STATUS_SKIP = auto()
+    """Content check was skipped because of HTTP status code."""
+
+    CHECKED = auto()
+    """The content has been checked by at least one checker."""
+
 class Report(LoggerAdapter):
     """Gathers check results for a document produced by one request."""
 
@@ -142,11 +158,11 @@ class Report(LoggerAdapter):
         (such as a warning or error) is logged on this report.
         """
 
-        self.checked = False
-        """`True` iff the content of the document has been checked.
+        self.checked = Checked.NOT_CHECKED
+        """The content check status of the document.
 
-        This is initialized to `False`. A checker should set it to
-        `True` when it has checked the document.
+        This is initialized to `NOT_CHECKED`. A checker should set it to
+        `CHECKED` when it has checked the document.
         """
 
     def log(self, level: int, msg: Any, *args: Any, **kwargs: Any) -> None:
@@ -182,7 +198,7 @@ class Report(LoggerAdapter):
             for record in _HANDLER.records[self.url]
             )]
 
-        if not self.checked:
+        if self.checked is Checked.NOT_CHECKED:
             yield xml.p['No content checks were performed']
         if not self.ok:
             yield xml.p['Referenced by:']

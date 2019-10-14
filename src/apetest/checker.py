@@ -9,10 +9,9 @@ from collections import defaultdict
 from email.message import Message
 from enum import Enum, auto
 from logging import getLogger
-from typing import (
-    DefaultDict, Iterable, Iterator, List, Optional, cast
-)
+from typing import DefaultDict, Iterable, Iterator, List, Optional, cast
 from urllib.parse import urljoin, urlsplit, urlunsplit
+from urllib.response import addinfourl
 import re
 
 from lxml import etree
@@ -222,20 +221,18 @@ class PageChecker:
         req_url = str(req)
         _LOG.info('Checking page: %s', self.short_url(req_url))
 
-        accept = self.accept
         accept_header = {
             # Prefer XHTML to HTML because it is stricter.
             Accept.ANY: 'text/html; q=0.8, application/xhtml+xml; q=1.0',
             Accept.HTML: 'text/html; q=1.0'
-            }[accept]
+            }[self.accept]
 
         report, response, content_bytes = load_page(
             req_url, req.maybe_bad, accept_header
             )
         referrers: List[Referrer] = []
 
-        code = None if response is None else response.code
-        if code is not None and 300 <= code < 400:
+        if response is not None and 300 <= (response.code or 0) < 400:
             assert response is not None
             content_url = normalize_url(response.url)
             if content_url != req_url:
@@ -256,23 +253,37 @@ class PageChecker:
         if content_bytes is None:
             report.info('Could not get any content to check')
             report.checked = Checked.NO_CONTENT
-            self.scribe.add_report(report)
-            return referrers
-        # If response is None, content_bytes is also None.
-        assert response is not None
+        else:
+            # If response is None, content_bytes is also None.
+            assert response is not None
+            referrers += self._check_response(
+                req_url, report, response, content_bytes
+                )
 
-        if code not in (200, None):
+        self.scribe.add_report(report)
+        return referrers
+
+    def _check_response(
+            self,
+            req_url: str,
+            report: Report,
+            response: addinfourl,
+            content_bytes: bytes
+        ) -> Iterator[Referrer]:
+        """Check the server's response to a request."""
+
+        if response.code not in (200, None):
             # TODO: This should probably be user-selectable.
             #       A lot of web servers produce error and redirection
             #       notices that are not HTML5 compliant. Checking the
             #       content is likely only useful if the application
             #       under test is producing the content instead.
             report.info(
-                'Skipping content check because of HTTP status %d', code
+                'Skipping content check because of HTTP status %d',
+                response.code
                 )
             report.checked = Checked.HTTP_STATUS_SKIP
-            self.scribe.add_report(report)
-            return referrers
+            return
 
         # This type has been fixed in typeshed; the workaround can be removed
         # once mypy updates (0.730 stil has the problem).
@@ -283,8 +294,7 @@ class PageChecker:
             message = 'Missing Content-Type header'
             _LOG.error(message)
             report.error(message)
-            self.scribe.add_report(report)
-            return referrers
+            return
 
         content_type = headers.get_content_type()
         is_html = content_type in ('text/html', 'application/xhtml+xml')
@@ -313,7 +323,7 @@ class PageChecker:
                     content_type
                     )
 
-        if is_html and is_xml and accept is Accept.HTML:
+        if is_html and is_xml and self.accept is Accept.HTML:
             report.warning(
                 'HTML document is serialized as XML, while the HTTP Accept '
                 'header did not include "application/xhtml+xml"'
@@ -351,17 +361,15 @@ class PageChecker:
                     tree = parse_document(content, is_xml, report)
                     if tree is not None:
                         # Find links to other documents.
-                        referrers += self.find_referrers_in_xml(
+                        yield from self.find_referrers_in_xml(
                             tree, req_url, report
                             )
                         if is_html:
-                            referrers += self.find_referrers_in_html(
+                            yield from self.find_referrers_in_html(
                                 tree, req_url
                                 )
 
         self.plugins.resource_loaded(content_bytes, content_type_header, report)
-        self.scribe.add_report(report)
-        return referrers
 
     _htmlLinkElements = {
         'a': 'href',

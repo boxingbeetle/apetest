@@ -7,7 +7,7 @@ The `PageChecker` class is where the work is done.
 
 from collections import defaultdict
 from email.message import Message
-from enum import Enum
+from enum import Enum, auto
 from logging import getLogger
 from typing import (
     DefaultDict, Iterable, Iterator, List, Optional, cast
@@ -33,10 +33,10 @@ from apetest.request import Request
 class Accept(Enum):
     """The types of documents that we tell the server we accept."""
 
-    ANY = 1
+    ANY = auto()
     """Accept both HTML and XHTML."""
 
-    HTML = 2
+    HTML = auto()
     """Accept only HTML."""
 
 _LOG = getLogger(__name__)

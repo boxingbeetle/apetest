@@ -21,8 +21,8 @@ from typing import (
     TYPE_CHECKING, Any, Collection, DefaultDict, Dict, List, MutableMapping,
     Optional, Tuple
 )
-from urllib.error import HTTPError
 from urllib.parse import unquote_plus, urlsplit
+from urllib.response import addinfourl
 
 from apetest.plugin import PluginCollection
 from apetest.request import Request
@@ -212,7 +212,7 @@ class FetchFailure(Report, Exception):
             self,
             url: str,
             message: str,
-            http_error: Optional[HTTPError] = None
+            http_error: Optional[addinfourl] = None
         ):
         """Initialize the report and log `message` as an error."""
         Report.__init__(self, url)

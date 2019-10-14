@@ -7,14 +7,17 @@
 """
 
 from email import message_from_string
+from email.message import Message
 from io import BytesIO
 from logging import getLogger
 from time import sleep
+from typing import IO, List, Mapping, Optional, Tuple, cast
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import (
     FileHandler, HTTPRedirectHandler, Request as URLRequest, build_opener
 )
+from urllib.response import addinfourl
 import re
 
 from apetest.decode import decode_and_report, encoding_from_bom
@@ -28,12 +31,14 @@ _LOG = getLogger(__name__)
 
 class _CustomRedirectHandler(HTTPRedirectHandler):
 
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
+    def redirect_request(self, req: URLRequest, fp: IO[str], code: int,
+                         msg: str, headers: Mapping[str, str], newurl: str
+                         ) -> Optional[URLRequest]:
         raise HTTPError(newurl, code, msg, headers, fp)
 
 class _CustomFileHandler(FileHandler):
 
-    def file_open(self, req):
+    def file_open(self, req: URLRequest) -> addinfourl:
         path = urlsplit(req.full_url).path
 
         # Drop queries and fragments on local files.
@@ -66,7 +71,11 @@ class _CustomFileHandler(FileHandler):
 
 _URL_OPENER = build_opener(_CustomRedirectHandler, _CustomFileHandler)
 
-def open_page(url, ignore_client_error=False, accept_header='*/*'):
+def open_page(
+        url: str,
+        ignore_client_error: bool = False,
+        accept_header: str = '*/*'
+    ) -> addinfourl:
     """Open a connection to retrieve a resource via HTTP `GET`.
 
     Parameters:
@@ -83,8 +92,8 @@ def open_page(url, ignore_client_error=False, accept_header='*/*'):
     Returns:
 
     response
-        An `http.client.HTTPResponse` object that contains an open
-        stream that data can be read from.
+        A result object that contains an open stream that data can
+        be read from.
 
     Raises:
 
@@ -100,7 +109,8 @@ def open_page(url, ignore_client_error=False, accept_header='*/*'):
     url_req.add_header('User-Agent', USER_AGENT)
     while True:
         try:
-            return _URL_OPENER.open(url_req)
+            response: addinfourl = _URL_OPENER.open(url_req)
+            return response
         except HTTPError as ex:
             if ex.code == 503:
                 if 'retry-after' in ex.headers:
@@ -124,14 +134,18 @@ def open_page(url, ignore_client_error=False, accept_header='*/*'):
                 # request and 400 can be the correct response to that.
                 return ex
             else:
-                message = f'HTTP error {ex.code:d}: {ex.msg}'
+                message = f'HTTP error {ex.code:d}: {ex.reason}'
                 raise FetchFailure(url, message, http_error=ex)
         except URLError as ex:
             raise FetchFailure(url, str(ex.reason))
         except OSError as ex:
             raise FetchFailure(url, ex.strerror)
 
-def load_page(url, ignore_client_error=False, accept_header='*/*'):
+def load_page(
+        url: str,
+        ignore_client_error: bool = False,
+        accept_header: str = '*/*'
+    ) -> Tuple[Report, Optional[addinfourl], Optional[bytes]]:
     """Load the contents of a resource via HTTP `GET`.
 
     Parameters:
@@ -151,13 +165,15 @@ def load_page(url, ignore_client_error=False, accept_header='*/*'):
         `report` is a `apetest.report.Report` instance that may already
         have some messages logged to it.
 
-        `response` is an `http.client.HTTPResponse` object if
-        a response was received from the server, or `None` otherwise.
+        `response` is a `urllib.response.addinfourl` object if a response
+        was received from the server, or `None` otherwise.
 
         `contents` is the loaded data as `bytes`, or `None` if
         the loading failed.
     """
 
+    report: Report
+    response: Optional[addinfourl]
     try:
         response = open_page(url, ignore_client_error, accept_header)
     except FetchFailure as failure:
@@ -181,7 +197,10 @@ def load_page(url, ignore_client_error=False, accept_header='*/*'):
 
 _RE_EOLN = re.compile(r'\r\n|\r|\n')
 
-def load_text(url, accept_header='text/plain'):
+def load_text(
+        url: str,
+        accept_header: str = 'text/plain'
+    ) -> Tuple[Report, Optional[addinfourl], Optional[List[str]]]:
     """Load a text document.
 
     Parameters:
@@ -222,8 +241,13 @@ def load_text(url, accept_header='text/plain'):
                 report.warning('Redirect limit exceeded')
         return report, response, None
 
+    assert content_bytes is not None
     bom_encoding = encoding_from_bom(content_bytes)
-    http_encoding = response.headers.get_content_charset()
+    # This type has been fixed in typeshed; the workaround can be removed
+    # once mypy updates (0.730 stil has the problem).
+    #   https://github.com/python/typeshed/issues/3344
+    headers = cast(Message, response.headers)
+    http_encoding = headers.get_content_charset()
     try:
         content, used_encoding_ = decode_and_report(
             content_bytes,

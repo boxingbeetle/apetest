@@ -6,21 +6,27 @@ The `PageChecker` class is where the work is done.
 """
 
 from collections import defaultdict
+from email.message import Message
 from enum import Enum
 from logging import getLogger
+from typing import (
+    DefaultDict, Iterable, Iterator, List, Optional, cast
+)
 from urllib.parse import urljoin, urlsplit, urlunsplit
 import re
 
 from lxml import etree
 
 from apetest.control import (
-    Checkbox, FileInput, HiddenInput, RadioButton, RadioButtonGroup,
+    Checkbox, Control, FileInput, HiddenInput, RadioButton, RadioButtonGroup,
     SelectMultiple, SelectSingle, SubmitButton, SubmitButtons, TextArea,
     TextField
 )
 from apetest.decode import decode_and_report, encoding_from_bom
 from apetest.fetch import load_page
-from apetest.referrer import Form, LinkSet, Redirect
+from apetest.plugin import PluginCollection
+from apetest.referrer import Form, LinkSet, Redirect, Referrer
+from apetest.report import Report, Scribe
 from apetest.request import Request
 
 
@@ -43,7 +49,7 @@ _RE_XML_DECL_ATTR = re.compile(
     r'(?P<quote>[\'"])([\w.\-]*)(?P=quote)'
     )
 
-def strip_xml_decl(text):
+def strip_xml_decl(text: str) -> str:
     """Strip the XML declaration from the start of the given text.
 
     Returns the given text without XML declaration, or the unmodified text if
@@ -52,7 +58,7 @@ def strip_xml_decl(text):
     match = _RE_XML_DECL.match(text)
     return text if match is None else text[match.end():]
 
-def encoding_from_xml_decl(text):
+def encoding_from_xml_decl(text: str) -> Optional[str]:
     """Look for an XML declaration with an `encoding` attribute at the start
     of the given text.
 
@@ -73,7 +79,7 @@ def encoding_from_xml_decl(text):
                 return value.lower()
     return None
 
-def normalize_url(url):
+def normalize_url(url: str) -> str:
     """Returns a unique string for the given URL.
 
     This is required in some places, since different libraries
@@ -82,7 +88,11 @@ def normalize_url(url):
     """
     return urlunsplit(urlsplit(url))
 
-def parse_document(content, is_xml, report):
+def parse_document(
+        content: str,
+        is_xml: bool,
+        report: Report
+    ) -> Optional[etree._ElementTree]:
     """Parse the given XML or HTML document.
 
     Parameters:
@@ -138,7 +148,7 @@ def parse_document(content, is_xml, report):
 
     return None if root is None else root.getroottree()
 
-def _parse_input_control(attrib):
+def _parse_input_control(attrib: etree._Attrib) -> Optional[Control]:
     _LOG.debug('input: %s', attrib)
     disabled = 'disabled' in attrib
     if disabled:
@@ -171,7 +181,13 @@ class PageChecker:
     to other pages.
     """
 
-    def __init__(self, base_url, accept, scribe, plugins):
+    def __init__(
+            self,
+            base_url: str,
+            accept: Accept,
+            scribe: Scribe,
+            plugins: PluginCollection
+        ):
         """Initialize page checker.
 
         Parameters:
@@ -191,7 +207,7 @@ class PageChecker:
         self.scribe = scribe
         self.plugins = plugins
 
-    def short_url(self, url):
+    def short_url(self, url: str) -> str:
         """Return a shortened version of `url`.
 
         This drops the part of the URL that all pages share.
@@ -200,7 +216,7 @@ class PageChecker:
         assert url.startswith(self.base_url), url
         return url[self.base_url.rindex('/') + 1 : ]
 
-    def check(self, req):
+    def check(self, req: Request) -> Iterable[Referrer]:
         """Check a single `apetest.request.Request`."""
 
         req_url = str(req)
@@ -216,10 +232,11 @@ class PageChecker:
         report, response, content_bytes = load_page(
             req_url, req.maybe_bad, accept_header
             )
-        referrers = []
+        referrers: List[Referrer] = []
 
-        if response is not None and response.code is not None \
-                and 300 <= response.code < 400:
+        code = None if response is None else response.code
+        if code is not None and 300 <= code < 400:
+            assert response is not None
             content_url = normalize_url(response.url)
             if content_url != req_url:
                 if content_url.startswith(self.base_url):
@@ -239,7 +256,7 @@ class PageChecker:
         if content_bytes is None:
             report.info('Could not get any content to check')
             skip_content = True
-        elif response.code in (200, None):
+        elif code in (200, None):
             skip_content = False
         else:
             # TODO: This should probably be user-selectable.
@@ -248,8 +265,7 @@ class PageChecker:
             #       content is likely only useful if the application
             #       under test is producing the content instead.
             report.info(
-                'Skipping content check because of HTTP status %d',
-                response.code
+                'Skipping content check because of HTTP status %d', code
                 )
             skip_content = True
 
@@ -257,8 +273,15 @@ class PageChecker:
             report.checked = True
             self.scribe.add_report(report)
             return referrers
+        # If content_bytes is None, skip_content is True, so we don't get here.
+        assert content_bytes is not None
+        # If response is None, content_bytes is also None.
+        assert response is not None
 
-        headers = response.headers
+        # This type has been fixed in typeshed; the workaround can be removed
+        # once mypy updates (0.730 stil has the problem).
+        #   https://github.com/python/typeshed/issues/3344
+        headers = cast(Message, response.headers)
         content_type_header = headers['Content-Type']
         if content_type_header is None:
             message = 'Missing Content-Type header'
@@ -369,25 +392,26 @@ class PageChecker:
     _linkElements = dict(_htmlLinkElements)
     _linkElements.update(_xmlLinkElements)
 
-    def find_urls(self, tree):
-        """Yield URLs found in the document `tree`.
-        """
+    def find_urls(self, tree: etree._ElementTree) -> Iterator[str]:
+        """Yield URLs found in the document `tree`."""
         get_attr_name = self._linkElements.__getitem__
         for node in tree.getroot().iter():
-            try:
-                yield node.attrib[get_attr_name(node.tag)]
-            except KeyError:
-                pass
-            try:
-                yield node.attrib['{http://www.w3.org/1999/xlink}href']
-            except KeyError:
-                pass
+            for attr_name in (get_attr_name(cast(str, node.tag)),
+                              '{http://www.w3.org/1999/xlink}href'):
+                try:
+                    yield cast(str, node.attrib[attr_name])
+                except KeyError:
+                    pass
 
-    def find_referrers_in_xml(self, tree, tree_url, report):
-        """Yield `apetest.referrer.Referrer` objects for links found
-        in XML tags in the document `tree`.
+    def find_referrers_in_xml(
+            self,
+            tree: etree._ElementTree,
+            tree_url: str,
+            report: Report
+        ) -> Iterator[Referrer]:
+        """Yield referrers for links found in XML tags in the document `tree`.
         """
-        links = defaultdict(LinkSet)
+        links: DefaultDict[str, LinkSet] = defaultdict(LinkSet)
         for url in self.find_urls(tree):
             _LOG.debug(' Found URL: %s', url)
             if url.startswith('?'):
@@ -402,9 +426,13 @@ class PageChecker:
                     links[request.page_url].add(request)
         yield from links.values()
 
-    def find_referrers_in_html(self, tree, url):
-        """Yield `apetest.referrer.Referrer` objects for links and forms
-        found in HTML tags in the document `tree`.
+    def find_referrers_in_html(
+            self,
+            tree: etree._ElementTree,
+            url: str
+        ) -> Iterator[Referrer]:
+        """Yield referrers for links and forms found in HTML tags in
+        the document `tree`.
         """
         root = tree.getroot()
         ns_prefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''
@@ -416,8 +444,9 @@ class PageChecker:
             #       3. flag as error (not clearly specced)
             #       I think either flag as error, or mimic the browsers.
             try:
-                action = form_node.attrib['action'] or urlsplit(url).path
-                method = form_node.attrib['method'].lower()
+                action = cast(str, form_node.attrib['action']) \
+                      or urlsplit(url).path
+                method = cast(str, form_node.attrib['method']).lower()
             except KeyError:
                 continue
             if method == 'post':
@@ -433,7 +462,8 @@ class PageChecker:
             # Note: Disabled controls should not be submitted, so we pretend
             #       they do not even exist.
             controls = []
-            radio_buttons = defaultdict(list)
+            radio_buttons: DefaultDict[str, List[RadioButton]] \
+                         = defaultdict(list)
             submit_buttons = []
             for inp in form_node.iter(ns_prefix + 'input'):
                 control = _parse_input_control(inp.attrib)
@@ -445,25 +475,26 @@ class PageChecker:
                     submit_buttons.append(control)
                 else:
                     controls.append(control)
-            for control in form_node.iter(ns_prefix + 'select'):
-                name = control.attrib.get('name')
-                multiple = control.attrib.get('multiple')
-                disabled = 'disabled' in control.attrib
+            for control_node in form_node.iter(ns_prefix + 'select'):
+                name = control_node.attrib.get('name')
+                multiple = control_node.attrib.get('multiple')
+                disabled = 'disabled' in control_node.attrib
                 if disabled:
                     continue
                 options = [
                     option.attrib.get('value', option.text)
-                    for option in control.iter(ns_prefix + 'option')
+                    for option in control_node.iter(ns_prefix + 'option')
+                    if option.text is not None
                     ]
                 if multiple:
                     for option in options:
                         controls.append(SelectMultiple(name, option))
                 else:
                     controls.append(SelectSingle(name, options))
-            for control in form_node.iter(ns_prefix + 'textarea'):
-                name = control.attrib.get('name')
-                value = control.text
-                disabled = 'disabled' in control.attrib
+            for control_node in form_node.iter(ns_prefix + 'textarea'):
+                name = control_node.attrib.get('name')
+                value = control_node.text
+                disabled = 'disabled' in control_node.attrib
                 if disabled:
                     continue
                 _LOG.debug('textarea "%s": %s', name, value)

@@ -400,12 +400,14 @@ class PageChecker:
         """Yield URLs found in the document `tree`."""
         get_attr_name = self._linkElements.__getitem__
         for node in tree.getroot().iter():
-            for attr_name in (get_attr_name(cast(str, node.tag)),
-                              '{http://www.w3.org/1999/xlink}href'):
-                try:
-                    yield cast(str, node.attrib[attr_name])
-                except KeyError:
-                    pass
+            try:
+                yield node.attrib[get_attr_name(cast(str, node.tag))]
+            except KeyError:
+                pass
+            try:
+                yield node.attrib['{http://www.w3.org/1999/xlink}href']
+            except KeyError:
+                pass
 
     def find_referrers_in_xml(
             self,

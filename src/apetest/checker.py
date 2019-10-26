@@ -396,18 +396,24 @@ class PageChecker:
     _linkElements = dict(_htmlLinkElements)
     _linkElements.update(_xmlLinkElements)
 
+    def link_attrs_for_node(self, tag: str) -> Iterator[str]:
+        """Yield names of attributes that might exist on the given tag
+        and contain URLs.
+        """
+        try:
+            yield self._linkElements[tag]
+        except KeyError:
+            pass
+        yield '{http://www.w3.org/1999/xlink}href'
+
     def find_urls(self, tree: etree._ElementTree) -> Iterator[str]:
         """Yield URLs found in the document `tree`."""
-        get_attr_name = self._linkElements.__getitem__
         for node in tree.getroot().iter():
-            try:
-                yield node.attrib[get_attr_name(cast(str, node.tag))]
-            except KeyError:
-                pass
-            try:
-                yield node.attrib['{http://www.w3.org/1999/xlink}href']
-            except KeyError:
-                pass
+            for attr in self.link_attrs_for_node(cast(str, node.tag)):
+                try:
+                    yield cast(str, node.attrib[attr])
+                except KeyError:
+                    pass
 
     def find_referrers_in_xml(
             self,

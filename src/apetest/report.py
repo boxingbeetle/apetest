@@ -340,7 +340,7 @@ class Scribe:
         # HTTP requires empty URL path to be mapped to "/".
         #   https://tools.ietf.org/html/rfc7230#section-5.3.1
         base_path = base_path or '/'
-        self._base_path = base_path = base_path[ : base_path.rindex('/') + 1]
+        self._base_path = base_path[ : base_path.rindex('/') + 1]
 
         self._spider = spider
         self._plugins = plugins

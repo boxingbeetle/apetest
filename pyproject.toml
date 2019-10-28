@@ -46,6 +46,7 @@ isort = {version = "^4.3",extras = ["pyproject"]}
 pylint-json2html = "^0.1.0"
 markdown = "^3.1"
 mypy = "^0.730.0"
+pyflakes = "^2.1"
 
 [tool.poetry.scripts]
 apetest = 'apetest.cmdline:main'

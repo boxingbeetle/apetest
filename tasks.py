@@ -49,11 +49,8 @@ def lint(c, src=None, html=None, results=None):
         report_dir = Path(results).parent.resolve()
         html = report_dir / 'pylint.html'
     cmd = ['pylint', source_arg(src)]
-    if html is None:
-        hide = None
-    else:
+    if html is not None:
         json_file = report_dir / 'pylint.json'
-        hide = 'stdout'
         cmd += ['--load-plugins=pylint_json2html',
                 '--output-format=jsonextended',
                 '>%s' % json_file]

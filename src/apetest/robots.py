@@ -30,7 +30,14 @@ References:
 - <http://www.robotstxt.org/>
 """
 
-def scan_robots_txt(lines, logger):
+from logging import Logger
+from typing import Dict, Iterable, Iterator, List, Mapping, Set, Tuple
+
+
+def scan_robots_txt(
+        lines: Iterable[str],
+        logger: Logger
+    ) -> Iterator[Iterable[Tuple[int, str, str]]]:
     """Tokenizes the contents of a `robots.txt` file.
 
     lines
@@ -43,7 +50,7 @@ def scan_robots_txt(lines, logger):
     record: (lineno, token, value)*
         Records, where each record is a sequence of triples.
     """
-    record = []
+    record: List[Tuple[int, str, str]] = []
     for lineno, line in enumerate(lines, 1):
         stripped_line = line.lstrip()
         if stripped_line.startswith('#'):
@@ -69,7 +76,10 @@ def scan_robots_txt(lines, logger):
     if record:
         yield record
 
-def parse_robots_txt(records, logger):
+def parse_robots_txt(
+        records: Iterable[Iterable[Tuple[int, str, str]]],
+        logger: Logger
+    ) -> Mapping[str, Iterable[Tuple[bool, str]]]:
     """Parses `robots.txt` records.
 
     Parameters:
@@ -86,11 +96,11 @@ def parse_robots_txt(records, logger):
         allow/disallow rules, where `allowed` is `True` iff the user agent
         is allowed to visit URLs starting with `url_prefix`.
     """
-    result = {}
-    unknowns = set()
+    result: Dict[str, Iterable[Tuple[bool, str]]] = {}
+    unknowns: Set[str] = set()
     for record in records:
         seen_user_agent = False
-        rules = []
+        rules: List[Tuple[bool, str]] = []
         for lineno, field, value in record:
             if field == 'user-agent':
                 if rules:
@@ -136,7 +146,7 @@ def parse_robots_txt(records, logger):
                         )
     return result
 
-def unescape_path(path):
+def unescape_path(path: str) -> str:
     """Decodes a percent-encoded URL path.
 
     Raises `ValueError` if the escaping is incorrect.
@@ -169,6 +179,7 @@ def unescape_path(path):
                     )
             data.append(value)
 
+            remaining: int
             if len(data) > 1:
                 if (value & 0xC0) == 0x80:
                     remaining -= 1 # pylint: disable=undefined-variable
@@ -206,7 +217,10 @@ def unescape_path(path):
                     f'expected {remaining:d} more escaped bytes'
                     )
 
-def lookup_robots_rules(rules_map, user_agent):
+def lookup_robots_rules(
+        rules_map: Mapping[str, Iterable[Tuple[bool, str]]],
+        user_agent: str
+    ) -> Iterable[Tuple[bool, str]]:
     """Looks up a user agent in a rules mapping.
 
     Parameters:
@@ -227,7 +241,7 @@ def lookup_robots_rules(rules_map, user_agent):
             return rules
     return rules_map.get('*', [])
 
-def path_allowed(path, rules):
+def path_allowed(path: str, rules: Iterable[Tuple[bool, str]]) -> bool:
     """Checks whether the given rules allow visiting the given path.
 
     Parameters:

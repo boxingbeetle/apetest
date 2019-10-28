@@ -196,10 +196,9 @@ def unescape_path(path):
                 remaining = 1
             elif value < 0xF0:
                 remaining = 2
-            elif value < 0xF8:
-                remaining = 3
             else:
-                assert False, value
+                assert value < 0xF8, value
+                remaining = 3
 
             if idx == len(path) or path[idx] != '%':
                 raise ValueError(

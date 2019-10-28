@@ -1,5 +1,4 @@
-from os import makedirs, remove
-from os.path import isfile
+from os import makedirs
 from pathlib import Path
 from shutil import rmtree
 

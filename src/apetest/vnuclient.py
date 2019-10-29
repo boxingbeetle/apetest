@@ -30,17 +30,17 @@ _LOG = getLogger(__name__)
 class RedirectError(HTTPException):
     """Raised when a redirect status from the service cannot be handled."""
 
-    msg = property(
+    @property
+    def msg(self):
+        """Error message."""
         # PyLint mistakenly thinks 'args' is not subscriptable.
         #   https://github.com/PyCQA/pylint/issues/2333
-        lambda self: self.args[0], # pylint: disable=unsubscriptable-object
-        doc="""Error message."""
-        )
+        return self.args[0] # pylint: disable=unsubscriptable-object
 
-    url = property(
-        lambda self: self.args[1], # pylint: disable=unsubscriptable-object
-        doc="""URL that we were redirected from."""
-        )
+    @property
+    def url(self):
+        """URL that we were redirected from."""
+        return self.args[1] # pylint: disable=unsubscriptable-object
 
     def __init__(self, msg, url):
         # pylint: disable=useless-super-delegation
@@ -53,15 +53,15 @@ class RedirectError(HTTPException):
 class RequestFailed(HTTPException):
     """Raised when a response has a non-successful status code."""
 
-    msg = property(
-        lambda self: self.args[0], # pylint: disable=unsubscriptable-object
-        doc="""Error message."""
-        )
+    @property
+    def msg(self):
+        """Error message."""
+        return self.args[0] # pylint: disable=unsubscriptable-object
 
-    status = property(
-        lambda self: self.args[1], # pylint: disable=unsubscriptable-object
-        doc="""HTTP status code."""
-        )
+    @property
+    def status(self):
+        """HTTP status code."""
+        return self.args[1] # pylint: disable=unsubscriptable-object
 
     def __init__(self, response):
         super().__init__(response.reason, response.status)

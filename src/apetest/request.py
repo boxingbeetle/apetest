@@ -15,7 +15,7 @@ class Request:
     """
 
     @staticmethod
-    def from_url(url: str) -> Request:
+    def from_url(url: str) -> 'Request':
         """Creates a `Request` from a URL.
 
         Raises `ValueError` if `url` cannot be represented by a `Request`

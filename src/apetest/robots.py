@@ -30,13 +30,13 @@ References:
 - <http://www.robotstxt.org/>
 """
 
-from logging import Logger
+from logging import LoggerAdapter
 from typing import Dict, Iterable, Iterator, List, Mapping, Set, Tuple
 
 
 def scan_robots_txt(
         lines: Iterable[str],
-        logger: Logger
+        logger: LoggerAdapter
     ) -> Iterator[Iterable[Tuple[int, str, str]]]:
     """Tokenizes the contents of a `robots.txt` file.
 
@@ -78,7 +78,7 @@ def scan_robots_txt(
 
 def parse_robots_txt(
         records: Iterable[Iterable[Tuple[int, str, str]]],
-        logger: Logger
+        logger: LoggerAdapter
     ) -> Mapping[str, Iterable[Tuple[bool, str]]]:
     """Parses `robots.txt` records.
 

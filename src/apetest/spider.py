@@ -11,10 +11,15 @@ can be used to ask which other requests linked to a given request.
 """
 
 from collections import defaultdict
+from typing import (
+    DefaultDict, Dict, Iterable, Iterator, List, Optional, Set, Tuple
+)
 from urllib.parse import urljoin, urlsplit
 
 from apetest.fetch import USER_AGENT_PREFIX, load_text
-from apetest.report import Checked
+from apetest.referrer import Referrer
+from apetest.report import Checked, Report
+from apetest.request import Request
 from apetest.robots import (
     lookup_robots_rules, parse_robots_txt, path_allowed, scan_robots_txt
 )
@@ -38,7 +43,7 @@ class Spider:
     # TODO: Currently just the first 100 are checked, it would be better
     #       to try variations of all query arguments.
 
-    def __init__(self, first_req, rules):
+    def __init__(self, first_req: Request, rules: Iterable[Tuple[bool, str]]):
         """Initializes a spider that starts at `first_req` and follows
         the given exclusion rules.
 
@@ -47,14 +52,15 @@ class Spider:
         self._base_url = first_req.page_url
         self._rules = rules
         self._requests_to_check = {first_req}
-        self._requests_checked = set()
-        self._queries_per_page = defaultdict(int)
+        self._requests_checked: Set[Request] = set()
+        self._queries_per_page: DefaultDict[str, int] = defaultdict(int)
         # Maps source request to referrers (destination).
-        self._site_graph = {}
+        self._site_graph: Dict[Request, List[Referrer]] = {}
         # Maps destination page to source requests.
-        self._page_referred_from = defaultdict(set)
+        self._page_referred_from: DefaultDict[str, Set[Request]] \
+                                = defaultdict(set)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Request]:
         checked = self._requests_checked
         to_check = self._requests_to_check
         while to_check:
@@ -64,7 +70,7 @@ class Spider:
             checked.add(request)
             yield request
 
-    def referrer_allowed(self, referrer):
+    def referrer_allowed(self, referrer: Referrer) -> bool:
         """Returns `True` iff this spider is allowed to visit the resources
         referenced by `referrer`.
         """
@@ -83,7 +89,11 @@ class Spider:
 
         return path_allowed(path, self._rules)
 
-    def add_requests(self, source_req, referrers):
+    def add_requests(
+            self,
+            source_req: Request,
+            referrers: Iterable[Referrer]
+        ) -> None:
         """Adds the requests from `referrers`, which were discovered
         in `source_req`.
 
@@ -118,15 +128,14 @@ class Spider:
                 self._queries_per_page[url] += 1
                 self._requests_to_check.add(request)
 
-    def iter_referring_requests(self, dest_req):
-        """Iterates through the requests that refer to the given request.
-        """
+    def iter_referring_requests(self, dest_req: Request) -> Iterator[Request]:
+        """Iterates through the requests that refer to the given request."""
         for source_req in self._page_referred_from[dest_req.page_url]:
             for referrer in self._site_graph[source_req]:
                 if referrer.has_request(dest_req):
                     yield source_req
 
-def spider_req(first_req):
+def spider_req(first_req: Request) -> Tuple[Spider, Optional[Report]]:
     """Creates a `Spider` that starts at the given `apetest.request.Request`.
 
     This function will attempt to read `robots.txt` from the server
@@ -140,6 +149,8 @@ def spider_req(first_req):
         robots_url = urljoin(base_url, '/robots.txt')
 
     print('fetching "robots.txt"...')
+    report: Optional[Report]
+    rules: Iterable[Tuple[bool, str]]
     report, response, robots_lines = load_text(robots_url)
     if robots_lines is None:
         if response is not None and response.code == 404:

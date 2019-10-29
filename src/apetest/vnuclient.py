@@ -27,8 +27,6 @@ except ImportError:
 
 _LOG = getLogger(__name__)
 
-__pdoc__ = {}
-
 class RedirectError(HTTPException):
     """Raised when a redirect status from the service cannot be handled."""
 
@@ -43,8 +41,6 @@ class RedirectError(HTTPException):
         lambda self: self.args[1], # pylint: disable=unsubscriptable-object
         doc="""URL that we were redirected from."""
         )
-
-    __pdoc__['RedirectError.__init__'] = False
 
     def __init__(self, msg, url):
         # pylint: disable=useless-super-delegation
@@ -66,8 +62,6 @@ class RequestFailed(HTTPException):
         lambda self: self.args[1], # pylint: disable=unsubscriptable-object
         doc="""HTTP status code."""
         )
-
-    __pdoc__['RequestFailed.__init__'] = False
 
     def __init__(self, response):
         super().__init__(response.reason, response.status)

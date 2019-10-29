@@ -3,6 +3,7 @@
 """Home of the `apetest.request.Request` class."""
 
 from functools import total_ordering
+from typing import Iterable, Tuple
 from urllib.parse import quote_plus, unquote_plus, urlsplit, urlunsplit
 
 
@@ -14,7 +15,7 @@ class Request:
     """
 
     @staticmethod
-    def from_url(url):
+    def from_url(url: str) -> Request:
         """Creates a `Request` from a URL.
 
         Raises `ValueError` if `url` cannot be represented by a `Request`
@@ -40,7 +41,12 @@ class Request:
                         )
         return Request(page_url, query)
 
-    def __init__(self, page_url, query, maybe_bad=False):
+    def __init__(
+            self,
+            page_url: str,
+            query: Iterable[Tuple[str, str]],
+            maybe_bad: bool = False
+        ):
         """Initializes a request object from a split URL.
 
         Parameters:
@@ -69,22 +75,22 @@ class Request:
         be reported as problems of a web app.
         """
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, Request):
             return self.page_url == other.page_url and self.query == other.query
         else:
             return NotImplemented
 
-    def __lt__(self, other):
+    def __lt__(self, other: object) -> bool:
         if isinstance(other, Request):
             return (self.page_url, self.query) < (other.page_url, other.query)
         else:
             return NotImplemented
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.page_url) ^ hash(self.query)
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.query:
             return self.page_url + '?' + '&'.join(
                 f'{quote_plus(key)}={quote_plus(value)}'

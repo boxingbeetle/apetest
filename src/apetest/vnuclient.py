@@ -9,17 +9,18 @@ You can find the checker itself at <https://validator.github.io/>
 """
 
 from gzip import GzipFile
-from http.client import HTTPConnection, HTTPException
+from http.client import HTTPConnection, HTTPException, HTTPResponse
 from io import BytesIO
 from logging import getLogger
 from time import sleep
-from typing import Callable, Optional
+from types import TracebackType
+from typing import Any, Iterator, Mapping, Optional, Tuple, Type, cast
 from urllib.parse import urlsplit
 import json
 
+https_connection_factory: Optional[Type[HTTPConnection]]
 try:
     from http.client import HTTPSConnection # pylint: disable=ungrouped-imports
-    https_connection_factory: Optional[Callable[[str], HTTPSConnection]]
     https_connection_factory = HTTPSConnection # pylint: disable=invalid-name
 except ImportError:
     https_connection_factory = None # pylint: disable=invalid-name
@@ -31,42 +32,42 @@ class RedirectError(HTTPException):
     """Raised when a redirect status from the service cannot be handled."""
 
     @property
-    def msg(self):
+    def msg(self) -> str:
         """Error message."""
         # PyLint mistakenly thinks 'args' is not subscriptable.
         #   https://github.com/PyCQA/pylint/issues/2333
-        return self.args[0] # pylint: disable=unsubscriptable-object
+        return cast(str, self.args[0]) # pylint: disable=unsubscriptable-object
 
     @property
-    def url(self):
+    def url(self) -> str:
         """URL that we were redirected from."""
-        return self.args[1] # pylint: disable=unsubscriptable-object
+        return cast(str, self.args[1]) # pylint: disable=unsubscriptable-object
 
-    def __init__(self, msg, url):
+    def __init__(self, msg: str, url: str):
         # pylint: disable=useless-super-delegation
         #   https://github.com/PyCQA/pylint/issues/2270
         super().__init__(msg, url)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '%s at %s' % self.args
 
 class RequestFailed(HTTPException):
     """Raised when a response has a non-successful status code."""
 
     @property
-    def msg(self):
+    def msg(self) -> str:
         """Error message."""
-        return self.args[0] # pylint: disable=unsubscriptable-object
+        return cast(str, self.args[0]) # pylint: disable=unsubscriptable-object
 
     @property
-    def status(self):
+    def status(self) -> int:
         """HTTP status code."""
-        return self.args[1] # pylint: disable=unsubscriptable-object
+        return cast(int, self.args[1]) # pylint: disable=unsubscriptable-object
 
-    def __init__(self, response):
+    def __init__(self, response: HTTPResponse):
         super().__init__(response.reason, response.status)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '%s (%d)' % self.args
 
 class VNUClient:
@@ -79,19 +80,24 @@ class VNUClient:
     will be re-opened.
     """
 
-    def __init__(self, url):
+    def __init__(self, url: str):
         """Initializes a client that connects to the v.Nu checker at `url`."""
         self.service_url = url
-        self._connection = None
-        self._remote = None
+        self._connection: Optional[HTTPConnection] = None
+        self._remote: Optional[Tuple[str, str]] = None
 
-    def __enter__(self):
+    def __enter__(self) -> 'VNUClient':
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType]
+        ) -> None:
         self.close()
 
-    def __connect(self, url):
+    def __connect(self, url: str) -> HTTPConnection:
         """Returns an HTTPConnection instance for the given URL string.
         Raises InvalidURL if the URL string cannot be parsed.
         Raises OSError if the URL uses an unsupported scheme.
@@ -121,7 +127,7 @@ class VNUClient:
 
         return connection
 
-    def close(self):
+    def close(self) -> None:
         """Closes the current connection.
 
         Does nothing if there is no open connection.
@@ -131,7 +137,12 @@ class VNUClient:
             self._connection = None
             self._remote = None
 
-    def __request_with_retries(self, url, data, content_type):
+    def __request_with_retries(
+            self,
+            url: str,
+            data: bytes,
+            content_type: str
+        ) -> Tuple[HTTPResponse, Optional[bytes]]:
         """Make a request and retry if it doesn't succeed the first time.
         For example, the connection may have timed out.
         Returns a pair consisting of the closed response object (containing
@@ -167,6 +178,7 @@ class VNUClient:
                 connection.request('POST', request, body, headers)
                 response = connection.getresponse()
 
+                response_body: Optional[bytes]
                 status = response.status
                 if status == 200:
                     if response.getheader('Content-Encoding', 'identity'
@@ -199,7 +211,12 @@ class VNUClient:
                     # Problem is probably not transient; give up.
                     raise
 
-    def __request_with_redirects(self, url, data, content_type):
+    def __request_with_redirects(
+            self,
+            url: str,
+            data: bytes,
+            content_type: str
+        ) -> str:
         """Makes an HTTP request to the checker service.
         Returns the reply body as a string.
         """
@@ -211,6 +228,7 @@ class VNUClient:
             status = response.status
             if status == 200:
                 charset = response.msg.get_content_charset('utf-8')
+                assert body is not None
                 return body.decode(charset)
             elif status in (301, 302, 307):
                 # Note: RFC 7231 states that we MAY handle redirects
@@ -233,7 +251,12 @@ class VNUClient:
             else:
                 raise RequestFailed(response)
 
-    def request(self, data, content_type, errors_only=False):
+    def request(
+            self,
+            data: bytes,
+            content_type: str,
+            errors_only: bool = False
+        ) -> Iterator[Mapping[str, Any]]:
         """Feeds the given document to the checker.
 
         Parameters:

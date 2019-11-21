@@ -295,6 +295,9 @@ class PageChecker:
             _LOG.error(message)
             report.error(message)
             return
+        else:
+            # Convert Header to plain string.
+            content_type_header = str(content_type_header)
 
         content_type = headers.get_content_type()
         is_html = content_type in ('text/html', 'application/xhtml+xml')

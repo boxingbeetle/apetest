@@ -31,9 +31,19 @@ If one of the requested plugins cannot be created, `PluginError` should
 be raised with a message that is meaningful to the end user.
 """
 
+from argparse import ArgumentParser, Namespace
 from importlib import import_module
 from logging import getLogger
 from pkgutil import iter_modules
+from types import ModuleType
+from typing import TYPE_CHECKING, Callable, Iterator, Iterable, List
+
+if TYPE_CHECKING:
+    # pylint: disable=cyclic-import
+    from apetest.report import Report, Scribe
+else:
+    Report = Scribe = object
+
 
 _LOG = getLogger(__name__)
 
@@ -48,7 +58,7 @@ class Plugin:
     one or more methods.
     """
 
-    def close(self):
+    def close(self) -> None:
         """Tells the plugin to release any resources (processes, sockets
         etc.) that it may have acquired.
 
@@ -56,7 +66,12 @@ class Plugin:
         The default implementation does nothing.
         """
 
-    def resource_loaded(self, data, content_type_header, report):
+    def resource_loaded(
+            self,
+            data: bytes,
+            content_type_header: str,
+            report: Report
+        ) -> None:
         """Called when a resource has been loaded.
 
         Parameters:
@@ -73,42 +88,49 @@ class Plugin:
         resource data. The default implementation does nothing.
         """
 
-    def report_added(self, report):
+    def report_added(self, report: Report) -> None:
         """Called when a `apetest.report.Report` has been finished.
 
         Plugins can override this method to act on the report data.
         The default implementation does nothing.
         """
 
-    def postprocess(self, scribe):
+    def postprocess(self, scribe: Scribe) -> None:
         """Called when the test run has finished.
 
         Plugins can override this method to process the results.
         The default implementation does nothing.
         """
 
-class PluginCollection:
+if TYPE_CHECKING:
+    PluginCollectionBase = Plugin
+else:
+    PluginCollectionBase = object
+
+class PluginCollection(PluginCollectionBase):
     """Keeps a collection of `Plugin` instances and dispatches calls to
     each of them.
     """
 
-    def __init__(self, plugins):
+    def __init__(self, plugins: Iterable[Plugin]):
         """Initialize a collection containing `plugins`."""
         self.plugins = tuple(plugins)
 
-    def __getattr__(self, name):
-        if hasattr(Plugin, name):
-            return self.__dispatch(name)
-        else:
-            raise AttributeError(name)
+    if not TYPE_CHECKING:
 
-    def __dispatch(self, name):
-        def dispatch(*args, **kvargs):
-            for plugin in self.plugins:
-                getattr(plugin, name)(*args, **kvargs)
-        return dispatch
+        def __getattr__(self, name):
+            if hasattr(Plugin, name):
+                return self.__dispatch(name)
+            else:
+                raise AttributeError(name)
 
-def load_plugins():
+        def __dispatch(self, name):
+            def dispatch(*args, **kvargs):
+                for plugin in self.plugins:
+                    getattr(plugin, name)(*args, **kvargs)
+            return dispatch
+
+def load_plugins() -> Iterator[ModuleType]:
     """Discover and import plugin modules.
 
     Yields:
@@ -118,24 +140,32 @@ def load_plugins():
 
     Errors will be logged to the default logger.
     """
+
+    # Work around mypy not knowing about __path__.
+    #   https://github.com/python/mypy/issues/1422
+    if TYPE_CHECKING:
+        __path__: List[str]
+
     for finder_, name, ispkg_ in iter_modules(__path__, 'apetest.plugin.'):
         try:
             yield import_module(name)
         except Exception: # pylint: disable=broad-except
             _LOG.exception('Error importing plugin module "%s":', name)
 
-def add_plugin_arguments(module, parser):
+def add_plugin_arguments(module: ModuleType, parser: ArgumentParser) -> None:
     """Ask a plugin module to register its command line arguments.
 
     Parameters:
 
     module
         Plugin module.
-    parser: argparse.ArgumentParser
+    parser
         Command line parser on which arguments must be registered.
 
     Errors will be logged to the default logger.
     """
+
+    func: Callable[[ArgumentParser], None]
     try:
         func = getattr(module, 'plugin_arguments')
     except AttributeError:
@@ -148,7 +178,7 @@ def add_plugin_arguments(module, parser):
             _LOG.exception('Error registering command line arguments for '
                            'plugin module "%s":', module.__name__)
 
-def create_plugins(module, args):
+def create_plugins(module: ModuleType, args: Namespace) -> Iterator[Plugin]:
     """Ask a plugin module to create `Plugin` objects according to
     the command line arguments.
 
@@ -156,12 +186,14 @@ def create_plugins(module, args):
 
     module
         Plugin module.
-    args: argparse.Namespace
+    args
         Parsed command line arguments.
 
     Errors will be logged to the default logger.
     Exceptions will be re-raised after logging.
     """
+
+    func: Callable[[Namespace], Iterator[Plugin]]
     try:
         func = getattr(module, 'plugin_create')
     except AttributeError:
@@ -169,7 +201,7 @@ def create_plugins(module, args):
                    module.__name__)
         raise
 
-    def _log_yield():
+    def _log_yield() -> Iterable[Plugin]:
         try:
             yield from func(args)
         except PluginError as ex:

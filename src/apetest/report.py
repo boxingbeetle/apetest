@@ -3,14 +3,15 @@
 """Gathers and presents checker results in a report.
 
 If a page was loaded, the results of checking it can be stored
-in a `Report` instance. If a page fails to load, the problems
-in trying to fetch it can be stored in a `FetchFailure` report.
+in a L{Report} instance. If a page fails to load, the problems
+in trying to fetch it can be stored in a L{FetchFailure} report.
 
-Reports are `logging.LoggerAdapter` implementations, so you can
-call the usual `info`, `warning` and `error` logging methods on
-them to store checker results.
+Reports are L{logging.LoggerAdapter} implementations, so you can call
+the usual L{info<logging.Logger.info>}, L{warning<logging.Logger.warning>}
+and L{error<logging.Logger.error>} logging methods on them to store
+checker results.
 
-`Scribe` collects reports for multiple pages and can generate
+L{Scribe} collects reports for multiple pages and can generate
 a combined report from them.
 """
 
@@ -101,7 +102,7 @@ class StoreHandler(Handler):
 
     Used internally to store messages logged to reports.
 
-    Log records handled by this handler must have a `url` property
+    Log records handled by this handler must have a C{url} property
     that contains the URL that the record applies to.
     """
 
@@ -111,7 +112,7 @@ class StoreHandler(Handler):
         """Maps a URL to a collection of reports for that URL."""
 
     def emit(self, record: LogRecord) -> None:
-        """Store a log record in our `records`."""
+        """Store a log record in our L{records}."""
         self.format(record)
         # The 'url' attribute is defined via the 'extra' mechanism.
         url: str = record.url # type: ignore[attr-defined]
@@ -143,7 +144,7 @@ class Report(LoggerAdapter):
 
     def __init__(self, url: str):
         """Initialize a report that will be collecting results
-        for the document at `url`.
+        for the document at C{url}.
         """
         super().__init__(_LOG, dict(url=url))
 
@@ -151,18 +152,18 @@ class Report(LoggerAdapter):
         """The request URL to which this report applies."""
 
         self.ok = True # pylint: disable=invalid-name
-        """`True` iff no warnings or errors were reported.
+        """C{True} iff no warnings or errors were reported.
 
-        This is initialized to `True` and will be set to `False`
-        when a message with a level higher than `logging.INFO`
+        This is initialized to C{True} and will be set to C{False}
+        when a message with a level higher than L{logging.INFO}
         (such as a warning or error) is logged on this report.
         """
 
         self.checked = Checked.NOT_CHECKED
         """The content check status of the document.
 
-        This is initialized to `NOT_CHECKED`. A checker should set it to
-        `CHECKED` when it has checked the document.
+        This is initialized to L{NOT_CHECKED}. A checker should set it to
+        L{CHECKED} when it has checked the document.
         """
 
     def log(self, level: int, msg: Any, *args: Any, **kwargs: Any) -> None:
@@ -177,7 +178,7 @@ class Report(LoggerAdapter):
         ) -> Tuple[Any, MutableMapping[str, Any]]:
         """Process contextual information for a logged message.
 
-        Our `url` will be inserted into the log record.
+        Our C{url} will be inserted into the log record.
         """
 
         extra = kwargs.get('extra')
@@ -220,7 +221,7 @@ class Report(LoggerAdapter):
 class FetchFailure(Report, Exception):
     """Records the details of a request that failed.
 
-    This is an `Exception`, so it can be raised instead of returned,
+    This is an L{Exception}, so it can be raised instead of returned,
     where that is appropriate.
     """
 
@@ -230,7 +231,7 @@ class FetchFailure(Report, Exception):
             message: str,
             http_error: Optional[addinfourl] = None
         ):
-        """Initialize the report and log `message` as an error."""
+        """Initialize the report and log C{message} as an error."""
         Report.__init__(self, url)
         Exception.__init__(self, message)
 
@@ -240,7 +241,7 @@ class FetchFailure(Report, Exception):
         self.error('Failed to fetch: %s', message)
 
 class Page:
-    """Information collected by `Scribe` about a single page.
+    """Information collected by L{Scribe} about a single page.
 
     A page is identified by a URL minus query.
     """
@@ -262,7 +263,7 @@ class Page:
         return self._name
 
     def add_report(self, report: Report) -> None:
-        """Add `Report` for this page.
+        """Add a L{Report} for this page.
 
         For each unique query, only one report can be added.
         Reports should only be added once final: after all checks
@@ -309,7 +310,7 @@ class Page:
             yield report.present(scribe)
 
 def now_local() -> datetime:
-    """Return the current time, in the local time zone."""
+    """@return: The current time, in the local time zone."""
     return datetime.now(timezone.utc).astimezone()
 
 class Scribe:
@@ -323,17 +324,16 @@ class Scribe:
         ):
         """Initialize scribe.
 
-        Parameters:
-
-        base_url
+        @param base_url:
             Page URL at the base of the app or site that is being checked.
             The root URL will be computed from this by dropping the path
             element after the last directory level, if any.
-        spider
+        @param spider:
             Spider from which links between pages can be looked up.
-        plugins
+        @param plugins:
             Plugins that will receive notifications from this scribe.
         """
+
         scheme_, host_, base_path, query, fragment = urlsplit(base_url)
         assert query == ''
         assert fragment == ''
@@ -385,8 +385,8 @@ class Scribe:
         return self._pages.values()
 
     def get_failed_pages(self) -> Collection[Page]:
-        """Like `Scribe.get_pages`, but only pages for which warnings
-        or error were reported are returned.
+        """Like L{get_pages}, but only pages for which warnings or errors
+        were reported are returned.
         """
         return [
             page for page in self._pages.values() if page.failures != 0

@@ -2,32 +2,32 @@
 
 """APE's plugin infrastructure.
 
-Each plugin is a separate module in the `apetest.plugin` package.
+Each plugin is a separate module in the L{apetest.plugin} package.
 Plugins can register command line options by defining the
-following function:
+following function::
 
     def plugin_arguments(parser):
         parser.add_argument('--cow', help='fetchez la vache')
 
-The ``parser`` argument is an instance of `argparse.ArgumentParser`.
-See the `argparse` documentation for a detailed description of what
+The C{parser} argument is an instance of L{ArgumentParser}.
+See the L{argparse} documentation for a detailed description of what
 kind of argument parsing it supports.
 
-It is not mandatory to implement ``plugin_arguments()``, but in general
+It is not mandatory to implement C{plugin_arguments()}, but in general
 plugins should not activate automatically, so there should at least
 be a command line argument to enable them.
 
 To instantiate plugins, the plugin module must define the
-following function:
+following function::
 
     def plugin_create(args):
         if args.cow is not None:
             yield CatapultPlugin(args.cow)
 
-`args` is an `argparse.Namespace` that contains the result of the
+C{args} is an L{Namespace} that contains the result of the
 command line parsing.
-Each yielded object must implement the `Plugin` interface.
-If one of the requested plugins cannot be created, `PluginError` should
+Each yielded object must implement the L{Plugin} interface.
+If one of the requested plugins cannot be created, L{PluginError} should
 be raised with a message that is meaningful to the end user.
 """
 
@@ -48,8 +48,8 @@ else:
 _LOG = getLogger(__name__)
 
 class PluginError(Exception):
-    """A plugin module can raise this in `plugin_create` when it fails
-    to create the `Plugin` instances requested by the command line
+    """A plugin module can raise this in C{plugin_create()} when it fails
+    to create the L{Plugin} instances requested by the command line
     arguments.
     """
 
@@ -74,22 +74,20 @@ class Plugin:
         ) -> None:
         """Called when a resource has been loaded.
 
-        Parameters:
-
-        data: bytes
-            The resource contents.
-        content_type_header: str
-            The HTTP `Content-Type` header received for this resource,
-            including `charset` if the server sent it.
-        report: apetest.report.Report
-            Report to which problems found in the resource can be logged.
-
         Plugins can override this method to perform checks on the raw
         resource data. The default implementation does nothing.
+
+        @param data:
+            The resource contents.
+        @param content_type_header:
+            The HTTP C{Content-Type} header received for this resource,
+            including C{charset} if the server sent it.
+        @param report:
+            Report to which problems found in the resource can be logged.
         """
 
     def report_added(self, report: Report) -> None:
-        """Called when a `apetest.report.Report` has been finished.
+        """Called when a L{Report} has been finished.
 
         Plugins can override this method to act on the report data.
         The default implementation does nothing.
@@ -108,12 +106,12 @@ else:
     PluginCollectionBase = object
 
 class PluginCollection(PluginCollectionBase):
-    """Keeps a collection of `Plugin` instances and dispatches calls to
+    """Keeps a collection of L{Plugin} instances and dispatches calls to
     each of them.
     """
 
     def __init__(self, plugins: Iterable[Plugin]):
-        """Initialize a collection containing `plugins`."""
+        """Initialize a collection containing C{plugins}."""
         self.plugins = tuple(plugins)
 
     if not TYPE_CHECKING:
@@ -133,12 +131,9 @@ class PluginCollection(PluginCollectionBase):
 def load_plugins() -> Iterator[ModuleType]:
     """Discover and import plugin modules.
 
-    Yields:
-
-    module
-        Imported plugin module.
-
     Errors will be logged to the default logger.
+
+    @return: Yields the imported plugin modules.
     """
 
     # Work around mypy not knowing about __path__.
@@ -155,14 +150,12 @@ def load_plugins() -> Iterator[ModuleType]:
 def add_plugin_arguments(module: ModuleType, parser: ArgumentParser) -> None:
     """Ask a plugin module to register its command line arguments.
 
-    Parameters:
-
-    module
-        Plugin module.
-    parser
-        Command line parser on which arguments must be registered.
-
     Errors will be logged to the default logger.
+
+    @param module:
+        Plugin module.
+    @param parser:
+        Command line parser on which arguments must be registered.
     """
 
     func: Callable[[ArgumentParser], None]
@@ -179,18 +172,16 @@ def add_plugin_arguments(module: ModuleType, parser: ArgumentParser) -> None:
                            'plugin module "%s":', module.__name__)
 
 def create_plugins(module: ModuleType, args: Namespace) -> Iterator[Plugin]:
-    """Ask a plugin module to create `Plugin` objects according to
+    """Ask a plugin module to create L{Plugin} objects according to
     the command line arguments.
-
-    Parameters:
-
-    module
-        Plugin module.
-    args
-        Parsed command line arguments.
 
     Errors will be logged to the default logger.
     Exceptions will be re-raised after logging.
+
+    @param module:
+        Plugin module.
+    @param args:
+        Parsed command line arguments.
     """
 
     func: Callable[[Namespace], Iterator[Plugin]]

@@ -2,12 +2,12 @@
 
 """Keeps track of links between pages.
 
-Use `spider_req` to create a `Spider`, then iterate through it to receive
-new requests to check and call `Spider.add_requests` to add links you found
+Use L{spider_req} to create a L{Spider}, then iterate through it to receive
+new requests to check and call the L{add_requests} method to add links you found
 while checking.
 
-At any point during or after the crawling, `Spider.iter_referring_requests`
-can be used to ask which other requests linked to a given request.
+At any point during or after the crawling, the L{iter_referring_requests}
+method can be used to ask which other requests linked to a given request.
 """
 
 from collections import defaultdict
@@ -44,10 +44,10 @@ class Spider:
     #       to try variations of all query arguments.
 
     def __init__(self, first_req: Request, rules: Iterable[Tuple[bool, str]]):
-        """Initializes a spider that starts at `first_req` and follows
+        """Initializes a spider that starts at C{first_req} and follows
         the given exclusion rules.
 
-        In most cases, you should use `spider_req` instead.
+        In most cases, you should use L{spider_req()} instead.
         """
         self._base_url = first_req.page_url
         self._rules = rules
@@ -71,8 +71,8 @@ class Spider:
             yield request
 
     def referrer_allowed(self, referrer: Referrer) -> bool:
-        """Returns `True` iff this spider is allowed to visit the resources
-        referenced by `referrer`.
+        """Returns C{True} iff this spider is allowed to visit the resources
+        referenced by C{referrer}.
         """
         # TODO: Currently the 'checker' module rejects out-of-scope URLs,
         #       but it would be cleaner to do that at the spider level,
@@ -94,11 +94,11 @@ class Spider:
             source_req: Request,
             referrers: Iterable[Referrer]
         ) -> None:
-        """Adds the requests from `referrers`, which were discovered
-        in `source_req`.
+        """Adds the requests from C{referrers}, which were discovered
+        in C{source_req}.
 
         Added requests that were not discovered before are registered
-        as to be checked. The spider also remembers that `source_req`
+        as to be checked. The spider also remembers that C{source_req}
         links to the added requests.
         """
 
@@ -136,11 +136,11 @@ class Spider:
                     yield source_req
 
 def spider_req(first_req: Request) -> Tuple[Spider, Optional[Report]]:
-    """Creates a `Spider` that starts at the given `apetest.request.Request`.
+    """Creates a L{Spider} that starts at the given L{Request}.
 
-    This function will attempt to read `robots.txt` from the server
-    or base directory contained in `first_req`. Any rules found there
-    that apply to APE will be passed on to the new `Spider`.
+    This function will attempt to read C{robots.txt} from the server
+    or base directory contained in C{first_req}. Any rules found there
+    that apply to APE will be passed on to the new L{Spider}.
     """
     base_url = first_req.page_url
     if base_url.startswith('file:'):

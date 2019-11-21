@@ -2,7 +2,7 @@
 
 """Models form controls.
 
-This module contains the `Control` class and its subclasses, which can be
+This module contains the L{Control} class and its subclasses, which can be
 used to model input elements in an (HTML) form.
 """
 
@@ -18,12 +18,12 @@ class Control:
     """Abstract base class for submittable elements in a form."""
 
     def has_alternative(self, name, value):
-        """Return `True` iff the given name-value combination could be
+        """Return C{True} iff the given name-value combination could be
         submitted by this control.
 
         Note that for free-input controls, it is possible this method
-        returns `True` while the name-value pair is not in the sequence
-        returned by the `Control.alternatives` method.
+        returns C{True} while the name-value pair is not in the sequence
+        returned by the L{alternatives} method.
         """
         raise NotImplementedError
 
@@ -35,7 +35,7 @@ class Control:
         For free-input controls there is an infinite number of alternatives,
         so we just pick a few.
 
-        The alternative `(None, None)` represents a control not being part
+        The alternative C{(None, None)} represents a control not being part
         of the submission, for example an unchecked checkbox.
         """
         raise NotImplementedError
@@ -130,7 +130,7 @@ class Checkbox(SingleValueControl):
 class RadioButton(SingleValueControl):
     """Single radio button.
 
-    Radio buttons must be combined in a `RadioButtonGroup` control.
+    Radio buttons must be combined in a L{RadioButtonGroup} control.
     """
 
     def has_alternative(self, name, value):
@@ -143,8 +143,8 @@ class RadioButtonGroup(Control):
     """Multiple-choice control containing one or more radio buttons."""
 
     def __init__(self, buttons):
-        """Initialize a radio buttons group control containing `buttons`,
-        which must be a non-empty sequence of `RadioButton` objects.
+        """Initialize a radio buttons group control containing C{buttons},
+        which must be a non-empty sequence of L{RadioButton} objects.
         """
 
         # Perform sanity check on input and gather values.
@@ -177,7 +177,7 @@ class RadioButtonGroup(Control):
 class SubmitButton(SingleValueControl):
     """Single submit button.
 
-    All submit buttons in a form must be combined in a `SubmitButtons`
+    All submit buttons in a form must be combined in a L{SubmitButtons}
     control.
     """
 
@@ -189,8 +189,8 @@ class SubmitButtons(Control):
     """
 
     def __init__(self, buttons):
-        """Initialize a submit buttons control containing `buttons`,
-        which must be a sequence of `SubmitButton` objects.
+        """Initialize a submit buttons control containing C{buttons},
+        which must be a sequence of L{SubmitButton} objects.
         """
         Control.__init__(self)
         self.buttons = tuple((button.name, button.value) for button in buttons)
@@ -202,7 +202,7 @@ class SubmitButtons(Control):
         yield from self.buttons
 
 class SelectMultiple(SingleValueControl):
-    """Pseudo-control which represents an option in a `<select>` control
+    """Pseudo-control which represents an option in a C{<select>} control
     where multiple options can be active at the same time.
 
     This type of control is typically shown in a browser as a list box.
@@ -219,19 +219,17 @@ class SelectMultiple(SingleValueControl):
         yield self.name, self.value # selected
 
 class SelectSingle(Control):
-    """`<select>` control where one option can be active at the same time.
+    """C{<select>} control where one option can be active at the same time.
 
     This type of control is typically shown in a browser as a drop-down list.
     """
 
     def __init__(self, name, options):
-        """Initialize a single-choice `<select>` control.
+        """Initialize a single-choice C{<select>} control.
 
-        Parameters:
-
-        name
+        @param name:
             The name under which this control is submitted.
-        options
+        @param options:
             Sequence of all possible values for this control.
         """
 

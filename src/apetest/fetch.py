@@ -2,8 +2,8 @@
 
 """Load documents via HTTP.
 
-`load_page` loads arbitrary resources (as `bytes`).
-`load_text` loads and decodes plain text documents.
+L{load_page} loads arbitrary resources as C{bytes},
+while L{load_text} loads and decodes plain text documents.
 """
 
 from email import message_from_string
@@ -76,28 +76,20 @@ def open_page(
         ignore_client_error: bool = False,
         accept_header: str = '*/*'
     ) -> addinfourl:
-    """Open a connection to retrieve a resource via HTTP `GET`.
+    """Open a connection to retrieve a resource via HTTP GET.
 
-    Parameters:
-
-    url
+    @param url:
         The URL of the resource to request.
-    ignore_client_error
-        If `True`, a client error (HTTP status 400) is not reported
+    @param ignore_client_error:
+        If C{True}, a client error (HTTP status 400) is not reported
         as an error. This is useful to avoid false positives when
         making speculative requests.
-    accept_header
-        HTTP `Accept` header to use for the request.
-
-    Returns:
-
-    response
+    @param accept_header:
+        HTTP C{Accept} header to use for the request.
+    @return response:
         A result object that contains an open stream that data can
         be read from.
-
-    Raises:
-
-    apetest.report.FetchFailure
+    @raise apetest.report.FetchFailure:
         If no connection could be opened.
     """
 
@@ -146,29 +138,25 @@ def load_page(
         ignore_client_error: bool = False,
         accept_header: str = '*/*'
     ) -> Tuple[Report, Optional[addinfourl], Optional[bytes]]:
-    """Load the contents of a resource via HTTP `GET`.
+    """Load the contents of a resource via HTTP GET.
 
-    Parameters:
-
-    url
+    @param url:
         The URL of the resource to load.
-    ignore_client_error
-        If `True`, a client error (HTTP status 400) is not reported
+    @param ignore_client_error:
+        If C{True}, a client error (HTTP status 400) is not reported
         as an error. This is useful to avoid false positives when
         making speculative requests.
-    accept_header
-        HTTP `Accept` header to use for the request.
+    @param accept_header:
+        HTTP C{Accept} header to use for the request.
+    @return: C{(report, response, contents)}
 
-    Returns:
-
-    report, response, contents
-        `report` is a `apetest.report.Report` instance that may already
+        C{report} is a L{Report} instance that may already
         have some messages logged to it.
 
-        `response` is a `urllib.response.addinfourl` object if a response
-        was received from the server, or `None` otherwise.
+        C{response} is a C{urllib.response.addinfourl} object
+        if a response was received from the server, or C{None} otherwise.
 
-        `contents` is the loaded data as `bytes`, or `None` if
+        C{contents} is the loaded data as C{bytes}, or C{None} if
         the loading failed.
     """
 
@@ -203,23 +191,19 @@ def load_text(
     ) -> Tuple[Report, Optional[addinfourl], Optional[List[str]]]:
     """Load a text document.
 
-    Parameters:
-
-    url
+    @param url:
         The URL of the document to load.
-    accept_header
-        HTTP `Accept` header to use for the request.
+    @param accept_header:
+        HTTP C{Accept} header to use for the request.
+    @return: C{(report, response, contents)}
 
-    Returns:
-
-    report, response, contents
-        `report` is a `apetest.report.Report` instance that may already
+        C{report} is a L{Report} instance that may already
         have some messages logged to it.
 
-        `response` is an `http.client.HTTPResponse` object if
-        a response was received from the server, or `None` otherwise.
+        C{response} is an L{http.client.HTTPResponse} object if
+        a response was received from the server, or C{None} otherwise.
 
-        `contents` is the document as a list of lines, or `None` if
+        C{contents} is the document as a list of lines, or C{None} if
         the loading failed.
     """
     redirect_count = 0

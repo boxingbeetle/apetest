@@ -26,12 +26,12 @@ def plugin_create(args):
 class DataChangeMonitor(Plugin):
     """Monitors the log file for reported database changes.
 
-    HTTP `GET` requests must be idempotent, so any database activity
+    HTTP GET requests must be idempotent, so any database activity
     resulting from them is suspect.
     """
 
     def __init__(self, cclog):
-        """Initialize a monitor for the log at file path `cclog`."""
+        """Initialize a monitor for the log at file path C{cclog}."""
         self._log_file = cclog
         self._log_fd = None
         self._partial_line = b''

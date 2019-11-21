@@ -15,8 +15,8 @@ from typing import Dict, Iterable, Optional, Tuple
 
 
 def encoding_from_bom(data: bytes) -> Optional[str]:
-    """Look for a byte-order-marker at the start of the given `bytes`.
-    If found, return the encoding matching that BOM, otherwise return `None`.
+    """Look for a byte-order-marker at the start of the given C{bytes}.
+    If found, return the encoding matching that BOM, otherwise return C{None}.
     """
     if data.startswith(BOM_UTF8):
         return 'utf-8'
@@ -31,11 +31,9 @@ def standard_codec_name(name: str) -> str:
     """Map a codec name to the preferred standardized version.
 
     The preferred names were taken from this list published by IANA:
-      http://www.iana.org/assignments/character-sets/character-sets.xhtml
+    U{http://www.iana.org/assignments/character-sets/character-sets.xhtml}
 
-    Parameters:
-
-    name:
+    @param name:
         Text encoding name, in lower case.
     """
     if name.startswith('iso8859'):
@@ -52,23 +50,15 @@ def standard_codec_name(name: str) -> str:
 def try_decode(data: bytes, encodings: Iterable[str]) -> Tuple[str, str]:
     """Attempt to decode text using the given encodings in order.
 
-    Parameters:
-
-    data:
+    @param data:
         Encoded version of the text.
-    encodings:
+    @param encodings:
         Names of the encodings to try. Must all be lower case.
-
-    Returns:
-
-    text, encoding
+    @return: C{(text, encoding)}
         The decoded string and the encoding used to decode it.
         The returned encoding is name the preferred name, which could differ
-        from the name used in the `encodings` argument.
-
-    Raises:
-
-    ValueError
+        from the name used in the C{encodings} argument.
+    @raise ValueError:
         If the text could not be decoded.
     """
 
@@ -99,27 +89,19 @@ def decode_and_report(
     ) -> Tuple[str, str]:
     """Attempt to decode text using several encoding options in order.
 
-    Parameters:
-
-    data
+    @param data:
         Encoded version of the text.
-    encoding_options: (encoding | None, source)*
+    @param encoding_options: C{(encoding | None, source)*}
         Each option is a pair of encoding name and a description of
         where this encoding suggestion originated.
-        If the encoding name is `None`, the option is skipped.
-    logger
+        If the encoding name is C{None}, the option is skipped.
+    @param logger:
         Non-fatal problems are logged here.
         Such problems include an unknown or differing encodings
         among the options.
-
-    Returns:
-
-    text, encoding
+    @return: C{(text, encoding)}
         The decoded string and the encoding used to decode it.
-
-    Raises:
-
-    ValueError
+    @raise ValueError:
         If the text could not be decoded.
     """
 

@@ -8,9 +8,8 @@ Later, several search engines invented their own extensions.
 
 This module implements all of the original proposal and some of the
 extensions:
-
-- `allow` rules
-- percent-encoded UTF-8 in paths
+  - C{allow} rules
+  - percent-encoded UTF-8 in paths
 
 Note that the module takes sequences of strings as its input,
 so the decoding of the text file itself is done by the caller.
@@ -18,16 +17,14 @@ For interoperability, it is recommended to support at least
 UTF-8 both with and without a BOM.
 
 Features that are not (yet) implemented:
-
-- non-group records such as `sitemap`
-- `crawl-delay` rules
-- wildcards in paths
+  - non-group records such as C{sitemap}
+  - C{crawl-delay} rules
+  - wildcards in paths
 
 References:
-
-- <https://en.wikipedia.org/wiki/Robots_exclusion_standard>
-- <https://developers.google.com/search/reference/robots_txt>
-- <http://www.robotstxt.org/>
+  - U{https://en.wikipedia.org/wiki/Robots_exclusion_standard}
+  - U{https://developers.google.com/search/reference/robots_txt}
+  - U{http://www.robotstxt.org/}
 """
 
 from logging import LoggerAdapter
@@ -38,17 +35,15 @@ def scan_robots_txt(
         lines: Iterable[str],
         logger: LoggerAdapter
     ) -> Iterator[Iterable[Tuple[int, str, str]]]:
-    """Tokenizes the contents of a `robots.txt` file.
+    """Tokenizes the contents of a C{robots.txt} file.
 
-    lines
-        Contents of a `robots.txt` file.
-    logger
+    @param lines:
+        Contents of a C{robots.txt} file.
+    @param logger:
         Problems found while scanning are logged here.
-
-    Yields:
-
-    record: (lineno, token, value)*
-        Records, where each record is a sequence of triples.
+    @return:
+        Yields records, where each record is a sequence of
+        C{(lineno, token, value)} triples.
     """
     record: List[Tuple[int, str, str]] = []
     for lineno, line in enumerate(lines, 1):
@@ -80,21 +75,17 @@ def parse_robots_txt(
         records: Iterable[Iterable[Tuple[int, str, str]]],
         logger: LoggerAdapter
     ) -> Mapping[str, Iterable[Tuple[bool, str]]]:
-    """Parses `robots.txt` records.
+    """Parses C{robots.txt} records.
 
-    Parameters:
-
-    records
-        Tokenized records as produced by `scan_robots_txt`.
-    logger
+    @param records:
+        Tokenized records as produced by L{scan_robots_txt}.
+    @param logger:
         Problems found while parsing are logged here.
-
-    Returns:
-
-    rules_map: { user_agent: (allowed, url_prefix)* }
+    @param return:
+        rules_map: C{{ user_agent: (allowed, url_prefix)* }}
         A mapping from user agent name (case-folded) to a sequence of
-        allow/disallow rules, where `allowed` is `True` iff the user agent
-        is allowed to visit URLs starting with `url_prefix`.
+        allow/disallow rules, where C{allowed} is C{True} iff the user agent
+        is allowed to visit URLs starting with C{url_prefix}.
     """
     result: Dict[str, Iterable[Tuple[bool, str]]] = {}
     unknowns: Set[str] = set()
@@ -149,7 +140,8 @@ def parse_robots_txt(
 def unescape_path(path: str) -> str:
     """Decodes a percent-encoded URL path.
 
-    Raises `ValueError` if the escaping is incorrect.
+    @raise ValueError:
+        If the escaping is incorrect.
     """
     idx = 0
     while True:
@@ -223,18 +215,15 @@ def lookup_robots_rules(
     ) -> Iterable[Tuple[bool, str]]:
     """Looks up a user agent in a rules mapping.
 
-    Parameters:
-
-    rules_map
-        Rules mapping as produced by `parse_robots_txt`.
-    user_agent
+    @param rules_map:
+        Rules mapping as produced by L{parse_robots_txt}.
+    @param user_agent:
         Name of the user agent to look up in the rules.
-
-    Returns:
-
-    rules: (allowed, url_prefix)*
+    @return:
+        C{rules: (allowed, url_prefix)*}
         The rules that apply to the given user agent.
     """
+
     user_agent = user_agent.casefold()
     for name, rules in rules_map.items():
         if name.startswith(user_agent):
@@ -244,19 +233,15 @@ def lookup_robots_rules(
 def path_allowed(path: str, rules: Iterable[Tuple[bool, str]]) -> bool:
     """Checks whether the given rules allow visiting the given path.
 
-    Parameters:
-
-    path
+    @param path:
         URL path component.
-        Must not contain percent-encoded values other than `%2f` (`/`).
-    rules
-        Rules as returned by `lookup_robots_rules`.
-
-    Returns:
-
-    allowed
-        `True` iff `path` is allowed by `rules`.
+        Must not contain percent-encoded values other than C{%2f} (C{/}).
+    @param rules:
+        Rules as returned by L{lookup_robots_rules}.
+    @return:
+        C{True} iff C{path} is allowed by C{rules}.
     """
+
     # The draft RFC specifies that the first match should be used,
     # but both Google and Bing use the longest (most specific) match
     # instead. This means that in practice "longest match" will be

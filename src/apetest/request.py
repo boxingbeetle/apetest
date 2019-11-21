@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Home of the `apetest.request.Request` class."""
+"""Home of the L{Request} class."""
 
 from functools import total_ordering
 from typing import Iterable, Tuple
@@ -11,16 +11,18 @@ from urllib.parse import quote_plus, unquote_plus, urlsplit, urlunsplit
 class Request:
     """A resource request consisting of a page URL plus arguments.
 
-    To get the full URL including query, use `str(request)`.
+    To get the full URL including query, use C{str(request)}.
     """
 
     @staticmethod
     def from_url(url: str) -> 'Request':
-        """Creates a `Request` from a URL.
+        """Creates a L{Request} from a URL.
 
-        Raises `ValueError` if `url` cannot be represented by a `Request`
-        object because it uses non-standard query syntax.
+        @raise ValueError:
+            If C{url} cannot be represented by a L{Request}
+            object because it uses non-standard query syntax.
         """
+
         scheme, host, path, query_str, fragment_ = urlsplit(url)
         if not path:
             path = '/'
@@ -49,17 +51,16 @@ class Request:
         ):
         """Initializes a request object from a split URL.
 
-        Parameters:
-
-        page_url
+        @param page_url:
             URL without the query.
-        query: (key, value)*
+        @param query:
+            C{(key, value)*}
             The query part of the URL, as a sequence of key-value pairs.
-        maybe_bad: bool
+        @param maybe_bad:
             For speculative requests that are not guaranteed to be correct,
-            pass `True`.
+            pass C{True}.
             For requests that originate from the user or the web app under
-            test, use the `False` default.
+            test, use the C{False} default.
         """
 
         self.page_url = page_url
@@ -69,7 +70,7 @@ class Request:
         """The query part of the URL, as a sequence of key-value pairs."""
 
         self.maybe_bad = bool(maybe_bad)
-        """`True` iff this request is speculative.
+        """C{True} iff this request is speculative.
 
         Client errors returned when making speculative requests should not
         be reported as problems of a web app.

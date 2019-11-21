@@ -6,12 +6,13 @@ from invoke import UnexpectedExit, task
 
 
 TOP_DIR = Path(__file__).parent
-SRC_ENV = {'PYTHONPATH': str(TOP_DIR / 'src')}
+SRC_DIR = TOP_DIR / 'src'
+SRC_ENV = {'PYTHONPATH': str(SRC_DIR)}
 
 def source_arg(pattern):
     """Converts a source pattern to a command line argument."""
     if pattern is None:
-        paths = (TOP_DIR / 'src' / 'apetest').glob('**/*.py')
+        paths = (SRC_DIR / 'apetest').glob('**/*.py')
     else:
         paths = Path.cwd().glob(pattern)
     return ' '.join(str(path) for path in paths)
@@ -61,7 +62,7 @@ def lint(c, src=None, html=None, results=None):
         c.run('pylint-json2html -f jsonextended -o %s %s' % (html, json_file))
     if results is not None:
         import sys
-        sys.path.append(f'{TOP_DIR}/src')
+        sys.path.append(str(SRC_DIR))
         from pylint_json2sfresults import gather_results
         results_dict = gather_results(json_file, lint_result.exited)
         results_dict['report'] = str(html)
@@ -128,7 +129,16 @@ def readme(c):
 @task
 def apidocs(c):
     """Generate documentation as HTML files."""
-    print('Not generating API docs.')
+    apiDir = TOP_DIR / 'docs' / 'api'
+    remove_dir(apiDir)
+    cmd = [
+        'pydoctor',
+        '--make-html', f'--html-output={apiDir}',
+        f' --add-package={SRC_DIR}/apetest',
+        f'--project-name=APE',
+        f'--project-url=https://boxingbeetle.com/tools/ape/',
+        ]
+    c.run(' '.join(cmd))
 
 @task(post=[apidocs, readme])
 def docs(c):

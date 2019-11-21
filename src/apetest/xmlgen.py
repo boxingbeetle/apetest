@@ -6,47 +6,46 @@ This is a system to generate strings in XML format. It does not provide
 an editable document model or a templates. Instead, you create a tree
 of XML objects and serialize it to a string.
 
-An XML element can be created using the following syntax:
+An XML element can be created using the following syntax::
 
     xml.dish(style='recommended', id=123)[
         xml.spam['wonderful'],
         xml.egg(class_='large')
         ]
 
-`xml`.*name* creates an XML element with the given name.
+C{xml.I{name}} creates an XML element with the given name.
 If the name is not a constant or contains for example a dash,
-you can use the alternative syntax `xml['tricky-name']`.
+you can use the alternative syntax C{xml['I{tricky-name}']}.
 
 Attributes are added to an element using keyword arguments. If an
-argument's value is `None`, that attribute will be omitted.
+argument's value is C{None}, that attribute will be omitted.
 Argument values will be converted to strings if necessary.
 Trailing underscores in names will be stripped off, which is
-useful for names such as `class` that are reserved in Python.
+useful for names such as C{class} that are reserved in Python.
 
 Nested content is added to an element using brackets. The following
 types of content are supported:
-
-- XML objects: elements, character data and sequences
-- strings, which will be treated as character data
-- iterables (list, tuple, generator etc.) containing objects of the
-  supported types; nested iterables are allowed
-- `None`, which will be ignored
-- `raw` objects, which contain text that will not be escaped
+  - XML objects: elements, character data and sequences
+  - strings, which will be treated as character data
+  - iterables (list, tuple, generator etc.) containing objects of the
+    supported types; nested iterables are allowed
+  - C{None}, which will be ignored
+  - L{raw} objects, which contain text that will not be escaped
 
 It is possible to derive an XML element from an existing one by
 applying the attribute or nested content syntax to it. This will
 produce a new XML element with updated attributes or added content;
 the original element object will not be modified.
 
-You can construct sequences of XML objects using the `+` operator
-or the `concat` function. If you are creating a sequence of many
-objects, `concat` will perform better. The same conversion rules
+You can construct sequences of XML objects using the C{+} operator
+or the L{concat} function. If you are creating a sequence of many
+objects, L{concat} will perform better. The same conversion rules
 for nested content are applied when creating sequences.
 
-You can also create a sequence of XML objects using the `join()` method
-of any XML object, similar to Python's `str.join()`. If you want the
+You can also create a sequence of XML objects using the L{join()} method
+of any XML object, similar to Python's C{str.join()}. If you want the
 separator to be character data, you can create a character data object
-using the `txt` function. For example:
+using the L{txt} function. For example::
 
     xml.br.join(lines)
 
@@ -56,7 +55,7 @@ using the `txt` function. For example:
         )
 
 To output the generated XML, you convert an XML object to a string
-by calling its `flatten()` method.
+by calling its L{flatten()} method.
 
 When an element is flattened, the generated XML will be well-formed,
 assuming you used only allowed characters in element and attribute
@@ -67,7 +66,7 @@ The XML string will retain any Unicode characters that were put into
 the XML tree. Therefore, if you want to write the generated XML as
 bytes, you should either encode the string in a Unicode encoding such
 as UTF-8, or escape Unicode characters that don't exist in the selected
-encoding. For example:
+encoding. For example::
 
     with open(name, 'w',
               encoding='ascii',
@@ -106,7 +105,7 @@ class _XMLSerializable:
     def join(self, siblings: Iterable['XMLContent']) -> '_XMLSequence':
         """Creates an XML sequence containing the given XML objects,
         with itself inserted between each sibling, similar to
-        `str.join()`.
+        C{str.join()}.
         """
         return _XMLSequence(_join(self, _adapt(siblings)))
 
@@ -133,7 +132,7 @@ class _Text(_XMLSerializable):
         yield self.__text
 
 def txt(text: str) -> XML:
-    """Creates an XML character data object containing `text`."""
+    """Creates an XML character data object containing C{text}."""
     return _Text(text)
 
 class _Raw(_XMLSerializable):
@@ -241,10 +240,11 @@ def _adapt(node: XMLContent) -> Iterator[XML]:
         raise TypeError(f'cannot handle node of type {type(node).__name__}')
 
 def concat(*siblings: XMLContent) -> _XMLSequence:
-    """Creates an XML sequence by concatenating `siblings`.
+    """Creates an XML sequence by concatenating C{siblings}.
 
-    Siblings must be XML objects or convertible to XML objects,
-    otherwise `TypeError` will be raised.
+    @raise TypeError:
+        If one of the C{siblings} is neither an XML object nor convertible
+        to XML.
     """
     return _XMLSequence(_adapt(siblings))
 

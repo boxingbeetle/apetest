@@ -2,7 +2,7 @@
 
 """Checks a document for problems and finds links to other documents.
 
-The `PageChecker` class is where the work is done.
+The L{PageChecker} class is where the work is done.
 """
 
 from collections import defaultdict
@@ -51,22 +51,18 @@ _RE_XML_DECL_ATTR = re.compile(
 def strip_xml_decl(text: str) -> str:
     """Strip the XML declaration from the start of the given text.
 
-    Returns the given text without XML declaration, or the unmodified text if
-    no XML declaration was found.
+    @return: The given text without XML declaration,
+             or the unmodified text if no XML declaration was found.
     """
     match = _RE_XML_DECL.match(text)
     return text if match is None else text[match.end():]
 
 def encoding_from_xml_decl(text: str) -> Optional[str]:
-    """Look for an XML declaration with an `encoding` attribute at the start
+    """Look for an XML declaration with an C{encoding} attribute at the start
     of the given text.
 
-    Returns:
-
-    encoding
-        The attribute value, converted to lower case.
-    None
-        If no attribute was found.
+    @return: The attribute value, converted to lower case,
+             or C{None} if no attribute was found.
     """
 
     match = _RE_XML_DECL.match(text)
@@ -79,12 +75,13 @@ def encoding_from_xml_decl(text: str) -> Optional[str]:
     return None
 
 def normalize_url(url: str) -> str:
-    """Returns a unique string for the given URL.
+    """Return a unique string for the given URL.
 
     This is required in some places, since different libraries
     have different opinions whether local URLs should start with
-    `file:/` or `file:///`.
+    C{file:/} or C{file:///}.
     """
+
     return urlunsplit(urlsplit(url))
 
 def parse_document(
@@ -94,22 +91,17 @@ def parse_document(
     ) -> Optional[etree._ElementTree]:
     """Parse the given XML or HTML document.
 
-    Parameters:
-
-    content
+    @param content:
         Text to be parsed.
-    is_xlm
-        If `True`, parse as XML, otherwise parse as HTML.
-    report: apetest.report.Report
+    @param is_xlm:
+        If C{True}, parse as XML, otherwise parse as HTML.
+    @param report:
         Parse errors are logged here.
-
-    Returns:
-
-    tree
-        A document `etree`.
-    None
-        If the document is too broken to be parsed.
+    @return:
+        A document U{C{etree}<https://lxml.de/api.html#lxml-etree>},
+        or C{None} if the document is too broken to be parsed.
     """
+
     parser_factory = etree.XMLParser if is_xml else etree.HTMLParser
     parser = parser_factory(recover=True)
 
@@ -189,15 +181,13 @@ class PageChecker:
         ):
         """Initialize page checker.
 
-        Parameters:
-
-        base_url
+        @param base_url:
             Base URL for the web site or app under test.
-        accept: Accept
+        @param accept:
             The types of documents that we tell the server we accept.
-        scribe: apetest.report.Scribe
+        @param scribe:
             Reports will be added here.
-        plugins: apetest.plugin.PluginCollection
+        @param plugins:
             Plugins to notify of loaded documents.
         """
 
@@ -207,7 +197,7 @@ class PageChecker:
         self.plugins = plugins
 
     def short_url(self, url: str) -> str:
-        """Return a shortened version of `url`.
+        """Return a shortened version of C{url}.
 
         This drops the part of the URL that all pages share.
         """
@@ -216,7 +206,7 @@ class PageChecker:
         return url[self.base_url.rindex('/') + 1 : ]
 
     def check(self, req: Request) -> Iterable[Referrer]:
-        """Check a single `apetest.request.Request`."""
+        """Check a single L{Request}."""
 
         req_url = str(req)
         _LOG.info('Checking page: %s', self.short_url(req_url))
@@ -410,7 +400,7 @@ class PageChecker:
         yield '{http://www.w3.org/1999/xlink}href'
 
     def find_urls(self, tree: etree._ElementTree) -> Iterator[str]:
-        """Yield URLs found in the document `tree`."""
+        """Yield URLs found in the document C{tree}."""
         for node in tree.getroot().iter():
             for attr in self.link_attrs_for_node(cast(str, node.tag)):
                 try:
@@ -424,7 +414,7 @@ class PageChecker:
             tree_url: str,
             report: Report
         ) -> Iterator[Referrer]:
-        """Yield referrers for links found in XML tags in the document `tree`.
+        """Yield referrers for links found in XML tags in the document C{tree}.
         """
         links: DefaultDict[str, LinkSet] = defaultdict(LinkSet)
         for url in self.find_urls(tree):
@@ -447,7 +437,7 @@ class PageChecker:
             url: str
         ) -> Iterator[Referrer]:
         """Yield referrers for links and forms found in HTML tags in
-        the document `tree`.
+        the document C{tree}.
         """
 
         root = tree.getroot()

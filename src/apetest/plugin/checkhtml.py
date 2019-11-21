@@ -3,8 +3,8 @@
 """Plugin that checks HTML and optionally CSS.
 
 The actual checking is done by the Nu Html Checker (v.Nu).
-Download the checker from <https://validator.github.io/>
-or install the `html5validator` package with `pip`.
+Download the checker from U{https://validator.github.io/}
+or install the C{html5validator} package with C{pip}.
 
 The checker is written in Java, so you must have a Java runtime (JRE)
 installed to run it.
@@ -100,16 +100,14 @@ class HTMLValidator(Plugin):
     def __init__(self, service_url, launch, content_types):
         """Initialize a validator using the given checker web service.
 
-        Parameters:
-
-        service_url
+        @param service_url:
             URL for the checker web service.
-        launch
-            If `True`, the validator should be launched using
-            the JAR file specified by `service_url`.
-            If `False`, `service_url` is the URL of an externally
+        @param launch:
+            If C{True}, the validator should be launched using
+            the JAR file specified by C{service_url}.
+            If C{False}, C{service_url} is the URL of an externally
             started web service.
-        content_types: str*
+        @param content_types:
             Documents of these types will be checked,
             other documents will be ignored.
         """

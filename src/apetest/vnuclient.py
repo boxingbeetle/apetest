@@ -2,10 +2,10 @@
 
 """Client for using the web service of the Nu Html Checker (v.Nu).
 
-`VNUClient` can connect to the checker web service and have it process one
+L{VNUClient} can connect to the checker web service and have it process one
 or more requests.
 
-You can find the checker itself at <https://validator.github.io/>
+You can find the checker itself at U{https://validator.github.io/}.
 """
 
 from gzip import GzipFile
@@ -74,14 +74,14 @@ class VNUClient:
     """Manages a connection to the checker web service.
 
     A connection will be opened on demand but has to be closed explicitly,
-    either by calling the `VNUClient.close` method or by using the client
-    object as the context manager in a `with` statement.
+    either by calling the L{close} method or by using the client object
+    as the context manager in a C{with} statement.
     A client with a closed connection can be used again: the connection
     will be re-opened.
     """
 
     def __init__(self, url: str):
-        """Initializes a client that connects to the v.Nu checker at `url`."""
+        """Initializes a client that connects to the v.Nu checker at C{url}."""
         self.service_url = url
         self._connection: Optional[HTTPConnection] = None
         self._remote: Optional[Tuple[str, str]] = None
@@ -259,33 +259,24 @@ class VNUClient:
         ) -> Iterator[Mapping[str, Any]]:
         """Feeds the given document to the checker.
 
-        Parameters:
-
-        data
-            Document to check, as `bytes`.
-        content_type
+        @param data:
+            Document to check, as C{bytes}.
+        @param content_type:
             Media type for the document.
-            This string is sent as the value for the HTTP "Content-Type"
+            This string is sent as the value for the HTTP C{Content-Type}
             header, so it can also include encoding information,
-            for example "text/html; charset=utf-8".
-        errors_only
-            When `True`, the checker returns only errors and no warnings
+            for example C{"text/html; charset=utf-8"}.
+        @param errors_only:
+            When C{True}, the checker returns only errors and no warnings
             or informational messages.
-
-        Yields:
-
-        dict
-            Message objects as described in
-            [the checker's JSON output format](
-            https://github.com/validator/validator/wiki/Output-»-JSON).
-
-        Raises:
-
-        OSError
+        @return: Yields message objects (mappings) as described in
+            U{the checker's JSON output format
+            <https://github.com/validator/validator/wiki/Output-»-JSON>}.
+        @raise OSError:
             When an unrecoverable low-level I/O error occurs.
-        HTTPException
+        @raise HTTPException:
             When an unrecoverable HTTP error occurs.
-        ValueError
+        @raise ValueError:
             When the response body could not be decoded or parsed.
         """
         url = self.service_url + '?out=json'

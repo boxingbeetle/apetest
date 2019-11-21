@@ -3,9 +3,9 @@
 """Plugin that creates a properties file summarizing the test results.
 
 This properties file can be used as-is by SoftFab, but should be easy
-to use with other tools as well. The format is of a Java `.properties`
-file, similar to a Windows `.ini` file. It is a text with with one
-key-value pair per line, with `=` as the separator.
+to use with other tools as well. The format is of a Java C{.properties}
+file, similar to a Windows C{.ini} file. It is a text with with one
+key-value pair per line, with C{=} as the separator.
 """
 
 from apetest.plugin import Plugin
@@ -25,7 +25,7 @@ class PropertiesPlugin(Plugin):
     """Plugin that creates a SoftFab-compatible results properties file."""
 
     def __init__(self, properties_file):
-        """Initialize the plugin to write `properties_file`."""
+        """Initialize the plugin to write C{properties_file}."""
         self.properties_file = properties_file
 
     def postprocess(self, scribe):

@@ -39,23 +39,18 @@ def detect_url(arg):
 def run(url, report_file_name, accept, plugins=()):
     """Runs APE with the given arguments.
 
-    Parameters:
-
-    url
+    @param url:
         Base URL of the web site or app to check.
-    report_file_name
+    @param report_file_name:
         Path to write the HTML report to.
-    accept: apetest.checker.Accept
+    @param accept:
         Document types that we tell the server that we accept.
-    plugins: apetest.plugin.Plugin*
+    @param plugins:
         Plugins to use on this run.
-
-    Returns:
-
-    exit_code
+    @return:
         0 if successful, non-zero on errors.
-
     """
+
     plugins = PluginCollection(plugins)
     try:
         try:
@@ -92,7 +87,7 @@ def run(url, report_file_name, accept, plugins=()):
         plugins.close()
 
 def main():
-    """Parse command line arguments and call `run` with the results.
+    """Parse command line arguments and call L{run} with the results.
 
     This is the entry point that gets called by the wrapper script.
     """

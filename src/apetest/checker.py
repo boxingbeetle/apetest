@@ -446,8 +446,15 @@ class PageChecker:
         """Yield referrers for links and forms found in HTML tags in
         the document `tree`.
         """
+
         root = tree.getroot()
-        ns_prefix = '{%s}' % root.nsmap[None] if None in root.nsmap else ''
+        if None in root.nsmap:
+            default_ns = root.nsmap[None]
+            if isinstance(default_ns, bytes):
+                default_ns = default_ns.decode('ascii')
+            ns_prefix = '{%s}' % default_ns
+        else:
+            ns_prefix = ''
 
         for form_node in root.iter(ns_prefix + 'form'):
             # TODO: How to handle an empty action?

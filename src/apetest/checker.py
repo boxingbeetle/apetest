@@ -275,10 +275,7 @@ class PageChecker:
             report.checked = Checked.HTTP_STATUS_SKIP
             return
 
-        # This type has been fixed in typeshed; the workaround can be removed
-        # once mypy updates (0.730 stil has the problem).
-        #   https://github.com/python/typeshed/issues/3344
-        headers = cast(Message, response.headers)
+        headers = response.headers
         content_type_header = headers['Content-Type']
         if content_type_header is None:
             message = 'Missing Content-Type header'

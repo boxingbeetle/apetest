@@ -227,11 +227,7 @@ def load_text(
 
     assert content_bytes is not None
     bom_encoding = encoding_from_bom(content_bytes)
-    # This type has been fixed in typeshed; the workaround can be removed
-    # once mypy updates (0.730 stil has the problem).
-    #   https://github.com/python/typeshed/issues/3344
-    headers = cast(Message, response.headers)
-    http_encoding = headers.get_content_charset()
+    http_encoding = response.headers.get_content_charset()
     try:
         content, used_encoding_ = decode_and_report(
             content_bytes,

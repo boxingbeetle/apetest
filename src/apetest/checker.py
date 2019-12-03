@@ -6,7 +6,6 @@ The L{PageChecker} class is where the work is done.
 """
 
 from collections import defaultdict
-from email.message import Message
 from enum import Enum, auto
 from logging import getLogger
 from typing import DefaultDict, Iterable, Iterator, List, Optional, cast

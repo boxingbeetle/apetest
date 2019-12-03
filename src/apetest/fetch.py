@@ -7,11 +7,10 @@ while L{load_text} loads and decodes plain text documents.
 """
 
 from email import message_from_string
-from email.message import Message
 from io import BytesIO
 from logging import getLogger
 from time import sleep
-from typing import IO, List, Mapping, Optional, Tuple, cast
+from typing import IO, List, Mapping, Optional, Tuple
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import (

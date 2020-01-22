@@ -128,6 +128,11 @@ class PluginCollection(PluginCollectionBase):
                     getattr(plugin, name)(*args, **kvargs)
             return dispatch
 
+# Work around mypy not knowing about __path__.
+#   https://github.com/python/mypy/issues/1422
+if TYPE_CHECKING:
+    __path__: List[str]
+
 def load_plugins() -> Iterator[ModuleType]:
     """Discover and import plugin modules.
 
@@ -135,11 +140,6 @@ def load_plugins() -> Iterator[ModuleType]:
 
     @return: Yields the imported plugin modules.
     """
-
-    # Work around mypy not knowing about __path__.
-    #   https://github.com/python/mypy/issues/1422
-    if TYPE_CHECKING:
-        __path__: List[str]
 
     for finder_, name, ispkg_ in iter_modules(__path__, 'apetest.plugin.'):
         try:

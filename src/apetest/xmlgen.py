@@ -43,16 +43,9 @@ objects, L{concat} will perform better. The same conversion rules
 for nested content are applied when creating sequences.
 
 You can also create a sequence of XML objects using the L{join()} method
-of any XML object, similar to Python's C{str.join()}. If you want the
-separator to be character data, you can create a character data object
-using the L{txt} function. For example::
+of any XML object, similar to Python's C{str.join()}::
 
     xml.br.join(lines)
-
-    txt(', ').join(
-        xml.a(href=url)[description]
-        for url, description in links
-        )
 
 To output the generated XML, you convert an XML object to a string
 by calling its L{flatten()} method.
@@ -130,10 +123,6 @@ class _Text(_XMLSerializable):
 
     def _to_fragments(self) -> Iterator[str]:
         yield self.__text
-
-def txt(text: str) -> XML:
-    """Creates an XML character data object containing C{text}."""
-    return _Text(text)
 
 class _Raw(_XMLSerializable):
 
@@ -248,4 +237,4 @@ def concat(*siblings: XMLContent) -> _XMLSequence:
     """
     return _XMLSequence(_adapt(siblings))
 
-__all__ = ('xml', 'txt', 'raw', 'concat')
+__all__ = ('xml', 'raw', 'concat')

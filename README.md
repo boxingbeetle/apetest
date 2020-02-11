@@ -90,11 +90,13 @@ If you want to modify APE, start by cloning the Git repository:
 
     $ git clone https://github.com/boxingbeetle/apetest.git
 
-Make sure the `python` command starts Python version 3.6 or later. If this is not the default on your system, you can use for example [pyenv](https://github.com/pyenv/pyenv) or [virtualenv](https://virtualenv.pypa.io/) to set up an environment with the right Python version.
-
 APE uses the [Poetry build system](https://poetry.eustace.io/) for managing its development environment. Using the [recommended installation procedure](https://github.com/sdispater/poetry#installation) instead of pip helps separate Poetry's dependencies from those of the software it manages, like APE.
 
-Start a shell in the virtual environment managed by Poetry:
+Create a virtual environment managed by Poetry:
+
+    $ poetry env use python3
+
+Start a shell in this virtual environment:
 
     $ poetry shell
 

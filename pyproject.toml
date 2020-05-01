@@ -36,13 +36,13 @@ lxml = '^4.0'
 # Technically we can run without "html5validator", but checking HTML is
 # a core feature.
 html5validator = '^0.3.1'
-importlib_metadata = "^0.23.0"
+importlib_metadata = {version = "^0.23.0", python = "<3.8"}
 
 [tool.poetry.dev-dependencies]
 pytest = '^4.0'
 pylint = '^2.0'
 invoke = "^1.2"
-isort = {version = "^4.3",extras = ["pyproject"]}
+isort = {version = "^4.3", extras = ["pyproject"]}
 pylint-json2html = "^0.1.0"
 markdown = "^3.1"
 mypy = '>=0.750'

@@ -36,7 +36,7 @@ from importlib import import_module
 from logging import getLogger
 from pkgutil import iter_modules
 from types import ModuleType
-from typing import TYPE_CHECKING, Callable, Iterator, Iterable, List
+from typing import TYPE_CHECKING, Callable, Iterable, Iterator, List
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import

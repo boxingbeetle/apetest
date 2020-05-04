@@ -30,6 +30,9 @@ classifiers = [
     'Topic :: Software Development :: Testing'
     ]
 
+[tool.poetry.urls]
+"Issue Tracker" = "https://github.com/boxingbeetle/apetest/issues"
+
 [tool.poetry.dependencies]
 python = '^3.6'
 lxml = '^4.0'

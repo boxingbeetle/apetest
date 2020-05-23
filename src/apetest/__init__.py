@@ -42,13 +42,13 @@ The exact resource being requested is determined by the page URL and
 an optional query; this is modeled by the L{Request} class.
 
 A request is discovered by crawling other pages. Something that can
-generate requests is called a I{X{referrer}} and is modeled by the
+generate requests is called a I{referrer} and is modeled by the
 L{Referrer} class. Some referrers, like an HTTP redirect,
 generate one exact request, while other referrers, like an HTML form,
 can generate many different requests depending on the values of
 the form's controls.
 
-A request is considered I{X{speculative}} if an actual user accessing the web
+A request is considered I{speculative} if an actual user accessing the web
 app/site through a web browser would not normally generate it. The server
 should be robust against such requests, but if it rejects them with
 an HTTP "client error" (400) status, APE will not report that as an error.

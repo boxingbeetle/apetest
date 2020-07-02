@@ -26,6 +26,7 @@ from apetest.plugin import PluginCollection
 from apetest.referrer import Form, LinkSet, Redirect, Referrer
 from apetest.report import Checked, Report, Scribe
 from apetest.request import Request
+from apetest.xmlgen import concat, xml
 
 
 class Accept(Enum):
@@ -137,6 +138,35 @@ def parse_document(
             report.error(message)
 
     return None if root is None else root.getroottree()
+
+def repair_tree(
+        tree: etree._ElementTree,
+        content_type: str,
+        report: Report
+    ) -> bool:
+    """Check the document tree for general errors that would prevent
+    other checkers from doing their work and repair those if possible.
+
+    @return: True iff the tree was modified.
+    """
+
+    modified = False
+
+    # Make sure XHTML root element has a namespace.
+    if content_type == 'application/xhtml+xml':
+        root = tree.getroot()
+        if root.tag != '{http://www.w3.org/1999/xhtml}html':
+            msg = 'The root element does not use the XHTML namespace.'
+            html = concat(
+                msg, xml.br, 'expected: ',
+                xml.code['<html xmlns="http://www.w3.org/1999/xhtml"']
+                )
+            report.error(msg, extra={'html': html})
+            # lxml will auto-fix this for us when serializing, so there is
+            # no need to actually modify the tree.
+            modified = True
+
+    return modified
 
 def _parse_input_control(attrib: etree._Attrib) -> Optional[Control]:
     _LOG.debug('input: %s', attrib)
@@ -349,6 +379,13 @@ class PageChecker:
                 if is_html or is_xml:
                     tree = parse_document(content, is_xml, report)
                     if tree is not None:
+                        if repair_tree(tree, content_type, report):
+                            # Offer the repaired tree to plugins, so they
+                            # are more likely to be able to do their work.
+                            repaired = etree.tostring(tree, encoding='utf-8')
+                            assert isinstance(repaired, bytes)
+                            content_bytes = repaired
+
                         # Find links to other documents.
                         yield from self.find_referrers_in_xml(
                             tree, req_url, report

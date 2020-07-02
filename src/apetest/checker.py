@@ -398,7 +398,7 @@ class PageChecker:
     def find_urls(self, tree: etree._ElementTree) -> Iterator[str]:
         """Yield URLs found in the document C{tree}."""
         for node in tree.getroot().iter():
-            for attr in self.link_attrs_for_node(cast(str, node.tag)):
+            for attr in self.link_attrs_for_node(node.tag):
                 try:
                     yield cast(str, node.attrib[attr])
                 except KeyError:

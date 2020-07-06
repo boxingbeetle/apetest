@@ -50,7 +50,7 @@ pylint-json2html = "^0.1.0"
 markdown = "^3.1"
 mypy = '>=0.750'
 pyflakes = "^2.1"
-lxml-stubs = { git = "https://github.com/boxingbeetle/lxml-stubs.git" }
+lxml-stubs = { git = "https://github.com/lxml/lxml-stubs.git" }
 pydoctor = ">=20.7.0"
 
 [tool.poetry.scripts]

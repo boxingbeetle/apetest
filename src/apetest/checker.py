@@ -93,7 +93,7 @@ def parse_document(
 
     @param content:
         Text to be parsed.
-    @param is_xlm:
+    @param is_xml:
         If C{True}, parse as XML, otherwise parse as HTML.
     @param report:
         Parse errors are logged here.

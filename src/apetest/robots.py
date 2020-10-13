@@ -81,7 +81,7 @@ def parse_robots_txt(
         Tokenized records as produced by L{scan_robots_txt}.
     @param logger:
         Problems found while parsing are logged here.
-    @param return:
+    @return:
         rules_map: C{{ user_agent: (allowed, url_prefix)* }}
         A mapping from user agent name (case-folded) to a sequence of
         allow/disallow rules, where C{allowed} is C{True} iff the user agent

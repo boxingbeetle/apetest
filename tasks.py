@@ -1,4 +1,3 @@
-from os import makedirs
 from pathlib import Path
 from shutil import rmtree
 
@@ -6,6 +5,7 @@ from invoke import UnexpectedExit, task
 
 
 TOP_DIR = Path(__file__).parent
+DOC_DIR = TOP_DIR / 'docs'
 SRC_DIR = TOP_DIR / 'src'
 SRC_ENV = {'PYTHONPATH': str(SRC_DIR)}
 
@@ -32,7 +32,7 @@ def write_results(results, results_path):
 def clean(c):
     """Clean up our output."""
     print('Cleaning up...')
-    remove_dir(TOP_DIR / 'docs')
+    remove_dir(DOC_DIR)
     doctest_report = TOP_DIR / 'doctest.html'
     if doctest_report.is_file():
         doctest_report.unlink()
@@ -123,14 +123,15 @@ def isort(c, src=None):
 def readme(c):
     """Render README.md to HTML."""
     print('Rendering README...')
-    makedirs('docs/', exist_ok=True)
-    c.run('markdown_py -f %s %s' % ('docs/README.html', 'README.md'))
+    DOC_DIR.mkdir(exist_ok=True)
+    c.run(f"markdown_py -f {DOC_DIR / 'README.html'} {TOP_DIR / 'README.md'}")
 
 @task
 def apidocs(c):
     """Generate documentation as HTML files."""
-    apiDir = TOP_DIR / 'docs' / 'api'
+    apiDir = DOC_DIR / 'api'
     remove_dir(apiDir)
+    apiDir.mkdir(parents=True)
     cmd = [
         'pydoctor',
         '--make-html', f'--html-output={apiDir}',

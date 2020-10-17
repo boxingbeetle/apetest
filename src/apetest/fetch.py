@@ -85,8 +85,8 @@ def open_page(
         making speculative requests.
     @param accept_header:
         HTTP C{Accept} header to use for the request.
-    @return response:
-        A result object that contains an open stream that data can
+    @return:
+        A response object that contains an open stream that data can
         be read from.
     @raise apetest.report.FetchFailure:
         If no connection could be opened.

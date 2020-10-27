@@ -155,8 +155,8 @@ class Report(LoggerAdapter):
         """C{True} iff no warnings or errors were reported.
 
         This is initialized to C{True} and will be set to C{False}
-        when a message with a level higher than L{logging.INFO}
-        (such as a warning or error) is logged on this report.
+        when a message with a level higher than C{INFO} (such as
+        a warning or error) is logged on this report.
         """
 
         self.checked = Checked.NOT_CHECKED

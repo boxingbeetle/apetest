@@ -136,8 +136,9 @@ def apidocs(c):
         'pydoctor',
         '--make-html', f'--html-output={apiDir}',
         f' --add-package={SRC_DIR}/apetest',
-        f'--project-name=APE',
-        f'--project-url=https://boxingbeetle.com/tools/ape/',
+        '--project-name=APE',
+        '--project-url=https://boxingbeetle.com/tools/ape/',
+        '--intersphinx=https://docs.python.org/3/objects.inv',
         ]
     c.run(' '.join(cmd))
 

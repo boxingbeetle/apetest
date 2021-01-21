@@ -135,10 +135,10 @@ def apidocs(c):
     cmd = [
         'pydoctor',
         '--make-html', f'--html-output={apiDir}',
-        f' --add-package={SRC_DIR}/apetest',
         '--project-name=APE',
         '--project-url=https://boxingbeetle.com/tools/ape/',
         '--intersphinx=https://docs.python.org/3/objects.inv',
+        f'{SRC_DIR}/apetest',
         ]
     c.run(' '.join(cmd))
 

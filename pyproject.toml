@@ -34,7 +34,7 @@ classifiers = [
 "Issue Tracker" = "https://github.com/boxingbeetle/apetest/issues"
 
 [tool.poetry.dependencies]
-python = '^3.6'
+python = '^3.6.1'
 lxml = '^4.0'
 # Technically we can run without "html5validator", but checking HTML is
 # a core feature.
@@ -52,6 +52,7 @@ mypy = '>=0.750'
 pyflakes = "^2.1"
 lxml-stubs = '>=0.1.1'
 pydoctor = ">=20.7.0"
+pre-commit = "^2.13.0"
 
 [tool.poetry.scripts]
 apetest = 'apetest.cmdline:main'

@@ -116,6 +116,10 @@ The task you will probably want to run first is `docs`, which generates the docu
 
 Now you can read the API documentation in `docs/api/`. The documentation of the top-level module gives a quick overview of the code.
 
+APE uses [`pre-commit` ](https://pre-commit.com/) to automatically check and reformat source code before it is committed. Running the following command once in your Git work area sets up the pre-commit hooks:
+
+    $ pre-commit install
+
 Before submitting a pull request, please run `inv test` to run all tests. There should be no failing tests and zero warnings from PyLint. If PyLint detects any false positives, please add a `pylint: disable=<id>` comment to suppress them.
 
 Note that APE may find invalid HTML in the API docs, but as long as APE doesn't crash and produces a readable report, that counts as the test passing as far as APE is concerned.

@@ -25,7 +25,7 @@ class Referrer:
         self.page_url = page_url
         """The URL of the page linked to, without query."""
 
-        self.method = 'get'
+        self.method = "get"
         """The HTTP method to be used for generated requests, in lower case.
 
         Only C{'get'} and C{'post'} are currently supported.
@@ -53,6 +53,7 @@ class Referrer:
         """
         raise NotImplementedError
 
+
 class Redirect(Referrer):
     """An HTTP redirect from one URL to another."""
 
@@ -69,6 +70,7 @@ class Redirect(Referrer):
     def iter_requests(self):
         yield self.target
 
+
 class LinkSet(Referrer):
     """One or more links to different queries of the same page."""
 
@@ -77,7 +79,7 @@ class LinkSet(Referrer):
 
         L{page_url} will be C{None} until links are added.
         """
-        Referrer.__init__(self, None) # page_url is set later
+        Referrer.__init__(self, None)  # page_url is set later
 
         self.links = set()
         """The links (L{Request} objects) that were added."""
@@ -101,6 +103,7 @@ class LinkSet(Referrer):
     def iter_requests(self):
         return iter(self.links)
 
+
 class Form(Referrer):
     """An HTML form that can generate a request upon submission."""
 
@@ -115,7 +118,7 @@ class Form(Referrer):
             The input elements contained in this form.
         """
 
-        assert method in ('get', 'post')
+        assert method in ("get", "post")
         Referrer.__init__(self, page_url)
         self.method = method
         self.controls = controls
@@ -136,10 +139,9 @@ class Form(Referrer):
         for control in controls:
             # Filter out duplicates.
             alternatives = {
-                (None, None) if name is None or value is None
-                else (name, value)
+                (None, None) if name is None or value is None else (name, value)
                 for name, value in control.alternatives()
-                }
+            }
             if len(alternatives) == 1:
                 # If there is only once choice, make that choice now.
                 name, value = alternatives.pop()
@@ -152,9 +154,9 @@ class Form(Referrer):
 
         self.combinations = combinations
 
-        print('non-alternatives:', base_query)
-        print('alternatives:', all_alternatives)
-        print('combinations:', combinations)
+        print("non-alternatives:", base_query)
+        print("alternatives:", all_alternatives)
+        print("combinations:", combinations)
 
     def has_request(self, request):
         # Check if page matches.
@@ -168,39 +170,44 @@ class Form(Referrer):
         # Create a matrix of bools that stores which control and pair
         # combinations are possible.
         produces_pairs = [
-            [control.has_alternative(name, value)
-             for name, value in request.query]
+            [control.has_alternative(name, value) for name, value in request.query]
             for control in self.controls
-            ]
+        ]
         # Store which controls can be omitted from the submission.
         produces_empty = [
-            control.has_alternative(None, None)
-            for control in self.controls
-            ]
+            control.has_alternative(None, None) for control in self.controls
+        ]
 
         class MatrixIterator:
-            """Base class for ControlIterator and PairIterator.
-            """
+            """Base class for ControlIterator and PairIterator."""
+
             # pylint: disable=missing-docstring
             def __init__(self):
                 self._index = self._get_length()
                 self._changed = False
+
             def __iter__(self):
                 return self
+
             def _get_length(self):
                 raise NotImplementedError
+
             def _value_at(self, index):
                 raise NotImplementedError
+
             def is_changed(self):
                 return self._changed
+
             def remove_control(self, control_index):
                 del produces_pairs[control_index]
                 del produces_empty[control_index]
                 self._changed = True
+
             def remove_pair(self, pair_index):
                 for produced in produces_pairs:
                     del produced[pair_index]
                 self._changed = True
+
             def __next__(self):
                 index = self._index
                 if index == 0:
@@ -214,10 +221,13 @@ class Form(Referrer):
             at a time, offering methods to remove controls and pairs without
             disturbing the iteration in progress.
             """
-            def remove_control(self): # pylint: disable=arguments-differ
+
+            def remove_control(self):  # pylint: disable=arguments-differ
                 MatrixIterator.remove_control(self, self._index)
+
             def _get_length(self):
                 return len(produces_pairs)
+
             def _value_at(self, index):
                 return produces_pairs[index], produces_empty[index]
 
@@ -226,16 +236,19 @@ class Form(Referrer):
             methods to remove controls and pairs without disturbing the
             iteration in progress.
             """
-            def remove_pair(self): # pylint: disable=arguments-differ
+
+            def remove_pair(self):  # pylint: disable=arguments-differ
                 MatrixIterator.remove_pair(self, self._index)
+
             def _get_length(self):
                 return len(produces_pairs[0]) if produces_pairs else 0
+
             def _value_at(self, index):
                 return [
                     controlIndex
                     for controlIndex, produces in enumerate(produces_pairs)
                     if produces[index]
-                    ]
+                ]
 
         # Simplify the matrix as much as possible.
         # We go through a lot of trouble to minimize the size of the matrix,
@@ -291,6 +304,7 @@ class Form(Referrer):
         # Recursively try to find a solution.
         # We don't have to know the solution, only check its existence.
         remaining_pairs = list(range(len(produces_pairs[0])))
+
         def solve_recursive(control_index):
             if control_index == len(produces_pairs):
                 return True
@@ -307,11 +321,14 @@ class Form(Referrer):
                         return True
                 if switch_index == len(remaining_pairs):
                     break
-                remaining_pairs[switch_index], pair_index = \
-                    pair_index, remaining_pairs[switch_index]
+                remaining_pairs[switch_index], pair_index = (
+                    pair_index,
+                    remaining_pairs[switch_index],
+                )
                 switch_index += 1
             remaining_pairs.append(pair_index)
             return False
+
         return solve_recursive(0)
 
     def iter_requests(self):
@@ -326,9 +343,7 @@ class Form(Referrer):
                 alternative = alternatives[choice]
                 if alternative[0] is not None:
                     query.append(alternative)
-            yield Request(
-                self.page_url, self.base_query + query, maybe_bad=True
-                )
+            yield Request(self.page_url, self.base_query + query, maybe_bad=True)
             progress = (progress + increment) % self.combinations
             if progress == 0:
                 # Because increment and combinations are relatively prime,

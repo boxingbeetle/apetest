@@ -9,7 +9,10 @@ import logging
 
 from apetest.checker import Accept, PageChecker
 from apetest.plugin import (
-    PluginCollection, add_plugin_arguments, create_plugins, load_plugins
+    PluginCollection,
+    add_plugin_arguments,
+    create_plugins,
+    load_plugins,
 )
 from apetest.report import Scribe
 from apetest.request import Request
@@ -20,21 +23,22 @@ from apetest.version import VERSION_STRING
 def detect_url(arg):
     """Attempt to turn a command line argument into a full URL."""
     url = urlparse(arg)
-    if url.scheme in ('http', 'https'):
+    if url.scheme in ("http", "https"):
         return arg
 
-    if arg.startswith('/'):
+    if arg.startswith("/"):
         # Assume absolute file path.
-        return urljoin('file://', arg)
+        return urljoin("file://", arg)
 
-    url = urlparse('http://' + arg)
-    idx = url.netloc.find(':')
-    if idx != -1 and url.netloc[idx + 1:].isdigit():
+    url = urlparse("http://" + arg)
+    idx = url.netloc.find(":")
+    if idx != -1 and url.netloc[idx + 1 :].isdigit():
         # Host and port without scheme, assume HTTP.
-        return 'http://' + arg
+        return "http://" + arg
 
     # Assume relative file path.
-    return urljoin(f'file://{getcwd()}/', arg)
+    return urljoin(f"file://{getcwd()}/", arg)
+
 
 def run(url, report_file_name, accept, plugins=()):
     """Runs APE with the given arguments.
@@ -56,7 +60,7 @@ def run(url, report_file_name, accept, plugins=()):
         try:
             first_req = Request.from_url(detect_url(url))
         except ValueError as ex:
-            print('Bad URL:', ex)
+            print("Bad URL:", ex)
             return 1
 
         spider, robots_report = spider_req(first_req)
@@ -70,21 +74,23 @@ def run(url, report_file_name, accept, plugins=()):
         for request in spider:
             referrers = checker.check(request)
             spider.add_requests(request, referrers)
-        print('Done checking')
+        print("Done checking")
 
         print(f'Writing report to "{report_file_name}"...')
-        with open(report_file_name, 'w',
-                  encoding='ascii', errors='xmlcharrefreplace') as out:
+        with open(
+            report_file_name, "w", encoding="ascii", errors="xmlcharrefreplace"
+        ) as out:
             for node in scribe.present():
                 out.write(node.flatten())
-        print('Done reporting')
+        print("Done reporting")
 
         scribe.postprocess()
-        print('Done post processing')
+        print("Done post processing")
 
         return 0
     finally:
         plugins.close()
+
 
 def main():
     """Parse command line arguments and call L{run} with the results.
@@ -94,29 +100,31 @@ def main():
 
     # Register core arguments.
     parser = ArgumentParser(
-        description='Automated Page Exerciser: '
-                    'smarter-than-monkey testing for web apps',
-        epilog='This is a test tool; do not use on production sites.'
-        )
+        description="Automated Page Exerciser: "
+        "smarter-than-monkey testing for web apps",
+        epilog="This is a test tool; do not use on production sites.",
+    )
+    parser.add_argument("url", metavar="URL|PATH", help="web app/site to check")
     parser.add_argument(
-        'url', metavar='URL|PATH',
-        help='web app/site to check'
-        )
+        "--accept",
+        type=str,
+        choices=("any", "html"),
+        default="any",
+        help="accept serialization: any (HTML or XHTML; default) or HTML only",
+    )
     parser.add_argument(
-        '--accept', type=str, choices=('any', 'html'), default='any',
-        help='accept serialization: any (HTML or XHTML; default) or HTML only'
-        )
+        "report", metavar="REPORT", help="file to write the HTML report to"
+    )
     parser.add_argument(
-        'report', metavar='REPORT',
-        help='file to write the HTML report to'
-        )
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="increase amount of logging, can be passed multiple times",
+    )
     parser.add_argument(
-        '-v', '--verbose', action='count', default=0,
-        help='increase amount of logging, can be passed multiple times'
-        )
-    parser.add_argument(
-        '-V', '--version', action='version', version=f'APE {VERSION_STRING}'
-        )
+        "-V", "--version", action="version", version=f"APE {VERSION_STRING}"
+    )
 
     # Let plugins register their arguments.
     plugin_modules = tuple(load_plugins())
@@ -127,14 +135,14 @@ def main():
 
     level_map = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
     level = level_map.get(args.verbose, logging.DEBUG)
-    logging.basicConfig(level=level, format='%(levelname)s: %(message)s')
+    logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
     # Instantiate plugins.
     plugins = []
     for module in plugin_modules:
         try:
             plugins += create_plugins(module, args)
-        except Exception: # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             return 1
 
     accept = Accept[args.accept.upper()]

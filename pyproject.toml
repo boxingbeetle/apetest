@@ -2,11 +2,16 @@
 requires = ['poetry>=0.12']
 build-backend = 'poetry.masonry.api'
 
+[tool.black]
+line-length = 88
+target-version = ['py36']
+
 [tool.isort]
+profile = "black"
+line_length = 88
 case_sensitive = true
 combine_as_imports = true
 from_first = true
-multi_line_output = 6
 
 [tool.poetry]
 name = 'apetest'
@@ -34,7 +39,7 @@ classifiers = [
 "Issue Tracker" = "https://github.com/boxingbeetle/apetest/issues"
 
 [tool.poetry.dependencies]
-python = '^3.6.1'
+python = '^3.6.2'
 lxml = '^4.0'
 # Technically we can run without "html5validator", but checking HTML is
 # a core feature.
@@ -53,6 +58,7 @@ pyflakes = "^2.1"
 lxml-stubs = '>=0.1.1'
 pydoctor = ">=20.7.0"
 pre-commit = "^2.13.0"
+black = "^21.7b0"
 
 [tool.poetry.scripts]
 apetest = 'apetest.cmdline:main'

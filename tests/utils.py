@@ -4,7 +4,7 @@ import logging
 class _NoLogHandler(logging.Handler):
     """Log handler that asserts if anything is logged."""
 
-    LOGGING_FORMAT = '%(levelname)s: %(message)s'
+    LOGGING_FORMAT = "%(levelname)s: %(message)s"
 
     def __init__(self, logger):
         logging.Handler.__init__(self)
@@ -19,7 +19,8 @@ class _NoLogHandler(logging.Handler):
 
     def emit(self, record):
         message = self.format(record)
-        assert False, 'Unexpected logging: %s' % message
+        assert False, "Unexpected logging: %s" % message
+
 
 def no_log(logger):
     """Return a context manager that asserts if anything is emitted

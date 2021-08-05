@@ -47,11 +47,13 @@ else:
 
 _LOG = getLogger(__name__)
 
+
 class PluginError(Exception):
     """A plugin module can raise this in C{plugin_create()} when it fails
     to create the L{Plugin} instances requested by the command line
     arguments.
     """
+
 
 class Plugin:
     """Plugin interface: your plugin class should inherit this and override
@@ -67,11 +69,8 @@ class Plugin:
         """
 
     def resource_loaded(
-            self,
-            data: bytes,
-            content_type_header: str,
-            report: Report
-        ) -> None:
+        self, data: bytes, content_type_header: str, report: Report
+    ) -> None:
         """Called when a resource has been loaded.
 
         Plugins can override this method to perform checks on the raw
@@ -100,10 +99,12 @@ class Plugin:
         The default implementation does nothing.
         """
 
+
 if TYPE_CHECKING:
     PluginCollectionBase = Plugin
 else:
     PluginCollectionBase = object
+
 
 class PluginCollection(PluginCollectionBase):
     """Keeps a collection of L{Plugin} instances and dispatches calls to
@@ -126,12 +127,15 @@ class PluginCollection(PluginCollectionBase):
             def dispatch(*args, **kvargs):
                 for plugin in self.plugins:
                     getattr(plugin, name)(*args, **kvargs)
+
             return dispatch
+
 
 # Work around mypy not knowing about __path__.
 #   https://github.com/python/mypy/issues/1422
 if TYPE_CHECKING:
     __path__: List[str]
+
 
 def load_plugins() -> Iterator[ModuleType]:
     """Discover and import plugin modules.
@@ -141,11 +145,12 @@ def load_plugins() -> Iterator[ModuleType]:
     @return: Yields the imported plugin modules.
     """
 
-    for finder_, name, ispkg_ in iter_modules(__path__, 'apetest.plugin.'):
+    for finder_, name, ispkg_ in iter_modules(__path__, "apetest.plugin."):
         try:
             yield import_module(name)
-        except Exception: # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             _LOG.exception('Error importing plugin module "%s":', name)
+
 
 def add_plugin_arguments(module: ModuleType, parser: ArgumentParser) -> None:
     """Ask a plugin module to register its command line arguments.
@@ -160,16 +165,20 @@ def add_plugin_arguments(module: ModuleType, parser: ArgumentParser) -> None:
 
     func: Callable[[ArgumentParser], None]
     try:
-        func = getattr(module, 'plugin_arguments')
+        func = getattr(module, "plugin_arguments")
     except AttributeError:
-        _LOG.info('Plugin module "%s" does not implement plugin_arguments()',
-                  module.__name__)
+        _LOG.info(
+            'Plugin module "%s" does not implement plugin_arguments()', module.__name__
+        )
     else:
         try:
             func(parser)
-        except Exception: # pylint: disable=broad-except
-            _LOG.exception('Error registering command line arguments for '
-                           'plugin module "%s":', module.__name__)
+        except Exception:  # pylint: disable=broad-except
+            _LOG.exception(
+                "Error registering command line arguments for " 'plugin module "%s":',
+                module.__name__,
+            )
+
 
 def create_plugins(module: ModuleType, args: Namespace) -> Iterator[Plugin]:
     """Ask a plugin module to create L{Plugin} objects according to
@@ -186,29 +195,33 @@ def create_plugins(module: ModuleType, args: Namespace) -> Iterator[Plugin]:
 
     func: Callable[[Namespace], Iterator[Plugin]]
     try:
-        func = getattr(module, 'plugin_create')
+        func = getattr(module, "plugin_create")
     except AttributeError:
-        _LOG.error('Plugin module "%s" does not implement plugin_create()',
-                   module.__name__)
+        _LOG.error(
+            'Plugin module "%s" does not implement plugin_create()', module.__name__
+        )
         raise
 
     def _log_yield() -> Iterable[Plugin]:
         try:
             yield from func(args)
         except PluginError as ex:
-            _LOG.error('Could not instantiate plugin in module "%s": %s',
-                       module.__name__, ex)
+            _LOG.error(
+                'Could not instantiate plugin in module "%s": %s', module.__name__, ex
+            )
             raise
-        except Exception: # pylint: disable=broad-except
-            _LOG.exception('Error instantiating plugin module "%s":',
-                           module.__name__)
+        except Exception:  # pylint: disable=broad-except
+            _LOG.exception('Error instantiating plugin module "%s":', module.__name__)
             raise
 
     for plugin in _log_yield():
         if isinstance(plugin, Plugin):
             yield plugin
         else:
-            _LOG.error('Module "%s" created a plugin of type "%s", '
-                       'which does not inherit from the Plugin class.',
-                       module.__name__, plugin.__class__.__name__)
+            _LOG.error(
+                'Module "%s" created a plugin of type "%s", '
+                "which does not inherit from the Plugin class.",
+                module.__name__,
+                plugin.__class__.__name__,
+            )
             raise TypeError(plugin.__class__)

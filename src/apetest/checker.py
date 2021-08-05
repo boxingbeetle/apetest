@@ -16,9 +16,18 @@ import re
 from lxml import etree
 
 from apetest.control import (
-    Checkbox, Control, FileInput, HiddenInput, RadioButton, RadioButtonGroup,
-    SelectMultiple, SelectSingle, SubmitButton, SubmitButtons, TextArea,
-    TextField
+    Checkbox,
+    Control,
+    FileInput,
+    HiddenInput,
+    RadioButton,
+    RadioButtonGroup,
+    SelectMultiple,
+    SelectSingle,
+    SubmitButton,
+    SubmitButtons,
+    TextArea,
+    TextField,
 )
 from apetest.decode import decode_and_report, encoding_from_bom
 from apetest.fetch import load_page
@@ -38,15 +47,14 @@ class Accept(Enum):
     HTML = auto()
     """Accept only HTML."""
 
+
 _LOG = getLogger(__name__)
 
-_RE_XML_DECL = re.compile(
-    r'<\?xml([ \t\r\n\'"\w.\-=]*).*\?>'
-    )
+_RE_XML_DECL = re.compile(r'<\?xml([ \t\r\n\'"\w.\-=]*).*\?>')
 _RE_XML_DECL_ATTR = re.compile(
-    r'[ \t\r\n]+([a-z]+)[ \t\r\n]*=[ \t\r\n]*'
-    r'(?P<quote>[\'"])([\w.\-]*)(?P=quote)'
-    )
+    r"[ \t\r\n]+([a-z]+)[ \t\r\n]*=[ \t\r\n]*" r'(?P<quote>[\'"])([\w.\-]*)(?P=quote)'
+)
+
 
 def strip_xml_decl(text: str) -> str:
     """Strip the XML declaration from the start of the given text.
@@ -55,7 +63,8 @@ def strip_xml_decl(text: str) -> str:
              or the unmodified text if no XML declaration was found.
     """
     match = _RE_XML_DECL.match(text)
-    return text if match is None else text[match.end():]
+    return text if match is None else text[match.end() :]
+
 
 def encoding_from_xml_decl(text: str) -> Optional[str]:
     """Look for an XML declaration with an C{encoding} attribute at the start
@@ -70,9 +79,10 @@ def encoding_from_xml_decl(text: str) -> Optional[str]:
         decl = match.group(1)
         for match in _RE_XML_DECL_ATTR.finditer(decl):
             name, quote_, value = match.groups()
-            if name == 'encoding':
+            if name == "encoding":
                 return value.lower()
     return None
+
 
 def normalize_url(url: str) -> str:
     """Return a unique string for the given URL.
@@ -84,11 +94,10 @@ def normalize_url(url: str) -> str:
 
     return urlunsplit(urlsplit(url))
 
+
 def parse_document(
-        content: str,
-        is_xml: bool,
-        report: Report
-    ) -> Optional[etree._ElementTree]:
+    content: str, is_xml: bool, report: Report
+) -> Optional[etree._ElementTree]:
     """Parse the given XML or HTML document.
 
     @param content:
@@ -113,10 +122,10 @@ def parse_document(
         root = etree.fromstring(content, parser)
     except etree.XMLSyntaxError:
         report.error(
-            'Failed to parse document as %s; '
-            'cannot gather references to other documents.',
-            'XML' if is_xml else 'HTML'
-            )
+            "Failed to parse document as %s; "
+            "cannot gather references to other documents.",
+            "XML" if is_xml else "HTML",
+        )
         return None
 
     # The lxml HTML parser is an HTML4 parser. HTML5 is similar enough
@@ -124,26 +133,23 @@ def parse_document(
     # report errors on for example inline SVG.
     if is_xml:
         for error in parser.error_log:
-            if hasattr(error, 'line'):
+            if hasattr(error, "line"):
                 line = error.line
-            elif hasattr(error, 'position'):
+            elif hasattr(error, "position"):
                 line = error.position[0]
             else:
                 line = None
 
             message = error.message
             if line is not None:
-                message += f' (line {line:d})'
+                message += f" (line {line:d})"
 
             report.error(message)
 
     return None if root is None else root.getroottree()
 
-def repair_tree(
-        tree: etree._ElementTree,
-        content_type: str,
-        report: Report
-    ) -> bool:
+
+def repair_tree(tree: etree._ElementTree, content_type: str, report: Report) -> bool:
     """Check the document tree for general errors that would prevent
     other checkers from doing their work and repair those if possible.
 
@@ -153,48 +159,52 @@ def repair_tree(
     modified = False
 
     # Make sure XHTML root element has a namespace.
-    if content_type == 'application/xhtml+xml':
+    if content_type == "application/xhtml+xml":
         root = tree.getroot()
-        if root.tag != '{http://www.w3.org/1999/xhtml}html':
-            msg = 'The root element does not use the XHTML namespace.'
+        if root.tag != "{http://www.w3.org/1999/xhtml}html":
+            msg = "The root element does not use the XHTML namespace."
             html = concat(
-                msg, xml.br, 'expected: ',
-                xml.code['<html xmlns="http://www.w3.org/1999/xhtml"']
-                )
-            report.error(msg, extra={'html': html})
+                msg,
+                xml.br,
+                "expected: ",
+                xml.code['<html xmlns="http://www.w3.org/1999/xhtml"'],
+            )
+            report.error(msg, extra={"html": html})
             # lxml will auto-fix this for us when serializing, so there is
             # no need to actually modify the tree.
             modified = True
 
     return modified
 
+
 def _parse_input_control(attrib: etree._Attrib) -> Optional[Control]:
-    _LOG.debug('input: %s', attrib)
-    disabled = 'disabled' in attrib
+    _LOG.debug("input: %s", attrib)
+    disabled = "disabled" in attrib
     if disabled:
         return None
     # TODO: Support readonly controls?
-    name = attrib.get('name')
-    ctype = attrib.get('type')
-    value = attrib.get('value')
-    if ctype in ('text', 'password'):
+    name = attrib.get("name")
+    ctype = attrib.get("type")
+    value = attrib.get("value")
+    if ctype in ("text", "password"):
         return TextField(name, value)
-    elif ctype == 'checkbox':
+    elif ctype == "checkbox":
         return Checkbox(name, value)
-    elif ctype == 'radio':
+    elif ctype == "radio":
         return RadioButton(name, value)
-    elif ctype == 'file':
+    elif ctype == "file":
         return FileInput(name, value)
-    elif ctype == 'hidden':
+    elif ctype == "hidden":
         return HiddenInput(name, value)
-    elif ctype in ('submit', 'image'):
+    elif ctype in ("submit", "image"):
         return SubmitButton(name, value)
-    elif ctype in ('button', 'reset'):
+    elif ctype in ("button", "reset"):
         # Type "button" is used by JavaScript, "reset" by the browser.
         return None
     else:
         # Invalid control type, will already be flagged by the DTD.
         return None
+
 
 class PageChecker:
     """Retrieves a page, checks its contents and finds references
@@ -202,12 +212,8 @@ class PageChecker:
     """
 
     def __init__(
-            self,
-            base_url: str,
-            accept: Accept,
-            scribe: Scribe,
-            plugins: PluginCollection
-        ):
+        self, base_url: str, accept: Accept, scribe: Scribe, plugins: PluginCollection
+    ):
         """Initialize page checker.
 
         @param base_url:
@@ -232,23 +238,23 @@ class PageChecker:
         """
 
         assert url.startswith(self.base_url), url
-        return url[self.base_url.rindex('/') + 1 : ]
+        return url[self.base_url.rindex("/") + 1 :]
 
     def check(self, req: Request) -> Iterable[Referrer]:
         """Check a single L{Request}."""
 
         req_url = str(req)
-        _LOG.info('Checking page: %s', self.short_url(req_url))
+        _LOG.info("Checking page: %s", self.short_url(req_url))
 
         accept_header = {
             # Prefer XHTML to HTML because it is stricter.
-            Accept.ANY: 'text/html; q=0.8, application/xhtml+xml; q=1.0',
-            Accept.HTML: 'text/html; q=1.0'
-            }[self.accept]
+            Accept.ANY: "text/html; q=0.8, application/xhtml+xml; q=1.0",
+            Accept.HTML: "text/html; q=1.0",
+        }[self.accept]
 
         report, response, content_bytes = load_page(
             req_url, req.maybe_bad, accept_header
-            )
+        )
         referrers: List[Referrer] = []
 
         if response is not None and 300 <= (response.code or 0) < 400:
@@ -256,39 +262,29 @@ class PageChecker:
             content_url = normalize_url(response.url)
             if content_url != req_url:
                 if content_url.startswith(self.base_url):
-                    if not content_url.startswith('file:'):
-                        report.info(
-                            'Redirected to: %s', self.short_url(content_url)
-                            )
+                    if not content_url.startswith("file:"):
+                        report.info("Redirected to: %s", self.short_url(content_url))
                     try:
-                        referrers.append(
-                            Redirect(Request.from_url(content_url))
-                            )
+                        referrers.append(Redirect(Request.from_url(content_url)))
                     except ValueError as ex:
-                        report.warning('%s', ex)
+                        report.warning("%s", ex)
                 else:
-                    report.info('Redirected outside: %s', content_url)
+                    report.info("Redirected outside: %s", content_url)
 
         if content_bytes is None:
-            report.info('Could not get any content to check')
+            report.info("Could not get any content to check")
             report.checked = Checked.NO_CONTENT
         else:
             # If response is None, content_bytes is also None.
             assert response is not None
-            referrers += self._check_response(
-                req_url, report, response, content_bytes
-                )
+            referrers += self._check_response(req_url, report, response, content_bytes)
 
         self.scribe.add_report(report)
         return referrers
 
     def _check_response(
-            self,
-            req_url: str,
-            report: Report,
-            response: addinfourl,
-            content_bytes: bytes
-        ) -> Iterator[Referrer]:
+        self, req_url: str, report: Report, response: addinfourl, content_bytes: bytes
+    ) -> Iterator[Referrer]:
         """Check the server's response to a request."""
 
         if response.code not in (200, None):
@@ -298,16 +294,15 @@ class PageChecker:
             #       content is likely only useful if the application
             #       under test is producing the content instead.
             report.info(
-                'Skipping content check because of HTTP status %d',
-                response.code
-                )
+                "Skipping content check because of HTTP status %d", response.code
+            )
             report.checked = Checked.HTTP_STATUS_SKIP
             return
 
         headers = response.headers
-        content_type_header = headers['Content-Type']
+        content_type_header = headers["Content-Type"]
         if content_type_header is None:
-            message = 'Missing Content-Type header'
+            message = "Missing Content-Type header"
             _LOG.error(message)
             report.error(message)
             return
@@ -316,39 +311,37 @@ class PageChecker:
             content_type_header = str(content_type_header)
 
         content_type = headers.get_content_type()
-        is_html = content_type in ('text/html', 'application/xhtml+xml')
-        is_xml = content_type.endswith('/xml') or content_type.endswith('+xml')
+        is_html = content_type in ("text/html", "application/xhtml+xml")
+        is_xml = content_type.endswith("/xml") or content_type.endswith("+xml")
         http_encoding = headers.get_content_charset()
 
         # Speculatively decode the first 1024 bytes, so we can look inside
         # the document for encoding clues.
         bom_encoding = encoding_from_bom(content_bytes)
-        content_head = content_bytes[:1024].decode(
-            bom_encoding or 'ascii', 'replace'
-            )
+        content_head = content_bytes[:1024].decode(bom_encoding or "ascii", "replace")
 
-        if not is_xml and content_head.startswith('<?xml'):
+        if not is_xml and content_head.startswith("<?xml"):
             is_xml = True
-            if req_url.startswith('file:'):
+            if req_url.startswith("file:"):
                 # Silently correct content-type detection for local files.
                 # This is not something the user can easily fix, so issuing
                 # a warning would not be helpful.
-                if content_type == 'text/html':
-                    content_type = 'application/xhtml+xml'
+                if content_type == "text/html":
+                    content_type = "application/xhtml+xml"
             else:
                 report.warning(
                     'Document is served with content type "%s" '
-                    'but starts with an XML declaration',
-                    content_type
-                    )
+                    "but starts with an XML declaration",
+                    content_type,
+                )
 
         if is_html and is_xml and self.accept is Accept.HTML:
             report.warning(
-                'HTML document is serialized as XML, while the HTTP Accept '
+                "HTML document is serialized as XML, while the HTTP Accept "
                 'header did not include "application/xhtml+xml"'
-                )
+            )
 
-        if is_xml or content_type.startswith('text/'):
+        if is_xml or content_type.startswith("text/"):
             # This looks like a text document, now figure out the encoding.
 
             # Look for encoding in XML declaration (if any).
@@ -362,19 +355,20 @@ class PageChecker:
             try:
                 content, used_encoding = decode_and_report(
                     content_bytes,
-                    ((bom_encoding, 'Byte Order Mark'),
-                     (decl_encoding, 'XML declaration'),
-                     (http_encoding, 'HTTP header')),
-                    report
-                    )
+                    (
+                        (bom_encoding, "Byte Order Mark"),
+                        (decl_encoding, "XML declaration"),
+                        (http_encoding, "HTTP header"),
+                    ),
+                    report,
+                )
             except ValueError as ex:
                 # All likely encodings failed.
-                report.error('Failed to decode contents: %s', ex)
+                report.error("Failed to decode contents: %s", ex)
             else:
-                if req_url.startswith('file:'):
+                if req_url.startswith("file:"):
                     # Construct a new header that is likely more accurate.
-                    content_type_header = \
-                            f'{content_type}; charset={used_encoding}'
+                    content_type_header = f"{content_type}; charset={used_encoding}"
 
                 if is_html or is_xml:
                     tree = parse_document(content, is_xml, report)
@@ -382,41 +376,37 @@ class PageChecker:
                         if repair_tree(tree, content_type, report):
                             # Offer the repaired tree to plugins, so they
                             # are more likely to be able to do their work.
-                            repaired = etree.tostring(tree, encoding='utf-8')
+                            repaired = etree.tostring(tree, encoding="utf-8")
                             assert isinstance(repaired, bytes)
                             content_bytes = repaired
 
                         # Find links to other documents.
-                        yield from self.find_referrers_in_xml(
-                            tree, req_url, report
-                            )
+                        yield from self.find_referrers_in_xml(tree, req_url, report)
                         if is_html:
-                            yield from self.find_referrers_in_html(
-                                tree, req_url
-                                )
+                            yield from self.find_referrers_in_html(tree, req_url)
 
         self.plugins.resource_loaded(content_bytes, content_type_header, report)
 
     _htmlLinkElements = {
-        'a': 'href',
-        'link': 'href',
-        'img': 'src',
-        'script': 'src',
-        }
+        "a": "href",
+        "link": "href",
+        "img": "src",
+        "script": "src",
+    }
     _xmlLinkElements = {
-        '{http://www.w3.org/1999/xhtml}' + tag_name: attr_name
+        "{http://www.w3.org/1999/xhtml}" + tag_name: attr_name
         for tag_name, attr_name in _htmlLinkElements.items()
-        }
+    }
     # SVG 1.1 uses XLink, but SVG 2 has native 'href' attributes.
     # We're only interested in elements that can link to external
     # resources, not all elements that support 'href'.
-    _xmlLinkElements.update({
-        '{http://www.w3.org/2000/svg}' + tag_name: 'href'
-        for tag_name in ('a', 'image', 'script')
-        })
-    _xmlLinkElements.update({
-        '{http://www.w3.org/2005/Atom}link': 'href'
-        })
+    _xmlLinkElements.update(
+        {
+            "{http://www.w3.org/2000/svg}" + tag_name: "href"
+            for tag_name in ("a", "image", "script")
+        }
+    )
+    _xmlLinkElements.update({"{http://www.w3.org/2005/Atom}link": "href"})
     # Insert HTML elements without namespace for HTML trees and
     # with namespace for XHTML trees.
     _linkElements = dict(_htmlLinkElements)
@@ -430,7 +420,7 @@ class PageChecker:
             yield self._linkElements[tag]
         except KeyError:
             pass
-        yield '{http://www.w3.org/1999/xlink}href'
+        yield "{http://www.w3.org/1999/xlink}href"
 
     def find_urls(self, tree: etree._ElementTree) -> Iterator[str]:
         """Yield URLs found in the document C{tree}."""
@@ -442,33 +432,27 @@ class PageChecker:
                     pass
 
     def find_referrers_in_xml(
-            self,
-            tree: etree._ElementTree,
-            tree_url: str,
-            report: Report
-        ) -> Iterator[Referrer]:
-        """Yield referrers for links found in XML tags in the document C{tree}.
-        """
+        self, tree: etree._ElementTree, tree_url: str, report: Report
+    ) -> Iterator[Referrer]:
+        """Yield referrers for links found in XML tags in the document C{tree}."""
         links: DefaultDict[str, LinkSet] = defaultdict(LinkSet)
         for url in self.find_urls(tree):
-            _LOG.debug(' Found URL: %s', url)
-            if url.startswith('?'):
+            _LOG.debug(" Found URL: %s", url)
+            if url.startswith("?"):
                 url = urlsplit(tree_url).path + url
             url = urljoin(tree_url, url)
             if url.startswith(self.base_url):
                 try:
                     request = Request.from_url(url)
                 except ValueError as ex:
-                    report.warning('%s', ex)
+                    report.warning("%s", ex)
                 else:
                     links[request.page_url].add(request)
         yield from links.values()
 
     def find_referrers_in_html(
-            self,
-            tree: etree._ElementTree,
-            url: str
-        ) -> Iterator[Referrer]:
+        self, tree: etree._ElementTree, url: str
+    ) -> Iterator[Referrer]:
         """Yield referrers for links and forms found in HTML tags in
         the document C{tree}.
         """
@@ -477,27 +461,26 @@ class PageChecker:
         if None in root.nsmap:
             default_ns = root.nsmap[None]
             if isinstance(default_ns, bytes):
-                default_ns = default_ns.decode('ascii')
-            ns_prefix = '{%s}' % default_ns
+                default_ns = default_ns.decode("ascii")
+            ns_prefix = "{%s}" % default_ns
         else:
-            ns_prefix = ''
+            ns_prefix = ""
 
-        for form_node in root.iter(ns_prefix + 'form'):
+        for form_node in root.iter(ns_prefix + "form"):
             # TODO: How to handle an empty action?
             #       1. take current path, erase query (current impl)
             #       2. take current path, merge query
             #       3. flag as error (not clearly specced)
             #       I think either flag as error, or mimic the browsers.
             try:
-                action = cast(str, form_node.attrib['action']) \
-                      or urlsplit(url).path
-                method = cast(str, form_node.attrib['method']).lower()
+                action = cast(str, form_node.attrib["action"]) or urlsplit(url).path
+                method = cast(str, form_node.attrib["method"]).lower()
             except KeyError:
                 continue
-            if method == 'post':
+            if method == "post":
                 # TODO: Support POST (with flag to enable/disable).
                 continue
-            if method != 'get':
+            if method != "get":
                 # The DTD will already have flagged this as a violation.
                 continue
             submit_url = urljoin(url, action)
@@ -507,10 +490,9 @@ class PageChecker:
             # Note: Disabled controls should not be submitted, so we pretend
             #       they do not even exist.
             controls = []
-            radio_buttons: DefaultDict[str, List[RadioButton]] \
-                         = defaultdict(list)
+            radio_buttons: DefaultDict[str, List[RadioButton]] = defaultdict(list)
             submit_buttons = []
-            for inp in form_node.iter(ns_prefix + 'input'):
+            for inp in form_node.iter(ns_prefix + "input"):
                 control = _parse_input_control(inp.attrib)
                 if control is None:
                     pass
@@ -520,26 +502,26 @@ class PageChecker:
                     submit_buttons.append(control)
                 else:
                     controls.append(control)
-            for control_node in form_node.iter(ns_prefix + 'select'):
-                name = control_node.attrib.get('name')
-                multiple = control_node.attrib.get('multiple')
-                disabled = 'disabled' in control_node.attrib
+            for control_node in form_node.iter(ns_prefix + "select"):
+                name = control_node.attrib.get("name")
+                multiple = control_node.attrib.get("multiple")
+                disabled = "disabled" in control_node.attrib
                 if disabled:
                     continue
                 options = [
-                    option.attrib.get('value', option.text)
-                    for option in control_node.iter(ns_prefix + 'option')
+                    option.attrib.get("value", option.text)
+                    for option in control_node.iter(ns_prefix + "option")
                     if option.text is not None
-                    ]
+                ]
                 if multiple:
                     for option in options:
                         controls.append(SelectMultiple(name, option))
                 else:
                     controls.append(SelectSingle(name, options))
-            for control_node in form_node.iter(ns_prefix + 'textarea'):
-                name = control_node.attrib.get('name')
+            for control_node in form_node.iter(ns_prefix + "textarea"):
+                name = control_node.attrib.get("name")
                 value = control_node.text
-                disabled = 'disabled' in control_node.attrib
+                disabled = "disabled" in control_node.attrib
                 if disabled:
                     continue
                 _LOG.debug('textarea "%s": %s', name, value)

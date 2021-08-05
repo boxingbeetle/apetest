@@ -20,8 +20,15 @@ from datetime import datetime, timezone
 from enum import Enum, auto
 from logging import INFO, Handler, LogRecord, LoggerAdapter, getLogger
 from typing import (
-    TYPE_CHECKING, Any, Collection, DefaultDict, Dict, List, MutableMapping,
-    Optional, Tuple
+    TYPE_CHECKING,
+    Any,
+    Collection,
+    DefaultDict,
+    Dict,
+    List,
+    MutableMapping,
+    Optional,
+    Tuple,
 )
 from urllib.parse import unquote_plus, urlsplit
 from urllib.response import addinfourl
@@ -40,10 +47,12 @@ if not TYPE_CHECKING:
     # Work around PyLint issue on Python 3.6.
     #   https://github.com/PyCQA/pylint/issues/2377
     from typing import Sequence  # pylint: disable=ungrouped-imports
-    Collection = Sequence # pylint: disable=invalid-name
+
+    Collection = Sequence  # pylint: disable=invalid-name
 
 
-_STYLE_SHEET = raw('''
+_STYLE_SHEET = raw(
+    """
 body {
     margin: 0;
     padding: 0;
@@ -95,7 +104,9 @@ code {
     background: #F0F0F0;
     color: #000000;
 }
-''')
+"""
+)
+
 
 class StoreHandler(Handler):
     """A log handler that stores all logged records in a list.
@@ -115,14 +126,16 @@ class StoreHandler(Handler):
         """Store a log record in our L{records}."""
         self.format(record)
         # The 'url' attribute is defined via the 'extra' mechanism.
-        url: str = record.url # type: ignore[attr-defined]
+        url: str = record.url  # type: ignore[attr-defined]
         self.records[url].append(record)
+
 
 _LOG = getLogger(__name__)
 _LOG.setLevel(INFO)
 _HANDLER = StoreHandler()
 _LOG.addHandler(_HANDLER)
 _LOG.propagate = False
+
 
 class Checked(Enum):
     """The content check status of a document."""
@@ -139,6 +152,7 @@ class Checked(Enum):
     CHECKED = auto()
     """The content has been checked by at least one checker."""
 
+
 class Report(LoggerAdapter):
     """Gathers check results for a document produced by one request."""
 
@@ -151,7 +165,7 @@ class Report(LoggerAdapter):
         self.url = url
         """The request URL to which this report applies."""
 
-        self.ok = True # pylint: disable=invalid-name
+        self.ok = True  # pylint: disable=invalid-name
         """C{True} iff no warnings or errors were reported.
 
         This is initialized to C{True} and will be set to C{False}
@@ -172,51 +186,47 @@ class Report(LoggerAdapter):
         super().log(level, msg, *args, **kwargs)
 
     def process(
-            self,
-            msg: Any,
-            kwargs: MutableMapping[str, Any]
-        ) -> Tuple[Any, MutableMapping[str, Any]]:
+        self, msg: Any, kwargs: MutableMapping[str, Any]
+    ) -> Tuple[Any, MutableMapping[str, Any]]:
         """Process contextual information for a logged message.
 
         Our C{url} will be inserted into the log record.
         """
 
-        extra = kwargs.get('extra')
+        extra = kwargs.get("extra")
         if extra is None:
             extra = self.extra
         else:
             extra.update(self.extra)
-        kwargs['extra'] = extra
+        kwargs["extra"] = extra
 
         return msg, kwargs
 
-    def present(self, scribe: 'Scribe') -> XMLContent:
+    def present(self, scribe: "Scribe") -> XMLContent:
         """Yield an XHTML rendering of this report."""
 
         present_record = self.present_record
-        yield xml.ul[(
-            present_record(record)
-            for record in _HANDLER.records[self.url]
-            )]
+        yield xml.ul[(present_record(record) for record in _HANDLER.records[self.url])]
 
         if self.checked is Checked.NOT_CHECKED:
-            yield xml.p['No content checks were performed']
+            yield xml.p["No content checks were performed"]
         if not self.ok:
-            yield xml.p['Referenced by:']
+            yield xml.p["Referenced by:"]
             # TODO: Store Request object instead of recreating it.
             request = Request.from_url(self.url)
             yield xml.ul[
                 # pylint: disable=protected-access
                 scribe._present_referrers(request)
-                ]
+            ]
 
     @staticmethod
     def present_record(record: LogRecord) -> XMLContent:
         """Return an XHTML rendering of one log record."""
 
         level = record.levelname.lower()
-        html = getattr(record, 'html', record.message)
+        html = getattr(record, "html", record.message)
         return xml.li(class_=level)[html]
+
 
 class FetchFailure(Report, Exception):
     """Records the details of a request that failed.
@@ -225,12 +235,7 @@ class FetchFailure(Report, Exception):
     where that is appropriate.
     """
 
-    def __init__(
-            self,
-            url: str,
-            message: str,
-            http_error: Optional[addinfourl] = None
-        ):
+    def __init__(self, url: str, message: str, http_error: Optional[addinfourl] = None):
         """Initialize the report and log C{message} as an error."""
         Report.__init__(self, url)
         Exception.__init__(self, message)
@@ -238,7 +243,8 @@ class FetchFailure(Report, Exception):
         self.http_error = http_error
         """Optional error that caused this fetch failure."""
 
-        self.error('Failed to fetch: %s', message)
+        self.error("Failed to fetch: %s", message)
+
 
 class Page:
     """Information collected by L{Scribe} about a single page.
@@ -276,14 +282,14 @@ class Page:
         if not report.ok:
             self.failures += 1
 
-    def present(self, scribe: 'Scribe') -> XMLContent:
+    def present(self, scribe: "Scribe") -> XMLContent:
         """Yield an XHTML rendering of all reports for this page."""
 
         # Use more compact presentation for local files.
         if len(self.query_to_report) == 1:
-            (query, report), = self.query_to_report.items()
-            if query == '' and report.url.startswith('file:'):
-                verdict = 'pass' if report.ok else 'fail'
+            ((query, report),) = self.query_to_report.items()
+            if query == "" and report.url.startswith("file:"):
+                verdict = "pass" if report.ok else "fail"
                 yield xml.h3(class_=verdict)[verdict]
                 yield report.present(scribe)
                 return
@@ -292,36 +298,33 @@ class Page:
         total = len(self.query_to_report)
         failures = self.failures
         yield xml.p[
-            f'{total:d} queries checked, '
-            f'{total - failures:d} passed, '
-            f'{failures:d} failed'
-            ]
+            f"{total:d} queries checked, "
+            f"{total - failures:d} passed, "
+            f"{failures:d} failed"
+        ]
         for query, report in sorted(self.query_to_report.items()):
-            yield xml.h3(class_='pass' if report.ok else 'fail')[
+            yield xml.h3(class_="pass" if report.ok else "fail")[
                 xml.a(href=report.url)[
-                    ' | '.join(
-                        '%s = %s' % tuple(
-                            unquote_plus(s) for s in elem.split('=')
-                            )
-                        for elem in query.split('&')
-                        ) if query else '(no query)'
-                    ]
+                    " | ".join(
+                        "%s = %s" % tuple(unquote_plus(s) for s in elem.split("="))
+                        for elem in query.split("&")
+                    )
+                    if query
+                    else "(no query)"
                 ]
+            ]
             yield report.present(scribe)
+
 
 def now_local() -> datetime:
     """@return: The current time, in the local time zone."""
     return datetime.now(timezone.utc).astimezone()
 
+
 class Scribe:
     """Collects reports for multiple pages."""
 
-    def __init__(
-            self,
-            base_url: str,
-            spider: Spider,
-            plugins: PluginCollection
-        ):
+    def __init__(self, base_url: str, spider: Spider, plugins: PluginCollection):
         """Initialize scribe.
 
         @param base_url:
@@ -335,12 +338,12 @@ class Scribe:
         """
 
         scheme_, host_, base_path, query, fragment = urlsplit(base_url)
-        assert query == ''
-        assert fragment == ''
+        assert query == ""
+        assert fragment == ""
         # HTTP requires empty URL path to be mapped to "/".
         #   https://tools.ietf.org/html/rfc7230#section-5.3.1
-        base_path = base_path or '/'
-        self._base_path = base_path[ : base_path.rindex('/') + 1]
+        base_path = base_path or "/"
+        self._base_path = base_path[: base_path.rindex("/") + 1]
 
         self._spider = spider
         self._plugins = plugins
@@ -361,9 +364,9 @@ class Scribe:
         return self._end_time
 
     def __url_to_name(self, url: str) -> str:
-        path = urlsplit(url).path or '/'
+        path = urlsplit(url).path or "/"
         assert path.startswith(self._base_path)
-        return path[len(self._base_path) : ]
+        return path[len(self._base_path) :]
 
     def add_report(self, report: Report) -> None:
         """Add a report to this scribe.
@@ -388,19 +391,17 @@ class Scribe:
         """Like L{get_pages}, but only pages for which warnings or errors
         were reported are returned.
         """
-        return [
-            page for page in self._pages.values() if page.failures != 0
-            ]
+        return [page for page in self._pages.values() if page.failures != 0]
 
     def get_summary(self) -> str:
         """Return a short string summarizing the check results."""
         total = len(self._pages)
         num_failed_pages = len(self.get_failed_pages())
         return (
-            f'{total:d} pages checked, '
-            f'{total - num_failed_pages:d} passed, '
-            f'{num_failed_pages:d} failed'
-            )
+            f"{total:d} pages checked, "
+            f"{total - num_failed_pages:d} passed, "
+            f"{num_failed_pages:d} failed"
+        )
 
     def postprocess(self) -> None:
         """Instruct the plugins to do their final processing."""
@@ -411,34 +412,35 @@ class Scribe:
         """Yield an XHTML rendering of a combined report for all
         checked pages.
         """
-        title = 'APE - Automated Page Exerciser'
+        title = "APE - Automated Page Exerciser"
         yield xml.html[
-            xml.head[
-                xml.title[title],
-                xml.style(type='text/css')[_STYLE_SHEET]
-                ],
+            xml.head[xml.title[title], xml.style(type="text/css")[_STYLE_SHEET]],
             xml.body[
                 xml.h1[title],
                 xml.p[self.get_summary()],
                 self._present_failed_index(),
-                ((xml.h2[xml.a(name=name or 'base')[name or '(base)']],
-                  page.present(self))
-                 for name, page in sorted(self._pages.items()))
-                ]
-            ]
+                (
+                    (
+                        xml.h2[xml.a(name=name or "base")[name or "(base)"]],
+                        page.present(self),
+                    )
+                    for name, page in sorted(self._pages.items())
+                ),
+            ],
+        ]
 
     def _present_failed_index(self) -> XMLContent:
         failed_page_names = [
             name for name, page in self._pages.items() if page.failures != 0
-            ]
+        ]
         if failed_page_names:
-            yield xml.p['Failed pages:']
-            yield xml.ul[(
-                xml.li[
-                    xml.a(href='#' + (name or 'base'))[name or '(base)']
-                    ]
-                for name in sorted(failed_page_names)
-                )]
+            yield xml.p["Failed pages:"]
+            yield xml.ul[
+                (
+                    xml.li[xml.a(href="#" + (name or "base"))[name or "(base)"]]
+                    for name in sorted(failed_page_names)
+                )
+            ]
 
     def _present_referrers(self, req: Request) -> XMLContent:
         # Note: Currently we only list the pages a request is referred from,
@@ -446,6 +448,6 @@ class Scribe:
         page_names = {
             self.__url_to_name(source_req.page_url)
             for source_req in self._spider.iter_referring_requests(req)
-            }
+        }
         for name in sorted(page_names):
-            yield xml.li[xml.a(href='#' + (name or 'base'))[name or '(base)']]
+            yield xml.li[xml.a(href="#" + (name or "base"))[name or "(base)"]]

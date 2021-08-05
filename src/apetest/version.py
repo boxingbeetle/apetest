@@ -12,4 +12,4 @@ try:
 except ImportError:
     import importlib_metadata
 
-VERSION_STRING = importlib_metadata.version('apetest')
+VERSION_STRING = importlib_metadata.version("apetest")

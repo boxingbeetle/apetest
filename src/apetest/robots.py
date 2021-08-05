@@ -32,9 +32,8 @@ from typing import Dict, Iterable, Iterator, List, Mapping, Set, Tuple
 
 
 def scan_robots_txt(
-        lines: Iterable[str],
-        logger: LoggerAdapter
-    ) -> Iterator[Iterable[Tuple[int, str, str]]]:
+    lines: Iterable[str], logger: LoggerAdapter
+) -> Iterator[Iterable[Tuple[int, str, str]]]:
     """Tokenizes the contents of a C{robots.txt} file.
 
     @param lines:
@@ -48,7 +47,7 @@ def scan_robots_txt(
     record: List[Tuple[int, str, str]] = []
     for lineno, line in enumerate(lines, 1):
         stripped_line = line.lstrip()
-        if stripped_line.startswith('#'):
+        if stripped_line.startswith("#"):
             # Comment-only lines are discarded and do not end records.
             continue
         if not stripped_line:
@@ -58,11 +57,11 @@ def scan_robots_txt(
                 record = []
             continue
         if len(stripped_line) != len(line):
-            logger.warning('Line %d has whitespace before field', lineno)
+            logger.warning("Line %d has whitespace before field", lineno)
 
-        nocomment_line = stripped_line.split('#', 1)[0]
+        nocomment_line = stripped_line.split("#", 1)[0]
         try:
-            field, value = nocomment_line.split(':', 1)
+            field, value = nocomment_line.split(":", 1)
         except ValueError:
             logger.error('Line %d contains no ":"; ignoring line', lineno)
         else:
@@ -71,10 +70,10 @@ def scan_robots_txt(
     if record:
         yield record
 
+
 def parse_robots_txt(
-        records: Iterable[Iterable[Tuple[int, str, str]]],
-        logger: LoggerAdapter
-    ) -> Mapping[str, Iterable[Tuple[bool, str]]]:
+    records: Iterable[Iterable[Tuple[int, str, str]]], logger: LoggerAdapter
+) -> Mapping[str, Iterable[Tuple[bool, str]]]:
     """Parses C{robots.txt} records.
 
     @param records:
@@ -93,49 +92,52 @@ def parse_robots_txt(
         seen_user_agent = False
         rules: List[Tuple[bool, str]] = []
         for lineno, field, value in record:
-            if field == 'user-agent':
+            if field == "user-agent":
                 if rules:
                     logger.error(
-                        'Line %d specifies user agent after rules; '
-                        'assuming new record', lineno
-                        )
+                        "Line %d specifies user agent after rules; "
+                        "assuming new record",
+                        lineno,
+                    )
                     rules = []
                 seen_user_agent = True
                 name = value.casefold()
                 if name in result:
                     logger.error(
                         'Line %d specifies user agent "%s", which was '
-                        'already addressed in an earlier record; '
-                        'ignoring new record', lineno, value
-                        )
+                        "already addressed in an earlier record; "
+                        "ignoring new record",
+                        lineno,
+                        value,
+                    )
                 else:
                     result[name] = rules
-            elif field in ('allow', 'disallow'):
+            elif field in ("allow", "disallow"):
                 if seen_user_agent:
                     try:
                         path = unescape_path(value)
                     except ValueError as ex:
                         logger.error(
-                            'Bad escape in %s URL on line %d: %s',
-                            field, lineno, ex
-                            )
+                            "Bad escape in %s URL on line %d: %s", field, lineno, ex
+                        )
                     else:
                         # Ignore allow/disallow directives without a path.
                         if path:
-                            rules.append((field == 'allow', path))
+                            rules.append((field == "allow", path))
                 else:
                     logger.error(
-                        'Line %d specifies %s rule without a preceding '
-                        'user agent line; ignoring line', lineno, field
-                        )
+                        "Line %d specifies %s rule without a preceding "
+                        "user agent line; ignoring line",
+                        lineno,
+                        field,
+                    )
             else:
                 # Unknown fields are allowed for extensions.
                 if field not in unknowns:
                     unknowns.add(field)
-                    logger.info(
-                        'Unknown field "%s" (line %d)', field, lineno
-                        )
+                    logger.info('Unknown field "%s" (line %d)', field, lineno)
     return result
+
 
 def unescape_path(path: str) -> str:
     """Decodes a percent-encoded URL path.
@@ -145,7 +147,7 @@ def unescape_path(path: str) -> str:
     """
     idx = 0
     while True:
-        idx = path.find('%', idx)
+        idx = path.find("%", idx)
         if idx == -1:
             return path
 
@@ -153,48 +155,46 @@ def unescape_path(path: str) -> str:
         start = idx
         data = []
         while True:
-            hex_num = path[idx + 1:idx + 3]
+            hex_num = path[idx + 1 : idx + 3]
             if len(hex_num) != 2:
-                raise ValueError(
-                    'incomplete escape, expected 2 characters after "%"'
-                    )
+                raise ValueError('incomplete escape, expected 2 characters after "%"')
             idx += 3
 
             try:
-                if '-' in hex_num:
+                if "-" in hex_num:
                     raise ValueError()
                 value = int(hex_num, 16)
             except ValueError:
                 raise ValueError(
                     'incorrect escape: expected 2 hex digits after "%%", '
                     'got "%s"' % hex_num
-                    )
+                )
             data.append(value)
 
             remaining: int
             if len(data) > 1:
                 if (value & 0xC0) == 0x80:
-                    remaining -= 1 # pylint: disable=undefined-variable
+                    remaining -= 1  # pylint: disable=undefined-variable
                     if remaining == 0:
                         path = path[:start] + bytes(data).decode() + path[idx:]
                         break
                 else:
                     raise ValueError(
-                        'invalid percent-encoded UTF8: expected 0x80..0xBF '
-                        'for non-first byte, got 0x%02X' % value
-                        )
-            elif value == 0x2F: # '/'
+                        "invalid percent-encoded UTF8: expected 0x80..0xBF "
+                        "for non-first byte, got 0x%02X" % value
+                    )
+            elif value == 0x2F:  # '/'
                 # Path separator should remain escaped.
-                path = path[:start] + '%2f' + path[idx:]
+                path = path[:start] + "%2f" + path[idx:]
                 break
             elif value < 0x80:
                 path = path[:start] + chr(value) + path[idx:]
                 break
             elif value < 0xC0 or value >= 0xF8:
                 raise ValueError(
-                    'invalid percent-encoded UTF8: expected 0xC0..0xF7 '
-                    'for first byte, got 0x%02X' % value
-                    )
+                    "invalid percent-encoded UTF8: expected 0xC0..0xF7 "
+                    "for first byte, got 0x%02X" % value
+                )
             elif value < 0xE0:
                 remaining = 1
             elif value < 0xF0:
@@ -203,16 +203,16 @@ def unescape_path(path: str) -> str:
                 assert value < 0xF8, value
                 remaining = 3
 
-            if idx == len(path) or path[idx] != '%':
+            if idx == len(path) or path[idx] != "%":
                 raise ValueError(
-                    f'incomplete escaped UTF8 character, '
-                    f'expected {remaining:d} more escaped bytes'
-                    )
+                    f"incomplete escaped UTF8 character, "
+                    f"expected {remaining:d} more escaped bytes"
+                )
+
 
 def lookup_robots_rules(
-        rules_map: Mapping[str, Iterable[Tuple[bool, str]]],
-        user_agent: str
-    ) -> Iterable[Tuple[bool, str]]:
+    rules_map: Mapping[str, Iterable[Tuple[bool, str]]], user_agent: str
+) -> Iterable[Tuple[bool, str]]:
     """Looks up a user agent in a rules mapping.
 
     @param rules_map:
@@ -228,7 +228,8 @@ def lookup_robots_rules(
     for name, rules in rules_map.items():
         if name.startswith(user_agent):
             return rules
-    return rules_map.get('*', [])
+    return rules_map.get("*", [])
+
 
 def path_allowed(path: str, rules: Iterable[Tuple[bool, str]]) -> bool:
     """Checks whether the given rules allow visiting the given path.

@@ -14,6 +14,7 @@ used to model input elements in an (HTML) form.
 #       "required" attribute, SelectSingle can become functionally
 #       equivalent to RadioButtonGroup.
 
+
 class Control:
     """Abstract base class for submittable elements in a form."""
 
@@ -39,6 +40,7 @@ class Control:
         of the submission, for example an unchecked checkbox.
         """
         raise NotImplementedError
+
 
 class SingleValueControl(Control):
     """Control that produces at most one name-value combination.
@@ -66,6 +68,7 @@ class SingleValueControl(Control):
     def alternatives(self):
         yield self.name, self.value
 
+
 class FileInput(SingleValueControl):
     """Control for selecting and uploading files."""
 
@@ -78,13 +81,15 @@ class FileInput(SingleValueControl):
         # file name input field even if a default value is provided.
         # Since we have no idea what kind of file should be uploaded, we just
         # submit the empty string.
-        yield self.name, ''
+        yield self.name, ""
+
 
 class HiddenInput(SingleValueControl):
     """Control that is not visible to the user.
 
     This control submits its default value.
     """
+
 
 class TextField(SingleValueControl):
     """Single-line text input."""
@@ -94,9 +99,10 @@ class TextField(SingleValueControl):
         return name == self.name
 
     def alternatives(self):
-        yield self.name, '' # empty
-        yield self.name, self.value # default
-        yield self.name, 'ook' # librarian's choice
+        yield self.name, ""  # empty
+        yield self.name, self.value  # default
+        yield self.name, "ook"  # librarian's choice
+
 
 class TextArea(SingleValueControl):
     """Multi-line text input."""
@@ -106,9 +112,10 @@ class TextArea(SingleValueControl):
         return name == self.name
 
     def alternatives(self):
-        yield self.name, '' # empty
-        yield self.name, self.value # default
-        yield self.name, 'Ook.\nOok? Ook!' # librarian's choice
+        yield self.name, ""  # empty
+        yield self.name, self.value  # default
+        yield self.name, "Ook.\nOok? Ook!"  # librarian's choice
+
 
 class Checkbox(SingleValueControl):
     """Checkbox.
@@ -118,14 +125,14 @@ class Checkbox(SingleValueControl):
     """
 
     def has_alternative(self, name, value):
-        return (
-            (name is None and value is None) or
-            (name == self.name and value == self.value)
-            )
+        return (name is None and value is None) or (
+            name == self.name and value == self.value
+        )
 
     def alternatives(self):
-        yield None, None # box unchecked
-        yield self.name, self.value # box checked
+        yield None, None  # box unchecked
+        yield self.name, self.value  # box checked
+
 
 class RadioButton(SingleValueControl):
     """Single radio button.
@@ -138,6 +145,7 @@ class RadioButton(SingleValueControl):
 
     def alternatives(self):
         assert False, f'radio button "{self.name}" was not merged'
+
 
 class RadioButtonGroup(Control):
     """Multiple-choice control containing one or more radio buttons."""
@@ -152,14 +160,12 @@ class RadioButtonGroup(Control):
         values = []
         for button in buttons:
             if not isinstance(button, RadioButton):
-                raise TypeError(
-                    f'expected RadioButton, got {type(button).__name__}'
-                    )
+                raise TypeError(f"expected RadioButton, got {type(button).__name__}")
             if button.name != name:
                 raise ValueError(
                     f'radio button name "{button.name}" differs from '
                     f'first radio button name "{name}"'
-                    )
+                )
             values.append(button.value)
 
         # Actual construction.
@@ -174,12 +180,14 @@ class RadioButtonGroup(Control):
         for value in self.values:
             yield self.name, value
 
+
 class SubmitButton(SingleValueControl):
     """Single submit button.
 
     All submit buttons in a form must be combined in a L{SubmitButtons}
     control.
     """
+
 
 class SubmitButtons(Control):
     """Pseudo-control which contains all submit buttons for a form.
@@ -201,6 +209,7 @@ class SubmitButtons(Control):
     def alternatives(self):
         yield from self.buttons
 
+
 class SelectMultiple(SingleValueControl):
     """Pseudo-control which represents an option in a C{<select>} control
     where multiple options can be active at the same time.
@@ -209,14 +218,14 @@ class SelectMultiple(SingleValueControl):
     """
 
     def has_alternative(self, name, value):
-        return (
-            (name is None and value is None) or
-            (name == self.name and value == self.value)
-            )
+        return (name is None and value is None) or (
+            name == self.name and value == self.value
+        )
 
     def alternatives(self):
-        yield None, None # not selected
-        yield self.name, self.value # selected
+        yield None, None  # not selected
+        yield self.name, self.value  # selected
+
 
 class SelectSingle(Control):
     """C{<select>} control where one option can be active at the same time.
@@ -238,12 +247,11 @@ class SelectSingle(Control):
         self.options = tuple(options)
 
     def has_alternative(self, name, value):
-        return (
-            (name is None and value is None) or
-            (name == self.name and value in self.options)
-            )
+        return (name is None and value is None) or (
+            name == self.name and value in self.options
+        )
 
     def alternatives(self):
-        yield None, None # nothing selected
+        yield None, None  # nothing selected
         for option in self.options:
             yield self.name, option

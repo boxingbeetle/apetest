@@ -15,7 +15,7 @@ class Request:
     """
 
     @staticmethod
-    def from_url(url: str) -> 'Request':
+    def from_url(url: str) -> "Request":
         """Creates a L{Request} from a URL.
 
         @raise ValueError:
@@ -25,13 +25,13 @@ class Request:
 
         scheme, host, path, query_str, fragment_ = urlsplit(url)
         if not path:
-            path = '/'
-        page_url = urlunsplit((scheme, host, path, '', ''))
+            path = "/"
+        page_url = urlunsplit((scheme, host, path, "", ""))
         query = []
         if query_str:
-            for elem in query_str.split('&'):
-                if '=' in elem:
-                    key, value = elem.split('=', 1)
+            for elem in query_str.split("&"):
+                if "=" in elem:
+                    key, value = elem.split("=", 1)
                     query.append((unquote_plus(key), unquote_plus(value)))
                 else:
                     # Note: This might be valid as a URL, but it does not
@@ -40,15 +40,12 @@ class Request:
                     #       to receive.
                     raise ValueError(
                         f'Query of URL "{url}" contains invalid part "{elem}"'
-                        )
+                    )
         return Request(page_url, query)
 
     def __init__(
-            self,
-            page_url: str,
-            query: Iterable[Tuple[str, str]],
-            maybe_bad: bool = False
-        ):
+        self, page_url: str, query: Iterable[Tuple[str, str]], maybe_bad: bool = False
+    ):
         """Initializes a request object from a split URL.
 
         @param page_url:
@@ -93,9 +90,13 @@ class Request:
 
     def __str__(self) -> str:
         if self.query:
-            return self.page_url + '?' + '&'.join(
-                f'{quote_plus(key)}={quote_plus(value)}'
-                for key, value in self.query
+            return (
+                self.page_url
+                + "?"
+                + "&".join(
+                    f"{quote_plus(key)}={quote_plus(value)}"
+                    for key, value in self.query
                 )
+            )
         else:
             return self.page_url

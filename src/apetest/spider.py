@@ -11,9 +11,7 @@ method can be used to ask which other requests linked to a given request.
 """
 
 from collections import defaultdict
-from typing import (
-    DefaultDict, Dict, Iterable, Iterator, List, Optional, Set, Tuple
-)
+from typing import DefaultDict, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 from urllib.parse import urljoin, urlsplit
 
 from apetest.fetch import USER_AGENT_PREFIX, load_text
@@ -21,7 +19,10 @@ from apetest.referrer import Referrer
 from apetest.report import Checked, Report
 from apetest.request import Request
 from apetest.robots import (
-    lookup_robots_rules, parse_robots_txt, path_allowed, scan_robots_txt
+    lookup_robots_rules,
+    parse_robots_txt,
+    path_allowed,
+    scan_robots_txt,
 )
 
 
@@ -57,14 +58,13 @@ class Spider:
         # Maps source request to referrers (destination).
         self._site_graph: Dict[Request, List[Referrer]] = {}
         # Maps destination page to source requests.
-        self._page_referred_from: DefaultDict[str, Set[Request]] \
-                                = defaultdict(set)
+        self._page_referred_from: DefaultDict[str, Set[Request]] = defaultdict(set)
 
     def __iter__(self) -> Iterator[Request]:
         checked = self._requests_checked
         to_check = self._requests_to_check
         while to_check:
-            print(f'checked: {len(checked):d}, to check: {len(to_check):d}')
+            print(f"checked: {len(checked):d}, to check: {len(to_check):d}")
             request = min(to_check)
             to_check.remove(request)
             checked.add(request)
@@ -78,22 +78,18 @@ class Spider:
         #       but it would be cleaner to do that at the spider level,
         #       in case we ever want to support crawling multiple roots
         #       or want to report all external links.
-        path = urlsplit(referrer.page_url).path or '/'
+        path = urlsplit(referrer.page_url).path or "/"
         base_url = self._base_url
-        if base_url.startswith('file:'):
-            base_path = urlsplit(base_url).path or '/'
+        if base_url.startswith("file:"):
+            base_path = urlsplit(base_url).path or "/"
             if not path.startswith(base_path):
                 # Path is outside the tree rooted at our base URL.
                 return False
-            path = path[base_path.rindex('/'):]
+            path = path[base_path.rindex("/") :]
 
         return path_allowed(path, self._rules)
 
-    def add_requests(
-            self,
-            source_req: Request,
-            referrers: Iterable[Referrer]
-        ) -> None:
+    def add_requests(self, source_req: Request, referrers: Iterable[Referrer]) -> None:
         """Adds the requests from C{referrers}, which were discovered
         in C{source_req}.
 
@@ -104,10 +100,8 @@ class Spider:
 
         # Filter referrers according to rules.
         allowed_referrers = [
-            referrer
-            for referrer in referrers
-            if self.referrer_allowed(referrer)
-            ]
+            referrer for referrer in referrers if self.referrer_allowed(referrer)
+        ]
 
         # Currently each request is only visited once, so we do not have to
         # merge data, but that might change once we start doing POSTs.
@@ -119,8 +113,10 @@ class Spider:
             self._page_referred_from[url].add(source_req)
 
             for request in referrer.iter_requests():
-                if request in self._requests_checked \
-                or request in self._requests_to_check:
+                if (
+                    request in self._requests_checked
+                    or request in self._requests_to_check
+                ):
                     continue
                 if self._queries_per_page[url] >= self.max_queries_per_page:
                     print(f'maximum number of queries reached for "{url}"')
@@ -135,6 +131,7 @@ class Spider:
                 if referrer.has_request(dest_req):
                     yield source_req
 
+
 def spider_req(first_req: Request) -> Tuple[Spider, Optional[Report]]:
     """Creates a L{Spider} that starts at the given L{Request}.
 
@@ -143,10 +140,10 @@ def spider_req(first_req: Request) -> Tuple[Spider, Optional[Report]]:
     that apply to APE will be passed on to the new L{Spider}.
     """
     base_url = first_req.page_url
-    if base_url.startswith('file:'):
-        robots_url = urljoin(base_url, 'robots.txt')
+    if base_url.startswith("file:"):
+        robots_url = urljoin(base_url, "robots.txt")
     else:
-        robots_url = urljoin(base_url, '/robots.txt')
+        robots_url = urljoin(base_url, "/robots.txt")
 
     print('fetching "robots.txt"...')
     report: Optional[Report]

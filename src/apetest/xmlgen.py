@@ -78,10 +78,10 @@ class _XMLSerializable:
     def __str__(self) -> str:
         return self.flatten()
 
-    def __add__(self, other: 'XMLContent') -> '_XMLSequence':
+    def __add__(self, other: "XMLContent") -> "_XMLSequence":
         return concat(self, other)
 
-    def __radd__(self, other: 'XMLContent') -> '_XMLSequence':
+    def __radd__(self, other: "XMLContent") -> "_XMLSequence":
         return concat(other, self)
 
     def _to_fragments(self) -> Iterator[str]:
@@ -93,17 +93,19 @@ class _XMLSerializable:
 
     def flatten(self) -> str:
         """Creates the XML string for this object."""
-        return ''.join(self._to_fragments())
+        return "".join(self._to_fragments())
 
-    def join(self, siblings: Iterable['XMLContent']) -> '_XMLSequence':
+    def join(self, siblings: Iterable["XMLContent"]) -> "_XMLSequence":
         """Creates an XML sequence containing the given XML objects,
         with itself inserted between each sibling, similar to
         C{str.join()}.
         """
         return _XMLSequence(_join(self, _adapt(siblings)))
 
+
 XML = _XMLSerializable
 XMLContent = Union[str, None, XML, Iterable]
+
 
 def _join(separator: XML, nodes: Iterable[XML]) -> Iterator[XML]:
     iterator = iter(nodes)
@@ -115,8 +117,8 @@ def _join(separator: XML, nodes: Iterable[XML]) -> Iterator[XML]:
         yield separator
         yield node
 
-class _Text(_XMLSerializable):
 
+class _Text(_XMLSerializable):
     def __init__(self, text: str):
         _XMLSerializable.__init__(self)
         self.__text = escape(text, quote=False)
@@ -124,14 +126,15 @@ class _Text(_XMLSerializable):
     def _to_fragments(self) -> Iterator[str]:
         yield self.__text
 
-class _Raw(_XMLSerializable):
 
+class _Raw(_XMLSerializable):
     def __init__(self, text: str):
         _XMLSerializable.__init__(self)
         self.__text = text
 
     def _to_fragments(self) -> Iterator[str]:
         yield self.__text
+
 
 def raw(text: str) -> XML:
     """Creates a segment that will appear in the output without escaping.
@@ -141,8 +144,8 @@ def raw(text: str) -> XML:
     """
     return _Raw(text)
 
-class _XMLSequence(_XMLSerializable):
 
+class _XMLSequence(_XMLSerializable):
     def __init__(self, children: Iterable[XML]):
         """Creates an XML sequence.
         The given children, must all be _XMLSerializable instances;
@@ -158,44 +161,44 @@ class _XMLSequence(_XMLSerializable):
             # allowed to access protected methods.
             yield from content._to_fragments()
 
-class _XMLElement(_XMLSerializable):
 
+class _XMLElement(_XMLSerializable):
     def __init__(
-            self,
-            name: str,
-            attrs: Mapping[str, str],
-            children: Optional[_XMLSequence]
-        ):
+        self, name: str, attrs: Mapping[str, str], children: Optional[_XMLSequence]
+    ):
         _XMLSerializable.__init__(self)
         self.__name = name
         self.__attributes = attrs
         self.__children = children
 
-    def __call__(self, **attributes: Optional[str]) -> '_XMLElement':
+    def __call__(self, **attributes: Optional[str]) -> "_XMLElement":
         attrs = dict(self.__attributes)
         attrs.update(
-            (key.rstrip('_'), escape(str(value)))
+            (key.rstrip("_"), escape(str(value)))
             for key, value in attributes.items()
             if value is not None
-            )
+        )
         return _XMLElement(self.__name, attrs, self.__children)
 
-    def __getitem__(self, index: XMLContent) -> '_XMLElement':
+    def __getitem__(self, index: XMLContent) -> "_XMLElement":
         children = concat(self.__children, index)
         return _XMLElement(self.__name, self.__attributes, children)
 
     def _to_fragments(self) -> Iterator[str]:
         attribs = self.__attributes
-        attrib_str = '' if attribs is None else ''.join(
-            ' %s="%s"' % item for item in attribs.items()
-            )
+        attrib_str = (
+            ""
+            if attribs is None
+            else "".join(' %s="%s"' % item for item in attribs.items())
+        )
         children = self.__children
         if children is None:
-            yield f'<{self.__name}{attrib_str} />'
+            yield f"<{self.__name}{attrib_str} />"
         else:
-            yield f'<{self.__name}{attrib_str}>'
-            yield from children._to_fragments() # pylint: disable=protected-access
-            yield f'</{self.__name}>'
+            yield f"<{self.__name}{attrib_str}>"
+            yield from children._to_fragments()  # pylint: disable=protected-access
+            yield f"</{self.__name}>"
+
 
 class _XMLElementFactory:
     """Automatically creates _XMLElement instances for any tag that is
@@ -209,11 +212,13 @@ class _XMLElementFactory:
     def __getitem__(self, key: str) -> _XMLElement:
         return _XMLElement(key, {}, None)
 
-xml = _XMLElementFactory() # pylint: disable=invalid-name
+
+xml = _XMLElementFactory()  # pylint: disable=invalid-name
 """Factory for XML elements.
 
 See the module level documentation for usage instructions.
 """
+
 
 def _adapt(node: XMLContent) -> Iterator[XML]:
     if isinstance(node, _XMLSerializable):
@@ -222,11 +227,12 @@ def _adapt(node: XMLContent) -> Iterator[XML]:
         yield _Text(node)
     elif node is None:
         pass
-    elif hasattr(node, '__iter__'):
+    elif hasattr(node, "__iter__"):
         for child in node:
             yield from _adapt(child)
     else:
-        raise TypeError(f'cannot handle node of type {type(node).__name__}')
+        raise TypeError(f"cannot handle node of type {type(node).__name__}")
+
 
 def concat(*siblings: XMLContent) -> _XMLSequence:
     """Creates an XML sequence by concatenating C{siblings}.
@@ -237,4 +243,5 @@ def concat(*siblings: XMLContent) -> _XMLSequence:
     """
     return _XMLSequence(_adapt(siblings))
 
-__all__ = ('xml', 'raw', 'concat')
+
+__all__ = ("xml", "raw", "concat")

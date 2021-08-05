@@ -154,6 +154,7 @@ def unescape_path(path: str) -> str:
         # Percent escaping can be used for UTF-8 paths.
         start = idx
         data = []
+        remaining: int = None  # type: ignore[assignment]
         while True:
             hex_num = path[idx + 1 : idx + 3]
             if len(hex_num) != 2:
@@ -171,10 +172,9 @@ def unescape_path(path: str) -> str:
                 )
             data.append(value)
 
-            remaining: int
             if len(data) > 1:
                 if (value & 0xC0) == 0x80:
-                    remaining -= 1  # pylint: disable=undefined-variable
+                    remaining -= 1
                     if remaining == 0:
                         path = path[:start] + bytes(data).decode() + path[idx:]
                         break

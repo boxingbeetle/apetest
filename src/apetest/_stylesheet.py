@@ -2,6 +2,8 @@
 
 # TODO: It would be better to have this as a CSS file.
 
+# flake8: noqa: E501
+
 CSS = """
 body {
     margin: 0;

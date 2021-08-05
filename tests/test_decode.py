@@ -3,6 +3,7 @@ import logging
 import unittest
 
 from utils import no_log
+import pytest
 
 from apetest.decode import decode_and_report, standard_codec_name, try_decode
 
@@ -43,12 +44,12 @@ class TestStandardCodecName(unittest.TestCase):
     def test_self(self):
         """Test whether a standard name is returned as-is."""
         for name in self.names:
-            self.assertEqual(standard_codec_name(name), name)
+            assert standard_codec_name(name) == name
 
     def test_other(self):
         """Test whether an unlisted codec name is returned as-is."""
         for name in ("cp437", "gibberish"):
-            self.assertEqual(standard_codec_name(name), name)
+            assert standard_codec_name(name) == name
 
     def test_round_trip(self):
         """Test standard name -> Python name -> standard name cycle."""
@@ -60,7 +61,7 @@ class TestStandardCodecName(unittest.TestCase):
                 # Python does not have separate codecs for these charset names.
                 continue
             codec_info = codecs.lookup(name)
-            self.assertEqual(standard_codec_name(codec_info.name), name)
+            assert standard_codec_name(codec_info.name) == name
 
 
 class TestTryDecode(unittest.TestCase):
@@ -73,8 +74,8 @@ class TestTryDecode(unittest.TestCase):
             yield "us-ascii"
 
         text, encoding = try_decode(b"Hello", to_try())
-        self.assertEqual(text, "Hello")
-        self.assertEqual(encoding, "us-ascii")
+        assert text == "Hello"
+        assert encoding == "us-ascii"
 
     def test_nonstandard(self):
         """Test handling of a non-standard encoding name."""
@@ -83,12 +84,12 @@ class TestTryDecode(unittest.TestCase):
             yield "ascii"
 
         text, encoding = try_decode(b"Hello", to_try())
-        self.assertEqual(text, "Hello")
-        self.assertEqual(encoding, "us-ascii")
+        assert text == "Hello"
+        assert encoding == "us-ascii"
 
     def test_no_options(self):
         """Test handling of no encoding options."""
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             text, encoding = try_decode(b"Hello", ())
 
     def test_no_valid_options(self):
@@ -97,7 +98,7 @@ class TestTryDecode(unittest.TestCase):
         def to_try():
             yield "utf-8"
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             text, encoding = try_decode(b"\xC0", to_try())
 
     def test_first(self):
@@ -108,22 +109,22 @@ class TestTryDecode(unittest.TestCase):
             yield "utf-8"
 
         text, encoding = try_decode(b"Hello", to_try())
-        self.assertEqual(text, "Hello")
-        self.assertEqual(encoding, "us-ascii")
+        assert text == "Hello"
+        assert encoding == "us-ascii"
         text, encoding = try_decode(b"Hello", reversed(list(to_try())))
-        self.assertEqual(text, "Hello")
-        self.assertEqual(encoding, "utf-8")
+        assert text == "Hello"
+        assert encoding == "utf-8"
 
     def test_utf8_only(self):
         """Test whether an emoji is decoded as UTF-8."""
         to_try = ["us-ascii", "utf-8"]
         text, encoding = try_decode(b"smile \xf0\x9f\x98\x83", to_try)
-        self.assertEqual(text, "smile \U0001f603")
-        self.assertEqual(encoding, "utf-8")
+        assert text == "smile \U0001f603"
+        assert encoding == "utf-8"
         to_try.reverse()
         text, encoding = try_decode(b"smile \xf0\x9f\x98\x83", to_try)
-        self.assertEqual(text, "smile \U0001f603")
-        self.assertEqual(encoding, "utf-8")
+        assert text == "smile \U0001f603"
+        assert encoding == "utf-8"
 
 
 class TestDecodeAndReport(unittest.TestCase):
@@ -137,8 +138,8 @@ class TestDecodeAndReport(unittest.TestCase):
 
         with no_log(logger):
             text, encoding = decode_and_report(b"Hello", to_try(), logger)
-        self.assertEqual(text, "Hello")
-        self.assertEqual(encoding, "us-ascii")
+        assert text == "Hello"
+        assert encoding == "us-ascii"
 
     def test_nonstandard(self):
         """Test handling of a non-standard encoding name."""
@@ -148,8 +149,8 @@ class TestDecodeAndReport(unittest.TestCase):
 
         with self.assertLogs(logger, logging.INFO):
             text, encoding = decode_and_report(b"Hello", to_try(), logger)
-        self.assertEqual(text, "Hello")
-        self.assertEqual(encoding, "us-ascii")
+        assert text == "Hello"
+        assert encoding == "us-ascii"
 
     def test_implicit_utf8(self):
         """Test whether UTF-8 is tried even when not specified."""
@@ -158,8 +159,8 @@ class TestDecodeAndReport(unittest.TestCase):
             text, encoding = decode_and_report(
                 b"smile \xf0\x9f\x98\x83", to_try, logger
             )
-        self.assertEqual(text, "smile \U0001f603")
-        self.assertEqual(encoding, "utf-8")
+        assert text == "smile \U0001f603"
+        assert encoding == "utf-8"
 
     def test_none(self):
         """Test whether None entries are ignored."""
@@ -172,8 +173,8 @@ class TestDecodeAndReport(unittest.TestCase):
             text, encoding = decode_and_report(
                 b"smile \xf0\x9f\x98\x83", to_try, logger
             )
-        self.assertEqual(text, "smile \U0001f603")
-        self.assertEqual(encoding, "utf-8")
+        assert text == "smile \U0001f603"
+        assert encoding == "utf-8"
 
     def test_invalid(self):
         """Test what happens when there is no valid way to decode."""
@@ -182,7 +183,7 @@ class TestDecodeAndReport(unittest.TestCase):
             (None, "Unicode BOM"),
             ("utf-8", "XML declaration"),
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             text, encoding = decode_and_report(
                 b"cut-off smile \xf0\x9f\x98", to_try, logger
             )

@@ -75,45 +75,37 @@ class TestScanRobots(unittest.TestCase):
     def test_0200_example(self):
         """Test scanning of example file."""
         with no_log(logger):
-            self.assertEqual(
-                list(scan_robots_txt(EXAMPLE_LINES, logger)), EXAMPLE_RECORDS
-            )
+            assert list(scan_robots_txt(EXAMPLE_LINES, logger)) == EXAMPLE_RECORDS
 
     def test_0300_warn(self):
         """Test scanning of files that trigger warnings."""
         with self.assertLogs(logger, logging.WARNING):
-            self.assertEqual(
-                list(
-                    scan_robots_txt(
-                        [
-                            # Whitespace before field
-                            " User-agent: *",
-                            "Disallow: /",
-                        ],
-                        logger,
-                    )
-                ),
-                [
-                    [(1, "user-agent", "*"), (2, "disallow", "/")],
-                ],
-            )
+            assert list(
+                scan_robots_txt(
+                    [
+                        # Whitespace before field
+                        " User-agent: *",
+                        "Disallow: /",
+                    ],
+                    logger,
+                )
+            ) == [
+                [(1, "user-agent", "*"), (2, "disallow", "/")],
+            ]
         with self.assertLogs(logger, logging.WARNING):
-            self.assertEqual(
-                list(
-                    scan_robots_txt(
-                        [
-                            # Non-empty line without ":"
-                            "User-agent: *",
-                            "Foo",
-                            "Disallow: /",
-                        ],
-                        logger,
-                    )
-                ),
-                [
-                    [(1, "user-agent", "*"), (3, "disallow", "/")],
-                ],
-            )
+            assert list(
+                scan_robots_txt(
+                    [
+                        # Non-empty line without ":"
+                        "User-agent: *",
+                        "Foo",
+                        "Disallow: /",
+                    ],
+                    logger,
+                )
+            ) == [
+                [(1, "user-agent", "*"), (3, "disallow", "/")],
+            ]
 
 
 class TestParseRobots(unittest.TestCase):
@@ -122,18 +114,18 @@ class TestParseRobots(unittest.TestCase):
     def test_0100_empty(self):
         """Test parsing of empty record set."""
         with no_log(logger):
-            self.assertEqual(parse_robots_txt((), logger), {})
+            assert parse_robots_txt((), logger) == {}
 
     def test_0200_example(self):
         """Test parsing of example records."""
         with no_log(logger):
-            self.assertEqual(parse_robots_txt(EXAMPLE_RECORDS, logger), EXAMPLE_MAP)
+            assert parse_robots_txt(EXAMPLE_RECORDS, logger) == EXAMPLE_MAP
 
     def test_0300_unknown(self):
         """Test handling of unknown fields."""
         records = [[(1, "user-agent", "*"), (2, "foo", "bar"), (3, "disallow", "/")]]
         with self.assertLogs(logger, logging.INFO):
-            self.assertEqual(parse_robots_txt(records, logger), {"*": [(False, "/")]})
+            assert parse_robots_txt(records, logger) == {"*": [(False, "/")]}
 
     def test_0310_user_argent_after_rules(self):
         """Test handling of user agents specified after rules."""
@@ -146,10 +138,10 @@ class TestParseRobots(unittest.TestCase):
             ]
         ]
         with self.assertLogs(logger, logging.ERROR):
-            self.assertEqual(
-                parse_robots_txt(records, logger),
-                {"smith": [(False, "/m")], "bender": [(False, "/casino")]},
-            )
+            assert parse_robots_txt(records, logger) == {
+                "smith": [(False, "/m")],
+                "bender": [(False, "/casino")],
+            }
 
     def test_0320_rules_before_user_argent(self):
         """Test handling of rules specified before user agent."""
@@ -162,10 +154,10 @@ class TestParseRobots(unittest.TestCase):
             ]
         ]
         with self.assertLogs(logger, logging.ERROR):
-            self.assertEqual(
-                parse_robots_txt(records, logger),
-                {"smith": [(False, "/casino")], "bender": [(False, "/casino")]},
-            )
+            assert parse_robots_txt(records, logger) == {
+                "smith": [(False, "/casino")],
+                "bender": [(False, "/casino")],
+            }
 
     def test_0330_duplicate_user_agent(self):
         """Test handling of multiple rules for the same user agent."""
@@ -178,9 +170,7 @@ class TestParseRobots(unittest.TestCase):
             ]
         ]
         with self.assertLogs(logger, logging.ERROR):
-            self.assertEqual(
-                parse_robots_txt(records, logger), {"smith": [(False, "/m2")]}
-            )
+            assert parse_robots_txt(records, logger) == {"smith": [(False, "/m2")]}
 
     def test_0400_unescape_valid(self):
         """Test unescaping of correctly escaped paths."""
@@ -196,19 +186,16 @@ class TestParseRobots(unittest.TestCase):
             ]
         ]
         with no_log(logger):
-            self.assertEqual(
-                parse_robots_txt(records, logger),
-                {
-                    "*": [
-                        (False, "/a<d.html"),
-                        (False, "/~joe/"),
-                        (False, "/a%2fb.html"),
-                        (False, "/\u00A2"),
-                        (False, "/\u20AC"),
-                        (False, "/\U00010348"),
-                    ]
-                },
-            )
+            assert parse_robots_txt(records, logger) == {
+                "*": [
+                    (False, "/a<d.html"),
+                    (False, "/~joe/"),
+                    (False, "/a%2fb.html"),
+                    (False, "/\u00A2"),
+                    (False, "/\u20AC"),
+                    (False, "/\U00010348"),
+                ]
+            }
 
     def test_0410_unescape_invalid(self):
         """Test handling of incorrect escaped paths."""
@@ -224,7 +211,7 @@ class TestParseRobots(unittest.TestCase):
             "/%e2%82ac",  # incomplete UTF8
         ):
             with self.assertLogs(logger, logging.ERROR):
-                self.assertEqual(
+                assert (
                     parse_robots_txt(
                         [
                             [
@@ -234,28 +221,20 @@ class TestParseRobots(unittest.TestCase):
                             ]
                         ],
                         logger,
-                    ),
-                    {"*": [(True, "/good")]},
+                    )
+                    == {"*": [(True, "/good")]}
                 )
 
     def test_0500_lookup(self):
         """Test lookup of rules for a specific user agent."""
         # Exact match.
-        self.assertEqual(
-            lookup_robots_rules(EXAMPLE_MAP, "excite"), EXAMPLE_MAP["excite"]
-        )
+        assert lookup_robots_rules(EXAMPLE_MAP, "excite") == EXAMPLE_MAP["excite"]
         # Prefix match.
-        self.assertEqual(
-            lookup_robots_rules(EXAMPLE_MAP, "web"), EXAMPLE_MAP["webcrawler"]
-        )
+        assert lookup_robots_rules(EXAMPLE_MAP, "web") == EXAMPLE_MAP["webcrawler"]
         # Case-insensitive match.
-        self.assertEqual(
-            lookup_robots_rules(EXAMPLE_MAP, "UnHipBot"), EXAMPLE_MAP["unhipbot"]
-        )
+        assert lookup_robots_rules(EXAMPLE_MAP, "UnHipBot") == EXAMPLE_MAP["unhipbot"]
         # Default.
-        self.assertEqual(
-            lookup_robots_rules(EXAMPLE_MAP, "unknown-bot"), EXAMPLE_MAP["*"]
-        )
+        assert lookup_robots_rules(EXAMPLE_MAP, "unknown-bot") == EXAMPLE_MAP["*"]
 
     def test_0600_match_path(self):
         """Test the `path_allowed` function."""
@@ -273,9 +252,9 @@ class TestParseRobots(unittest.TestCase):
             ("/~jim/jim.html", False),
             ("/~mak/mak.html", True),
         ):
-            self.assertTrue(path_allowed(path, rules_all))
-            self.assertFalse(path_allowed(path, rules_none))
-            self.assertEqual(path_allowed(path, rules_some), expected)
+            assert path_allowed(path, rules_all)
+            assert not path_allowed(path, rules_none)
+            assert path_allowed(path, rules_some) == expected
 
 
 if __name__ == "__main__":

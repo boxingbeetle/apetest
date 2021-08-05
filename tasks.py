@@ -1,8 +1,8 @@
+from itertools import chain
 from pathlib import Path
 from shutil import rmtree
 
 from invoke import UnexpectedExit, task
-
 
 TOP_DIR = Path(__file__).parent
 DOC_DIR = TOP_DIR / 'docs'
@@ -12,7 +12,11 @@ SRC_ENV = {'PYTHONPATH': str(SRC_DIR)}
 def source_arg(pattern):
     """Converts a source pattern to a command line argument."""
     if pattern is None:
-        paths = (SRC_DIR / 'apetest').glob('**/*.py')
+        paths = chain(
+            SRC_DIR.glob('**/*.py'),
+            (TOP_DIR / 'tests').glob('**/*.py'),
+            [Path(__file__)],
+            )
     else:
         paths = Path.cwd().glob(pattern)
     return ' '.join(str(path) for path in paths)

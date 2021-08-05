@@ -2,10 +2,9 @@ import codecs
 import logging
 import unittest
 
-from apetest.decode import decode_and_report, standard_codec_name, try_decode
-
 from utils import no_log
 
+from apetest.decode import decode_and_report, standard_codec_name, try_decode
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

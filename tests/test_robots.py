@@ -1,12 +1,11 @@
 import logging
 import unittest
 
-from apetest.robots import (
-    lookup_robots_rules, parse_robots_txt, path_allowed, scan_robots_txt
-    )
-
 from utils import no_log
 
+from apetest.robots import (
+    lookup_robots_rules, parse_robots_txt, path_allowed, scan_robots_txt
+)
 
 logger = logging.getLogger(__name__)
 

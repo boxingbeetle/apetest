@@ -20,7 +20,8 @@ import json
 
 https_connection_factory: Optional[Type[HTTPConnection]]
 try:
-    from http.client import HTTPSConnection # pylint: disable=ungrouped-imports
+    from http.client import \
+        HTTPSConnection  # pylint: disable=ungrouped-imports
     https_connection_factory = HTTPSConnection # pylint: disable=invalid-name
 except ImportError:
     https_connection_factory = None # pylint: disable=invalid-name

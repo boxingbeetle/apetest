@@ -39,7 +39,7 @@ else:
 if not TYPE_CHECKING:
     # Work around PyLint issue on Python 3.6.
     #   https://github.com/PyCQA/pylint/issues/2377
-    from typing import Sequence # pylint: disable=ungrouped-imports
+    from typing import Sequence  # pylint: disable=ungrouped-imports
     Collection = Sequence # pylint: disable=invalid-name
 
 

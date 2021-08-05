@@ -33,7 +33,8 @@ def write_results(results, results_path):
     """Write a results dictionary to file."""
     with open(str(results_path), "w", encoding="utf-8") as out:
         for key, value in results.items():
-            out.write("%s=%s\n" % (key, value.replace("\\", "\\\\")))
+            escaped = value.replace("\\", "\\\\")
+            out.write(f"{key}={escaped}\n")
 
 
 @task
@@ -64,12 +65,12 @@ def lint(c, src=None, html=None, results=None):
         cmd += [
             "--load-plugins=pylint_json2html",
             "--output-format=jsonextended",
-            ">%s" % json_file,
+            f">{json_file}",
         ]
     with c.cd(str(TOP_DIR)):
         lint_result = c.run(" ".join(cmd), env=SRC_ENV, warn=True, pty=results is None)
     if html is not None:
-        c.run("pylint-json2html -f jsonextended -o %s %s" % (html, json_file))
+        c.run(f"pylint-json2html -f jsonextended -o {html} {json_file}")
     if results is not None:
         import sys
 
@@ -185,7 +186,7 @@ def unittest(c, junit_xml=None, results=None):
         junit_xml = report_dir / "pytest-report.xml"
     args = ["pytest"]
     if junit_xml is not None:
-        args.append("--junit-xml=%s" % junit_xml)
+        args.append(f"--junit-xml={junit_xml}")
     args.append("tests")
     with c.cd(str(TOP_DIR)):
         c.run(" ".join(args), env=SRC_ENV, pty=results is None)

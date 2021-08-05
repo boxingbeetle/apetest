@@ -19,7 +19,7 @@ class _NoLogHandler(logging.Handler):
 
     def emit(self, record):
         message = self.format(record)
-        assert False, "Unexpected logging: %s" % message
+        assert False, f"Unexpected logging: {message}"
 
 
 def no_log(logger):

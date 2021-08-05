@@ -50,9 +50,9 @@ def results_from_json(json_path):
         with open(str(json_path), encoding="utf-8") as inp:
             data = json.load(inp)
     except OSError as ex:
-        return dict(result="error", summary="Error reading JSON: %s" % ex)
+        return dict(result="error", summary=f"Error reading JSON: {ex}")
     except ValueError as ex:
-        return dict(result="error", summary="Error parsing JSON: %s" % ex)
+        return dict(result="error", summary=f"Error parsing JSON: {ex}")
 
     # Count number of issues of each type.
     counts = Counter()
@@ -64,11 +64,11 @@ def results_from_json(json_path):
             # Extended JSON format from pylint_json2html.
             messages = data["messages"]
         else:
-            raise TypeError("Bad top-level type: %s" % type(data).__name__)
+            raise TypeError(f"Bad top-level type: {type(data).__name__}")
         for message in messages:
             counts[message["type"]] += 1
     except Exception as ex:
-        return dict(result="error", summary="Error processing JSON: %s" % ex)
+        return dict(result="error", summary=f"Error processing JSON: {ex}")
 
     # In case of a fatal problem, the results may be incomplete, so stop
     # here to avoid reporting incorrect information.
@@ -80,9 +80,9 @@ def results_from_json(json_path):
     issues = []
     for msg_type in ("error", "warning", "convention", "refactor"):
         count = counts[msg_type]
-        results["data.%s" % msg_type] = str(count)
+        results[f"data.{msg_type}"] = str(count)
         if count:
-            issues.append("%d %s%s" % (count, msg_type, "" if count == 1 else "s"))
+            issues.append(f"{count} {msg_type}{'' if count == 1 else 's'}")
 
     # Gather more mid-level data when using extended JSON format.
     if isinstance(data, dict):
@@ -99,16 +99,14 @@ def results_from_json(json_path):
                 "undocumented_method",
                 "undocumented_function",
             ):
-                results["data.%s" % key] = str(stats[key])
+                results[f"data.{key}"] = str(stats[key])
         except Exception as ex:
-            return dict(
-                result="error", summary="Error processing extended JSON: %s" % ex
-            )
+            return dict(result="error", summary=f"Error processing extended JSON: {ex}")
 
     # Summarize the findings.
     if issues:
         results["result"] = "warning"
-        results["summary"] = "PyLint found %s" % ", ".join(issues)
+        results["summary"] = f"PyLint found {', '.join(issues)}"
     else:
         results["result"] = "ok"
         results["summary"] = "PyLint found no issues"

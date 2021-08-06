@@ -11,7 +11,16 @@ method can be used to ask which other requests linked to a given request.
 """
 
 from collections import defaultdict
-from typing import DefaultDict, Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import (
+    Collection,
+    DefaultDict,
+    Dict,
+    Iterable,
+    Iterator,
+    Optional,
+    Set,
+    Tuple,
+)
 from urllib.parse import urljoin, urlsplit
 
 from apetest.fetch import USER_AGENT_PREFIX, load_text
@@ -56,7 +65,7 @@ class Spider:
         self._requests_checked: Set[Request] = set()
         self._queries_per_page: DefaultDict[str, int] = defaultdict(int)
         # Maps source request to referrers (destination).
-        self._site_graph: Dict[Request, List[Referrer]] = {}
+        self._site_graph: Dict[Request, Collection[Referrer]] = {}
         # Maps destination page to source requests.
         self._page_referred_from: DefaultDict[str, Set[Request]] = defaultdict(set)
 
@@ -89,7 +98,9 @@ class Spider:
 
         return path_allowed(path, self._rules)
 
-    def add_requests(self, source_req: Request, referrers: Iterable[Referrer]) -> None:
+    def add_requests(
+        self, source_req: Request, referrers: Collection[Referrer]
+    ) -> None:
         """Adds the requests from C{referrers}, which were discovered
         in C{source_req}.
 
@@ -98,17 +109,16 @@ class Spider:
         links to the added requests.
         """
 
-        # Filter referrers according to rules.
-        allowed_referrers = [
-            referrer for referrer in referrers if self.referrer_allowed(referrer)
-        ]
-
         # Currently each request is only visited once, so we do not have to
         # merge data, but that might change once we start doing POSTs.
         assert source_req not in self._site_graph
-        self._site_graph[source_req] = allowed_referrers
+        self._site_graph[source_req] = referrers
 
-        for referrer in allowed_referrers:
+        for referrer in referrers:
+            if not self.referrer_allowed(referrer):
+                # We are not allowed to spider this destination.
+                continue
+
             url = referrer.page_url
             self._page_referred_from[url].add(source_req)
 

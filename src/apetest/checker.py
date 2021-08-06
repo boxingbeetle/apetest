@@ -8,7 +8,7 @@ The L{PageChecker} class is where the work is done.
 from collections import defaultdict
 from enum import Enum, auto
 from logging import getLogger
-from typing import DefaultDict, Iterable, Iterator, List, Optional, cast
+from typing import Collection, DefaultDict, Iterator, List, Optional, cast
 from urllib.parse import urljoin, urlsplit, urlunsplit
 from urllib.response import addinfourl
 import re
@@ -240,7 +240,7 @@ class PageChecker:
         assert url.startswith(self.base_url), url
         return url[self.base_url.rindex("/") + 1 :]
 
-    def check(self, req: Request) -> Iterable[Referrer]:
+    def check(self, req: Request) -> Collection[Referrer]:
         """Check a single L{Request}."""
 
         req_url = str(req)

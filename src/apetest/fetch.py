@@ -7,10 +7,11 @@ while L{load_text} loads and decodes plain text documents.
 """
 
 from email import message_from_string
+from http.client import HTTPMessage
 from io import BytesIO
 from logging import getLogger
 from time import sleep
-from typing import IO, List, Mapping, Optional, Tuple
+from typing import IO, List, Optional, Tuple
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import (
@@ -36,10 +37,10 @@ class _CustomRedirectHandler(HTTPRedirectHandler):
     def redirect_request(
         self,
         req: URLRequest,
-        fp: IO[str],
+        fp: IO[bytes],
         code: int,
         msg: str,
-        headers: Mapping[str, str],
+        headers: HTTPMessage,
         newurl: str,
     ) -> Optional[URLRequest]:
         raise HTTPError(newurl, code, msg, headers, fp)

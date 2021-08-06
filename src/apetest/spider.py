@@ -24,7 +24,7 @@ from typing import (
 from urllib.parse import urljoin, urlsplit
 
 from apetest.fetch import USER_AGENT_PREFIX, load_text
-from apetest.referrer import Referrer
+from apetest.referrer import Redirect, Referrer
 from apetest.report import Checked, Report
 from apetest.request import Request
 from apetest.robots import (
@@ -53,15 +53,15 @@ class Spider:
     # TODO: Currently just the first 100 are checked, it would be better
     #       to try variations of all query arguments.
 
-    def __init__(self, first_req: Request, rules: Iterable[Tuple[bool, str]]):
+    def __init__(self, base_url: str, rules: Iterable[Tuple[bool, str]]):
         """Initializes a spider that starts at C{first_req} and follows
         the given exclusion rules.
 
         In most cases, you should use L{spider_req()} instead.
         """
-        self._base_url = first_req.page_url
+        self._base_url = base_url
         self._rules = rules
-        self._requests_to_check = {first_req}
+        self._requests_to_check: Set[Request] = set()
         self._requests_checked: Set[Request] = set()
         self._queries_per_page: DefaultDict[str, int] = defaultdict(int)
         # Maps source request to referrers (destination).
@@ -174,4 +174,6 @@ def spider_req(first_req: Request) -> Tuple[Spider, Optional[Report]]:
         rules = lookup_robots_rules(rules_map, USER_AGENT_PREFIX)
         report.checked = Checked.CHECKED
 
-    return Spider(first_req, rules), report
+    spider = Spider(base_url, rules)
+    spider.add_referrer(Redirect(first_req))
+    return spider, report

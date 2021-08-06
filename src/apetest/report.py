@@ -25,6 +25,7 @@ from typing import (
     Collection,
     DefaultDict,
     Dict,
+    Iterator,
     List,
     MutableMapping,
     Optional,
@@ -36,7 +37,7 @@ from urllib.response import addinfourl
 from apetest._stylesheet import CSS
 from apetest.plugin import PluginCollection
 from apetest.request import Request
-from apetest.xmlgen import XMLContent, raw, xml
+from apetest.xmlgen import XML, XMLContent, raw, xml
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
@@ -151,13 +152,14 @@ class Report(LoggerAdapter):
         if self.checked is Checked.NOT_CHECKED:
             yield xml.p["No content checks were performed"]
         if not self.ok:
-            yield xml.p["Referenced by:"]
             # TODO: Store Request object instead of recreating it.
             request = Request.from_url(self.url)
-            yield xml.ul[
-                # pylint: disable=protected-access
-                scribe._present_referrers(request)
-            ]
+            referrers = tuple(
+                scribe._present_referrers(request)  # pylint: disable=protected-access
+            )
+            if referrers:
+                yield xml.p["Referenced by:"]
+                yield xml.ul[referrers]
 
     @staticmethod
     def present_record(record: LogRecord) -> XMLContent:
@@ -382,7 +384,7 @@ class Scribe:
                 )
             ]
 
-    def _present_referrers(self, req: Request) -> XMLContent:
+    def _present_referrers(self, req: Request) -> Iterator[XML]:
         # Note: Currently we only list the pages a request is referred from,
         #       but we know the exact requests.
         page_names = {

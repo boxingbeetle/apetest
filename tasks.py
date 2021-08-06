@@ -20,7 +20,8 @@ def source_arg(pattern):
         )
     else:
         paths = Path.cwd().glob(pattern)
-    return " ".join(str(path) for path in paths)
+    for path in paths:
+        yield str(path)
 
 
 def remove_dir(path):
@@ -59,7 +60,8 @@ def lint(c, src=None, html=None, results=None):
         # output and the easiest way to do so is to enable the HTML report.
         report_dir = Path(results).parent.resolve()
         html = report_dir / "pylint.html"
-    cmd = ["pylint", source_arg(src)]
+    cmd = ["pylint"]
+    cmd += source_arg(src)
     if html is not None:
         json_file = report_dir / "pylint.json"
         cmd += [
@@ -98,7 +100,7 @@ def types(c, src=None, clean=False, report=False, results=None):
             mypy_report = report_dir / "mypy-coverage"
         remove_dir(mypy_report)
         cmd.append(f"--html-report {mypy_report}")
-    cmd.append(source_arg(src))
+    cmd += source_arg(src)
     out_path = None if report_dir is None else report_dir / "mypy-log.txt"
     out_stream = None if out_path is None else open(out_path, "w", encoding="utf-8")
     try:
@@ -130,7 +132,7 @@ def black(c, src=None):
     """Format source files."""
     print("Formatting sources...")
     with c.cd(str(TOP_DIR)):
-        c.run(f"black {source_arg(src)}", pty=True)
+        c.run(f"black {' '.join(source_arg(src))}", pty=True)
 
 
 @task
@@ -138,7 +140,7 @@ def isort(c, src=None):
     """Sort imports."""
     print("Sorting imports...")
     with c.cd(str(TOP_DIR)):
-        c.run(f"isort {source_arg(src)}", pty=True)
+        c.run(f"isort {' '.join(source_arg(src))}", pty=True)
 
 
 @task

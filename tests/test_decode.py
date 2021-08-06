@@ -98,7 +98,7 @@ def test_try_decode_nonstandard():
 def test_try_decode_no_options():
     """Test handling of no encoding options."""
     with raises(ValueError):
-        text, encoding = try_decode(b"Hello", ())
+        try_decode(b"Hello", ())
 
 
 def test_try_decode_no_valid_options():
@@ -108,7 +108,7 @@ def test_try_decode_no_valid_options():
         yield "utf-8"
 
     with raises(ValueError):
-        text, encoding = try_decode(b"\xC0", to_try())
+        try_decode(b"\xC0", to_try())
 
 
 def test_try_decode_first():
@@ -210,6 +210,4 @@ def test_decode_and_report_invalid():
         ("utf-8", "XML declaration"),
     )
     with raises(ValueError):
-        text, encoding = decode_and_report(
-            b"cut-off smile \xf0\x9f\x98", to_try, logger
-        )
+        decode_and_report(b"cut-off smile \xf0\x9f\x98", to_try, logger)

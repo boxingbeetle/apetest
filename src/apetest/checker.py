@@ -132,7 +132,7 @@ def parse_document(
     # that it will still be able to produce a document tree, but it will
     # report errors on for example inline SVG.
     if is_xml:
-        for error in parser.error_log:
+        for error in parser.error_log:  # pylint: disable=not-an-iterable
             if hasattr(error, "line"):
                 line = error.line
             elif hasattr(error, "position"):

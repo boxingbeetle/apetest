@@ -51,11 +51,11 @@ def _find_vnujar():
     """
     try:
         import vnujar  # pylint: disable=import-outside-toplevel
-    except ImportError:
+    except ImportError as ex:
         raise PluginError(
             'Please install the "vnujar" module, for example using '
             '"pip3 install html5validator"'
-        )
+        ) from ex
     jar_path = Path(vnujar.__file__).with_name("vnu.jar")
     if not jar_path.exists():
         raise PluginError('The "vnujar" module exists, but does not contain "vnu.jar"')
@@ -73,9 +73,9 @@ def _launch_service(jar_path):
         str(port),
     )
     try:
-        proc = Popen(args, stdin=DEVNULL)
+        proc = Popen(args, stdin=DEVNULL)  # pylint: disable=consider-using-with
     except OSError as ex:
-        raise PluginError(f"Failed to launch v.Nu checker servlet: {ex}")
+        raise PluginError(f"Failed to launch v.Nu checker servlet: {ex}") from ex
     return proc, f"http://localhost:{port:d}"
 
 

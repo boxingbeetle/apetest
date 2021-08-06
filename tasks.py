@@ -61,7 +61,9 @@ def lint(c, src=None, html=None, results=None):
         report_dir = Path(results).parent.resolve()
         html = report_dir / "pylint.html"
     cmd = ["pylint"]
-    cmd += source_arg(src)
+    sources = set(source_arg(src))
+    sources.remove(__file__)
+    cmd += sources
     if html is not None:
         json_file = report_dir / "pylint.json"
         cmd += [

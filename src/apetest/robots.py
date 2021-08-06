@@ -169,7 +169,7 @@ def unescape_path(path: str) -> str:
                 raise ValueError(
                     'incorrect escape: expected 2 hex digits after "%%", '
                     'got "%s"' % hex_num
-                )
+                ) from None
             data.append(value)
 
             if len(data) > 1:

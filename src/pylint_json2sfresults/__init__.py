@@ -67,7 +67,7 @@ def results_from_json(json_path):
             raise TypeError(f"Bad top-level type: {type(data).__name__}")
         for message in messages:
             counts[message["type"]] += 1
-    except Exception as ex:
+    except Exception as ex:  # pylint: disable=broad-except
         return dict(result="error", summary=f"Error processing JSON: {ex}")
 
     # In case of a fatal problem, the results may be incomplete, so stop
@@ -100,7 +100,7 @@ def results_from_json(json_path):
                 "undocumented_function",
             ):
                 results[f"data.{key}"] = str(stats[key])
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
             return dict(result="error", summary=f"Error processing extended JSON: {ex}")
 
     # Summarize the findings.

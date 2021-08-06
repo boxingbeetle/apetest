@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-# TODO: It would be better to have this as a CSS file.
+"""
+Style sheet for HTML reports.
+
+TODO: It would be better to have this as a CSS file.
+"""
 
 # flake8: noqa: E501
 

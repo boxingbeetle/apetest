@@ -60,6 +60,8 @@ disable=no-else-return,
         no-else-raise,
     # See "no-else-return".
         too-few-public-methods,
+    # Generates false positives on identical import statements.
+        duplicate-code,
     # I'm not sure this is ever useful, but currently it is also generating
     # false positives because methods for operator overloading are not
     # considered to be public methods.

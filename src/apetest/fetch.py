@@ -65,7 +65,7 @@ class _CustomFileHandler(FileHandler):
                     str(reason),
                     message_from_string("content-type: text/plain"),
                     BytesIO(),
-                )
+                ) from None
             elif isinstance(reason, IsADirectoryError):
                 # Emulate the way a web server handles directories.
                 if path.endswith("/"):
@@ -78,7 +78,7 @@ class _CustomFileHandler(FileHandler):
                     "Path is a directory",
                     message_from_string("content-type: text/plain"),
                     BytesIO(),
-                )
+                ) from None
             else:
                 raise
 
@@ -142,11 +142,11 @@ def open_page(
                 return ex
             else:
                 message = f"HTTP error {ex.code:d}: {ex.reason}"
-                raise FetchFailure(url, message, http_error=ex)
+                raise FetchFailure(url, message, http_error=ex) from ex
         except URLError as ex:
-            raise FetchFailure(url, str(ex.reason))
+            raise FetchFailure(url, str(ex.reason)) from ex
         except OSError as ex:
-            raise FetchFailure(url, ex.strerror)
+            raise FetchFailure(url, ex.strerror) from ex
 
 
 def load_page(

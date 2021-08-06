@@ -176,4 +176,7 @@ def spider_req(first_req: Request) -> Tuple[Spider, Optional[Report]]:
 
     spider = Spider(base_url, rules)
     spider.add_referrer(Redirect(first_req))
+    if report is not None:
+        # pylint: disable=protected-access
+        spider._requests_checked.add(Request.from_url(robots_url))
     return spider, report

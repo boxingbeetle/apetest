@@ -202,7 +202,7 @@ def create_plugins(module: ModuleType, args: Namespace) -> Iterator[Plugin]:
         )
         raise
 
-    def _log_yield() -> Iterable[Plugin]:
+    def _log_yield() -> Iterable[object]:
         try:
             yield from func(args)
         except PluginError as ex:

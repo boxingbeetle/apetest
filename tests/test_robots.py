@@ -3,8 +3,9 @@ Unit tests for `apetest.robots`.
 """
 
 from logging import ERROR, INFO, WARNING, getLogger
+from typing import Iterable, Mapping, Sequence, Tuple
 
-from pytest import mark
+from pytest import LogCaptureFixture, mark
 
 from apetest.robots import (
     lookup_robots_rules,
@@ -49,7 +50,7 @@ EXAMPLE_RECORDS = [
     ],
 ]
 
-EXAMPLE_MAP = {
+EXAMPLE_MAP: Mapping[str, Iterable[Tuple[bool, str]]] = {
     "*": [
         (False, "/org/plans.html"),
         (True, "/org/"),
@@ -73,21 +74,21 @@ EXAMPLE_MAP = {
         ["#comment"],
     ),
 )
-def test_scan_robots_empty(lines, caplog):
+def test_scan_robots_empty(lines: Sequence[str], caplog: LogCaptureFixture) -> None:
     """Test scanning of files that contain no records."""
     with caplog.at_level(INFO, logger=__name__):
         assert list(scan_robots_txt(lines, logger)) == []
     assert not caplog.records
 
 
-def test_scan_robots_example(caplog):
+def test_scan_robots_example(caplog: LogCaptureFixture) -> None:
     """Test scanning of example file."""
     with caplog.at_level(INFO, logger=__name__):
         assert list(scan_robots_txt(EXAMPLE_LINES, logger)) == EXAMPLE_RECORDS
     assert not caplog.records
 
 
-def test_scan_robots_warn_leading_whitespace(caplog):
+def test_scan_robots_warn_leading_whitespace(caplog: LogCaptureFixture) -> None:
     """Test scanning of files with leading whitespace."""
     with caplog.at_level(INFO, logger=__name__):
         assert list(
@@ -107,7 +108,7 @@ def test_scan_robots_warn_leading_whitespace(caplog):
     ]
 
 
-def test_scan_robots_error_missing_colon(caplog):
+def test_scan_robots_error_missing_colon(caplog: LogCaptureFixture) -> None:
     """Test scanning of files with missing colon."""
     with caplog.at_level(INFO, logger=__name__):
         assert list(
@@ -128,21 +129,21 @@ def test_scan_robots_error_missing_colon(caplog):
     ]
 
 
-def test_parse_robots_empty(caplog):
+def test_parse_robots_empty(caplog: LogCaptureFixture) -> None:
     """Test parsing of empty record set."""
     with caplog.at_level(INFO, logger=__name__):
         assert parse_robots_txt((), logger) == {}
     assert not caplog.records
 
 
-def test_parse_robots_example(caplog):
+def test_parse_robots_example(caplog: LogCaptureFixture) -> None:
     """Test parsing of example records."""
     with caplog.at_level(INFO, logger=__name__):
         assert parse_robots_txt(EXAMPLE_RECORDS, logger) == EXAMPLE_MAP
     assert not caplog.records
 
 
-def test_parse_robots_unknown(caplog):
+def test_parse_robots_unknown(caplog: LogCaptureFixture) -> None:
     """Test handling of unknown fields."""
     records = [[(1, "user-agent", "*"), (2, "foo", "bar"), (3, "disallow", "/")]]
     with caplog.at_level(INFO, logger=__name__):
@@ -152,7 +153,7 @@ def test_parse_robots_unknown(caplog):
     ]
 
 
-def test_parse_robots_user_argent_after_rules(caplog):
+def test_parse_robots_user_argent_after_rules(caplog: LogCaptureFixture) -> None:
     """Test handling of user agents specified after rules."""
     records = [
         [
@@ -176,7 +177,7 @@ def test_parse_robots_user_argent_after_rules(caplog):
     ]
 
 
-def test_parse_robots_rules_before_user_agent(caplog):
+def test_parse_robots_rules_before_user_agent(caplog: LogCaptureFixture) -> None:
     """Test handling of rules specified before user agent."""
     records = [
         [
@@ -201,7 +202,7 @@ def test_parse_robots_rules_before_user_agent(caplog):
     ]
 
 
-def test_parse_robots_duplicate_user_agent(caplog):
+def test_parse_robots_duplicate_user_agent(caplog: LogCaptureFixture) -> None:
     """Test handling of multiple rules for the same user agent."""
     records = [
         [(1, "user-agent", "smith"), (2, "disallow", "/m2")],
@@ -222,7 +223,7 @@ def test_parse_robots_duplicate_user_agent(caplog):
     ]
 
 
-def test_parse_robots_unescape_valid(caplog):
+def test_parse_robots_unescape_valid(caplog: LogCaptureFixture) -> None:
     """Test unescaping of correctly escaped paths."""
     records = [
         [
@@ -274,7 +275,9 @@ def test_parse_robots_unescape_valid(caplog):
         ),
     ),
 )
-def test_parse_robots_unescape_invalid(bad_path, reason, caplog):
+def test_parse_robots_unescape_invalid(
+    bad_path: str, reason: str, caplog: LogCaptureFixture
+) -> None:
     """Test handling of incorrect escaped paths."""
     with caplog.at_level(INFO, logger=__name__):
         assert (
@@ -308,7 +311,7 @@ def test_parse_robots_unescape_invalid(bad_path, reason, caplog):
         ("unknown-bot", "*"),
     ),
 )
-def test_parse_robots_lookup(name, entry):
+def test_parse_robots_lookup(name: str, entry: str) -> None:
     """Test lookup of rules for a specific user agent."""
     assert lookup_robots_rules(EXAMPLE_MAP, name) == EXAMPLE_MAP[entry]
 
@@ -327,7 +330,7 @@ def test_parse_robots_lookup(name, entry):
         ("/~mak/mak.html", True),
     ),
 )
-def test_parse_robots_match_path(path, expected):
+def test_parse_robots_match_path(path: str, expected: bool) -> None:
     """Test the `path_allowed` function."""
     assert path_allowed(path, EXAMPLE_MAP["excite"])
     assert not path_allowed(path, EXAMPLE_MAP["unhipbot"])

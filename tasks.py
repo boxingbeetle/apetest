@@ -102,7 +102,9 @@ def types(c, src=None, clean=False, report=False, results=None):
             mypy_report = report_dir / "mypy-coverage"
         remove_dir(mypy_report)
         cmd.append(f"--html-report {mypy_report}")
-    cmd += source_arg(src)
+    sources = set(source_arg(src))
+    sources.remove(__file__)
+    cmd += sources
     out_path = None if report_dir is None else report_dir / "mypy-log.txt"
     out_stream = None if out_path is None else open(out_path, "w", encoding="utf-8")
     try:

@@ -246,7 +246,7 @@ class Page:
         ]
         for query, report in sorted(self.query_to_report.items()):
             yield xml.h3(class_="pass" if report.ok else "fail")[
-                xml.a(href=report.url)[
+                xml.a(href=report.url, target="_blank")[
                     " | ".join(
                         "%s = %s" % tuple(unquote_plus(s) for s in elem.split("="))
                         for elem in query.split("&")

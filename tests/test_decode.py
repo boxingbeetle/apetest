@@ -3,9 +3,10 @@ Unit tests for `apetest.decode`.
 """
 
 from logging import INFO, WARNING, getLogger
+from typing import Iterator, Tuple
 import codecs
 
-from pytest import mark, raises
+from pytest import LogCaptureFixture, mark, raises
 
 from apetest.decode import decode_and_report, standard_codec_name, try_decode
 
@@ -42,13 +43,13 @@ CODEC_NAMES = (
 
 
 @mark.parametrize("name", CODEC_NAMES)
-def test_standard_codec_name_exact(name):
+def test_standard_codec_name_exact(name: str) -> None:
     """Test whether a standard name is returned as-is."""
     assert standard_codec_name(name) == name
 
 
 @mark.parametrize("name", ("cp437", "gibberish"))
-def test_standard_codec_name_unknown(name):
+def test_standard_codec_name_unknown(name: str) -> None:
     """Test whether an unlisted codec name is returned as-is."""
     assert standard_codec_name(name) == name
 
@@ -67,16 +68,16 @@ def test_standard_codec_name_unknown(name):
         "iso-8859-8-i",
     },
 )
-def test_standard_codec_name_round_trip(name):
+def test_standard_codec_name_round_trip(name: str) -> None:
     """Test standard name -> Python name -> standard name cycle."""
     codec_info = codecs.lookup(name)
     assert standard_codec_name(codec_info.name) == name
 
 
-def test_try_decode_trivial():
+def test_try_decode_trivial() -> None:
     """Test scanning of files that contain no records."""
 
-    def to_try():
+    def to_try() -> Iterator[str]:
         yield "us-ascii"
 
     text, encoding = try_decode(b"Hello", to_try())
@@ -84,10 +85,10 @@ def test_try_decode_trivial():
     assert encoding == "us-ascii"
 
 
-def test_try_decode_nonstandard():
+def test_try_decode_nonstandard() -> None:
     """Test handling of a non-standard encoding name."""
 
-    def to_try():
+    def to_try() -> Iterator[str]:
         yield "ascii"
 
     text, encoding = try_decode(b"Hello", to_try())
@@ -95,26 +96,26 @@ def test_try_decode_nonstandard():
     assert encoding == "us-ascii"
 
 
-def test_try_decode_no_options():
+def test_try_decode_no_options() -> None:
     """Test handling of no encoding options."""
     with raises(ValueError):
         try_decode(b"Hello", ())
 
 
-def test_try_decode_no_valid_options():
+def test_try_decode_no_valid_options() -> None:
     """Test handling of no valid encoding options."""
 
-    def to_try():
+    def to_try() -> Iterator[str]:
         yield "utf-8"
 
     with raises(ValueError):
         try_decode(b"\xC0", to_try())
 
 
-def test_try_decode_first():
+def test_try_decode_first() -> None:
     """Test whether the first possible encoding is used."""
 
-    def to_try():
+    def to_try() -> Iterator[str]:
         yield "us-ascii"
         yield "utf-8"
 
@@ -126,7 +127,7 @@ def test_try_decode_first():
     assert encoding == "utf-8"
 
 
-def test_try_decode_utf8_only():
+def test_try_decode_utf8_only() -> None:
     """Test whether an emoji is decoded as UTF-8."""
     to_try = ["us-ascii", "utf-8"]
     text, encoding = try_decode(b"smile \xf0\x9f\x98\x83", to_try)
@@ -138,10 +139,10 @@ def test_try_decode_utf8_only():
     assert encoding == "utf-8"
 
 
-def test_decode_and_report_trivial(caplog):
+def test_decode_and_report_trivial(caplog: LogCaptureFixture) -> None:
     """Test an input that should succeed without logging."""
 
-    def to_try():
+    def to_try() -> Iterator[Tuple[str, str]]:
         yield "us-ascii", "header"
 
     with caplog.at_level(INFO, logger=__name__):
@@ -151,10 +152,10 @@ def test_decode_and_report_trivial(caplog):
     assert not caplog.records
 
 
-def test_decode_and_report_nonstandard(caplog):
+def test_decode_and_report_nonstandard(caplog: LogCaptureFixture) -> None:
     """Test handling of a non-standard encoding name."""
 
-    def to_try():
+    def to_try() -> Iterator[Tuple[str, str]]:
         yield "ascii", "header"
 
     with caplog.at_level(INFO, logger=__name__):
@@ -171,7 +172,7 @@ def test_decode_and_report_nonstandard(caplog):
     ]
 
 
-def test_decode_and_report_implicit_utf8(caplog):
+def test_decode_and_report_implicit_utf8(caplog: LogCaptureFixture) -> None:
     """Test whether UTF-8 is tried even when not specified."""
     to_try = (("ascii", "bad header"),)
     with caplog.at_level(INFO, logger=__name__):
@@ -188,7 +189,7 @@ def test_decode_and_report_implicit_utf8(caplog):
     ]
 
 
-def test_decode_and_report_none(caplog):
+def test_decode_and_report_none(caplog: LogCaptureFixture) -> None:
     """Test whether None entries are ignored."""
     to_try = (
         (None, "HTTP header"),
@@ -202,7 +203,7 @@ def test_decode_and_report_none(caplog):
     assert not caplog.records
 
 
-def test_decode_and_report_invalid():
+def test_decode_and_report_invalid() -> None:
     """Test what happens when there is no valid way to decode."""
     to_try = (
         ("us-ascii", "HTTP header"),

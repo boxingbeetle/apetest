@@ -8,7 +8,17 @@ The L{PageChecker} class is where the work is done.
 from collections import defaultdict
 from enum import Enum, auto
 from logging import getLogger
-from typing import Collection, DefaultDict, Iterator, List, Optional, cast, overload
+from typing import (
+    Collection,
+    DefaultDict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    cast,
+    overload,
+)
 from urllib.parse import urljoin, urlsplit, urlunsplit
 from urllib.response import addinfourl
 import re
@@ -206,15 +216,38 @@ def _get_text(element: Element) -> Optional[str]:
     return value
 
 
-def _parse_input_control(attrib: etree._Attrib) -> Optional[Control]:
+def _parse_controls(nodes: Iterable[Element]) -> Iterator[Tuple[Element, str]]:
+    """
+    Iterate through the submittable controls defined in the given HTML nodes.
+
+    Each yielded item is a pair containing one control's node and name.
+
+    Controls that are disabled should not be submitted and are therefore skipped over.
+    Controls that are nameless cannot be submitted and are likewise skipped over.
+    """
+    for node in nodes:
+        attrib = node.attrib
+
+        disabled = "disabled" in attrib
+        if disabled:
+            # Disabled controls should not be submitted.
+            continue
+
+        name = _get_attr(attrib, "name")
+        if not name:
+            # Nameless controls cannot be submitted.
+            continue
+
+        yield node, name
+
+
+def _create_input_control(node: Element, name: str) -> Optional[Control]:
+    attrib = node.attrib
     _LOG.debug("input: %s", attrib)
-    disabled = "disabled" in attrib
-    if disabled:
-        return None
     # TODO: Support readonly controls?
-    name = _get_attr(attrib, "name")
-    ctype = _get_attr(attrib, "type")
+    ctype = _get_attr(attrib, "type", "text")
     value = _get_attr(attrib, "value")
+
     if ctype in ("text", "password"):
         return TextField(name, value)
     elif ctype == "checkbox":
@@ -516,27 +549,24 @@ class PageChecker:
             if not submit_url.startswith(self.base_url):
                 continue
 
-            # Note: Disabled controls should not be submitted, so we pretend
-            #       they do not even exist.
             controls = []
             radio_buttons: DefaultDict[str, List[RadioButton]] = defaultdict(list)
             submit_buttons = []
-            for inp in form_node.iter(ns_prefix + "input"):
-                control = _parse_input_control(inp.attrib)
+            for control_node, name in _parse_controls(
+                form_node.iter(ns_prefix + "input")
+            ):
+                control = _create_input_control(control_node, name)
                 if control is None:
                     pass
                 elif isinstance(control, RadioButton):
-                    radio_buttons[control.name].append(control)
+                    radio_buttons[name].append(control)
                 elif isinstance(control, SubmitButton):
                     submit_buttons.append(control)
                 else:
                     controls.append(control)
-            for control_node in form_node.iter(ns_prefix + "select"):
-                name = _get_attr(control_node.attrib, "name")
-                multiple = control_node.attrib.get("multiple")
-                disabled = "disabled" in control_node.attrib
-                if disabled:
-                    continue
+            for control_node, name in _parse_controls(
+                form_node.iter(ns_prefix + "select")
+            ):
                 options = []
                 for option_node in control_node.iter(ns_prefix + "option"):
                     option_text = _get_text(option_node)
@@ -544,17 +574,15 @@ class PageChecker:
                         options.append(
                             _get_attr(option_node.attrib, "value", option_text)
                         )
-                if multiple:
+                if "multiple" in control_node.attrib:
                     for option in options:
                         controls.append(SelectMultiple(name, option))
                 else:
                     controls.append(SelectSingle(name, options))
-            for control_node in form_node.iter(ns_prefix + "textarea"):
-                name = _get_attr(control_node.attrib, "name")
+            for control_node, name in _parse_controls(
+                form_node.iter(ns_prefix + "textarea")
+            ):
                 value = _get_text(control_node)
-                disabled = "disabled" in control_node.attrib
-                if disabled:
-                    continue
                 _LOG.debug('textarea "%s": %s', name, value)
                 controls.append(TextArea(name, value))
 

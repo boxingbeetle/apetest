@@ -8,7 +8,7 @@ The L{PageChecker} class is where the work is done.
 from collections import defaultdict
 from enum import Enum, auto
 from logging import getLogger
-from typing import Collection, DefaultDict, Iterator, List, Optional, cast
+from typing import Collection, DefaultDict, Iterator, List, Optional, cast, overload
 from urllib.parse import urljoin, urlsplit, urlunsplit
 from urllib.response import addinfourl
 import re
@@ -36,6 +36,8 @@ from apetest.referrer import Form, LinkSet, Redirect, Referrer
 from apetest.report import Checked, Report, Scribe
 from apetest.request import Request
 from apetest.xmlgen import concat, xml
+
+Element = etree._Element  # pylint: disable=protected-access
 
 
 class Accept(Enum):
@@ -177,15 +179,42 @@ def repair_tree(tree: etree._ElementTree, content_type: str, report: Report) -> 
     return modified
 
 
+@overload
+def _get_attr(attrib: etree._Attrib, name: str) -> Optional[str]:
+    ...
+
+
+@overload
+def _get_attr(attrib: etree._Attrib, name: str, default: str) -> str:
+    ...
+
+
+def _get_attr(
+    attrib: etree._Attrib, name: str, default: Optional[str] = None
+) -> Optional[str]:
+    value = attrib.get(name)
+    if value is None:
+        return default
+    else:
+        assert not isinstance(value, bytes)
+        return value
+
+
+def _get_text(element: Element) -> Optional[str]:
+    value = element.text
+    assert not isinstance(value, bytes)
+    return value
+
+
 def _parse_input_control(attrib: etree._Attrib) -> Optional[Control]:
     _LOG.debug("input: %s", attrib)
     disabled = "disabled" in attrib
     if disabled:
         return None
     # TODO: Support readonly controls?
-    name = attrib.get("name")
-    ctype = attrib.get("type")
-    value = attrib.get("value")
+    name = _get_attr(attrib, "name")
+    ctype = _get_attr(attrib, "type")
+    value = _get_attr(attrib, "value")
     if ctype in ("text", "password"):
         return TextField(name, value)
     elif ctype == "checkbox":
@@ -503,24 +532,26 @@ class PageChecker:
                 else:
                     controls.append(control)
             for control_node in form_node.iter(ns_prefix + "select"):
-                name = control_node.attrib.get("name")
+                name = _get_attr(control_node.attrib, "name")
                 multiple = control_node.attrib.get("multiple")
                 disabled = "disabled" in control_node.attrib
                 if disabled:
                     continue
-                options = [
-                    option.attrib.get("value", option.text)
-                    for option in control_node.iter(ns_prefix + "option")
-                    if option.text is not None
-                ]
+                options = []
+                for option_node in control_node.iter(ns_prefix + "option"):
+                    option_text = _get_text(option_node)
+                    if option_text is not None:
+                        options.append(
+                            _get_attr(option_node.attrib, "value", option_text)
+                        )
                 if multiple:
                     for option in options:
                         controls.append(SelectMultiple(name, option))
                 else:
                     controls.append(SelectSingle(name, options))
             for control_node in form_node.iter(ns_prefix + "textarea"):
-                name = control_node.attrib.get("name")
-                value = control_node.text
+                name = _get_attr(control_node.attrib, "name")
+                value = _get_text(control_node)
                 disabled = "disabled" in control_node.attrib
                 if disabled:
                     continue

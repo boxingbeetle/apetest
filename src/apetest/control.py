@@ -99,9 +99,12 @@ class TextField(SingleValueControl):
         return name == self.name
 
     def alternatives(self):
-        yield self.name, ""  # empty
-        yield self.name, self.value  # default
-        yield self.name, "ook"  # librarian's choice
+        name = self.name
+        value = self.value
+        if value:
+            yield name, value  # default
+        yield name, ""  # empty
+        yield name, "ook"  # librarian's choice
 
 
 class TextArea(SingleValueControl):
@@ -112,9 +115,12 @@ class TextArea(SingleValueControl):
         return name == self.name
 
     def alternatives(self):
-        yield self.name, ""  # empty
-        yield self.name, self.value  # default
-        yield self.name, "Ook.\nOok? Ook!"  # librarian's choice
+        name = self.name
+        value = self.value
+        if value:
+            yield name, value  # default
+        yield name, ""  # empty
+        yield name, "Ook.\nOok? Ook!"  # librarian's choice
 
 
 class Checkbox(SingleValueControl):

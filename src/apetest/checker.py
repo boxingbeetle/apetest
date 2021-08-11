@@ -569,11 +569,10 @@ class PageChecker:
             ):
                 options = []
                 for option_node in control_node.iter(ns_prefix + "option"):
-                    option_text = _get_text(option_node)
-                    if option_text:
-                        options.append(
-                            _get_attr(option_node.attrib, "value", option_text)
-                        )
+                    value = _get_attr(option_node.attrib, "value")
+                    if value is None:
+                        value = _get_text(option_node)
+                    options.append(value)
                 if "multiple" in control_node.attrib:
                     for option in options:
                         controls.append(SelectMultiple(name, option))

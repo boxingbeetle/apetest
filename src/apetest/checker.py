@@ -210,10 +210,10 @@ def _get_attr(
         return value
 
 
-def _get_text(element: Element) -> Optional[str]:
+def _get_text(element: Element) -> str:
     value = element.text
     assert not isinstance(value, bytes)
-    return value
+    return "" if value is None else value
 
 
 def _parse_controls(nodes: Iterable[Element]) -> Iterator[Tuple[Element, str]]:
@@ -570,7 +570,7 @@ class PageChecker:
                 options = []
                 for option_node in control_node.iter(ns_prefix + "option"):
                     option_text = _get_text(option_node)
-                    if option_text is not None:
+                    if option_text:
                         options.append(
                             _get_attr(option_node.attrib, "value", option_text)
                         )

@@ -246,20 +246,19 @@ def _create_input_control(node: Element, name: str) -> Optional[Control]:
     _LOG.debug("input: %s", attrib)
     # TODO: Support readonly controls?
     ctype = _get_attr(attrib, "type", "text")
-    value = _get_attr(attrib, "value")
 
     if ctype in ("text", "password"):
-        return TextField(name, value)
+        return TextField(name, _get_attr(attrib, "value", ""))
     elif ctype == "checkbox":
-        return Checkbox(name, value)
+        return Checkbox(name, _get_attr(attrib, "value", "on"))
     elif ctype == "radio":
-        return RadioButton(name, value)
+        return RadioButton(name, _get_attr(attrib, "value", "on"))
     elif ctype == "file":
-        return FileInput(name, value)
+        return FileInput(name, _get_attr(attrib, "value", ""))
     elif ctype == "hidden":
-        return HiddenInput(name, value)
+        return HiddenInput(name, _get_attr(attrib, "value", ""))
     elif ctype in ("submit", "image"):
-        return SubmitButton(name, value)
+        return SubmitButton(name, _get_attr(attrib, "value", ""))
     elif ctype in ("button", "reset"):
         # Type "button" is used by JavaScript, "reset" by the browser.
         return None

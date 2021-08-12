@@ -174,9 +174,7 @@ class Form(Referrer):
             for control in self.controls
         ]
         # Store which controls can be omitted from the submission.
-        produces_empty = [
-            control.has_alternative(None, None) for control in self.controls
-        ]
+        produces_empty = [control.maybe_omitted for control in self.controls]
 
         class MatrixIterator:
             """Base class for ControlIterator and PairIterator."""

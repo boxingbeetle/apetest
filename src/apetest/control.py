@@ -20,7 +20,16 @@ from typing import Collection, Iterator, NoReturn, Optional, Sequence, Tuple, Un
 class Control:
     """Abstract base class for submittable elements in a form."""
 
-    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
+    @property
+    def maybe_omitted(self) -> bool:
+        """Return C{True} iff this control may be omitted from the entry list on
+        form submission.
+
+        The default implementation returns C{False}.
+        """
+        return False
+
+    def has_alternative(self, name: str, value: str) -> bool:
         """Return C{True} iff the given name-value combination could be
         submitted by this control.
 
@@ -64,7 +73,7 @@ class SingleValueControl(Control):
         other control types can submit other values as well.
         """
 
-    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
+    def has_alternative(self, name: str, value: str) -> bool:
         return name == self.name and value == self.value
 
     def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
@@ -96,7 +105,7 @@ class HiddenInput(SingleValueControl):
 class TextField(SingleValueControl):
     """Single-line text input."""
 
-    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
+    def has_alternative(self, name: str, value: str) -> bool:
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
@@ -112,7 +121,7 @@ class TextField(SingleValueControl):
 class TextArea(SingleValueControl):
     """Multi-line text input."""
 
-    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
+    def has_alternative(self, name: str, value: str) -> bool:
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
@@ -132,10 +141,9 @@ class Checkbox(SingleValueControl):
     or nothing (box unchecked).
     """
 
-    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
-        return (name is None and value is None) or (
-            name == self.name and value == self.value
-        )
+    @property
+    def maybe_omitted(self) -> bool:
+        return True
 
     def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
         yield None, None  # box unchecked
@@ -148,7 +156,7 @@ class RadioButton(SingleValueControl):
     Radio buttons must be combined in a L{RadioButtonGroup} control.
     """
 
-    def has_alternative(self, name: Optional[str], value: Optional[str]) -> NoReturn:
+    def has_alternative(self, name: str, value: str) -> bool:
         assert False, f'radio button "{self.name}" was not merged'
 
     def alternatives(self) -> NoReturn:
@@ -181,7 +189,7 @@ class RadioButtonGroup(Control):
         self.name = name
         self.values = values
 
-    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
+    def has_alternative(self, name: str, value: str) -> bool:
         return name == self.name and value in self.values
 
     def alternatives(self) -> Iterator[Tuple[str, str]]:
@@ -211,7 +219,7 @@ class SubmitButtons(Control):
         Control.__init__(self)
         self.buttons = tuple((button.name, button.value) for button in buttons)
 
-    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
+    def has_alternative(self, name: str, value: str) -> bool:
         return (name, value) in self.buttons
 
     def alternatives(self) -> Iterator[Tuple[str, str]]:
@@ -225,10 +233,12 @@ class SelectMultiple(SingleValueControl):
     This type of control is typically shown in a browser as a list box.
     """
 
-    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
-        return (name is None and value is None) or (
-            name == self.name and value == self.value
-        )
+    @property
+    def maybe_omitted(self) -> bool:
+        return True
+
+    def has_alternative(self, name: str, value: str) -> bool:
+        return name == self.name and value == self.value
 
     def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
         yield None, None  # not selected
@@ -254,10 +264,12 @@ class SelectSingle(Control):
         self.name = name
         self.options = tuple(options)
 
-    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
-        return (name is None and value is None) or (
-            name == self.name and value in self.options
-        )
+    @property
+    def maybe_omitted(self) -> bool:
+        return True
+
+    def has_alternative(self, name: str, value: str) -> bool:
+        return name == self.name and value in self.options
 
     def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
         yield None, None  # nothing selected

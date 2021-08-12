@@ -6,6 +6,8 @@ This module contains the L{Control} class and its subclasses, which can be
 used to model input elements in an (HTML) form.
 """
 
+from typing import Collection, Iterator, NoReturn, Optional, Sequence, Tuple, Union
+
 # TODO: The subclasses currently have an almost 1:1 mapping to HTML,
 #       but I'm not sure that is necessary. For example SelectMultiple
 #       and Checkbox have the same submission functionality.
@@ -18,7 +20,7 @@ used to model input elements in an (HTML) form.
 class Control:
     """Abstract base class for submittable elements in a form."""
 
-    def has_alternative(self, name, value):
+    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
         """Return C{True} iff the given name-value combination could be
         submitted by this control.
 
@@ -28,7 +30,7 @@ class Control:
         """
         raise NotImplementedError
 
-    def alternatives(self):
+    def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
         """Yield alternative name-value pairs of the ways this control
         can be submitted.
 
@@ -50,7 +52,7 @@ class SingleValueControl(Control):
     control.
     """
 
-    def __init__(self, name, value):
+    def __init__(self, name: str, value: str):
         """Initialize control with the given name-value combination."""
         Control.__init__(self)
         self.name = name
@@ -62,21 +64,21 @@ class SingleValueControl(Control):
         other control types can submit other values as well.
         """
 
-    def has_alternative(self, name, value):
+    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
         return name == self.name and value == self.value
 
-    def alternatives(self):
+    def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
         yield self.name, self.value
 
 
 class FileInput(SingleValueControl):
     """Control for selecting and uploading files."""
 
-    def has_alternative(self, name, value):
+    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
-    def alternatives(self):
+    def alternatives(self) -> Iterator[Tuple[str, str]]:
         # Today's browsers, as a security precaution, will provide an empty
         # file name input field even if a default value is provided.
         # Since we have no idea what kind of file should be uploaded, we just
@@ -94,11 +96,11 @@ class HiddenInput(SingleValueControl):
 class TextField(SingleValueControl):
     """Single-line text input."""
 
-    def has_alternative(self, name, value):
+    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
-    def alternatives(self):
+    def alternatives(self) -> Iterator[Tuple[str, str]]:
         name = self.name
         value = self.value
         if value:
@@ -110,11 +112,11 @@ class TextField(SingleValueControl):
 class TextArea(SingleValueControl):
     """Multi-line text input."""
 
-    def has_alternative(self, name, value):
+    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
-    def alternatives(self):
+    def alternatives(self) -> Iterator[Tuple[str, str]]:
         name = self.name
         value = self.value
         if value:
@@ -130,12 +132,12 @@ class Checkbox(SingleValueControl):
     or nothing (box unchecked).
     """
 
-    def has_alternative(self, name, value):
+    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
         return (name is None and value is None) or (
             name == self.name and value == self.value
         )
 
-    def alternatives(self):
+    def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
         yield None, None  # box unchecked
         yield self.name, self.value  # box checked
 
@@ -146,17 +148,17 @@ class RadioButton(SingleValueControl):
     Radio buttons must be combined in a L{RadioButtonGroup} control.
     """
 
-    def has_alternative(self, name, value):
+    def has_alternative(self, name: Optional[str], value: Optional[str]) -> NoReturn:
         assert False, f'radio button "{self.name}" was not merged'
 
-    def alternatives(self):
+    def alternatives(self) -> NoReturn:
         assert False, f'radio button "{self.name}" was not merged'
 
 
 class RadioButtonGroup(Control):
     """Multiple-choice control containing one or more radio buttons."""
 
-    def __init__(self, buttons):
+    def __init__(self, buttons: Sequence[RadioButton]):
         """Initialize a radio buttons group control containing C{buttons},
         which must be a non-empty sequence of L{RadioButton} objects.
         """
@@ -179,10 +181,10 @@ class RadioButtonGroup(Control):
         self.name = name
         self.values = values
 
-    def has_alternative(self, name, value):
+    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
         return name == self.name and value in self.values
 
-    def alternatives(self):
+    def alternatives(self) -> Iterator[Tuple[str, str]]:
         for value in self.values:
             yield self.name, value
 
@@ -202,17 +204,17 @@ class SubmitButtons(Control):
     this pseudo-control models the choice between submit buttons.
     """
 
-    def __init__(self, buttons):
+    def __init__(self, buttons: Sequence[SubmitButton]):
         """Initialize a submit buttons control containing C{buttons},
         which must be a sequence of L{SubmitButton} objects.
         """
         Control.__init__(self)
         self.buttons = tuple((button.name, button.value) for button in buttons)
 
-    def has_alternative(self, name, value):
+    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
         return (name, value) in self.buttons
 
-    def alternatives(self):
+    def alternatives(self) -> Iterator[Tuple[str, str]]:
         yield from self.buttons
 
 
@@ -223,12 +225,12 @@ class SelectMultiple(SingleValueControl):
     This type of control is typically shown in a browser as a list box.
     """
 
-    def has_alternative(self, name, value):
+    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
         return (name is None and value is None) or (
             name == self.name and value == self.value
         )
 
-    def alternatives(self):
+    def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
         yield None, None  # not selected
         yield self.name, self.value  # selected
 
@@ -239,25 +241,25 @@ class SelectSingle(Control):
     This type of control is typically shown in a browser as a drop-down list.
     """
 
-    def __init__(self, name, options):
+    def __init__(self, name: str, options: Collection[str]):
         """Initialize a single-choice C{<select>} control.
 
         @param name:
             The name under which this control is submitted.
         @param options:
-            Sequence of all possible values for this control.
+            Collection of all possible values for this control.
         """
 
         Control.__init__(self)
         self.name = name
         self.options = tuple(options)
 
-    def has_alternative(self, name, value):
+    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
         return (name is None and value is None) or (
             name == self.name and value in self.options
         )
 
-    def alternatives(self):
+    def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
         yield None, None  # nothing selected
         for option in self.options:
             yield self.name, option

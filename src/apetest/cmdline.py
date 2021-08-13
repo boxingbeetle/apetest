@@ -4,11 +4,13 @@
 
 from argparse import ArgumentParser
 from os import getcwd
+from typing import List
 from urllib.parse import urljoin, urlparse
 import logging
 
 from apetest.checker import Accept, PageChecker
 from apetest.plugin import (
+    Plugin,
     PluginCollection,
     add_plugin_arguments,
     create_plugins,
@@ -20,7 +22,7 @@ from apetest.spider import spider_req
 from apetest.version import VERSION_STRING
 
 
-def detect_url(arg):
+def detect_url(arg: str) -> str:
     """Attempt to turn a command line argument into a full URL."""
     url = urlparse(arg)
     if url.scheme in ("http", "https"):
@@ -40,7 +42,9 @@ def detect_url(arg):
     return urljoin(f"file://{getcwd()}/", arg)
 
 
-def run(url, report_file_name, accept, plugins=()):
+def run(
+    url: str, report_file_name: str, accept: Accept, plugins: PluginCollection
+) -> int:
     """Runs APE with the given arguments.
 
     @param url:
@@ -55,7 +59,6 @@ def run(url, report_file_name, accept, plugins=()):
         0 if successful, non-zero on errors.
     """
 
-    plugins = PluginCollection(plugins)
     try:
         try:
             first_req = Request.from_url(detect_url(url))
@@ -80,8 +83,7 @@ def run(url, report_file_name, accept, plugins=()):
         with open(
             report_file_name, "w", encoding="ascii", errors="xmlcharrefreplace"
         ) as out:
-            for node in scribe.present():
-                out.write(node.flatten())
+            out.write(scribe.present().flatten())
         print("Done reporting")
 
         scribe.postprocess()
@@ -92,7 +94,7 @@ def run(url, report_file_name, accept, plugins=()):
         plugins.close()
 
 
-def main():
+def main() -> int:
     """Parse command line arguments and call L{run} with the results.
 
     This is the entry point that gets called by the wrapper script.
@@ -138,12 +140,13 @@ def main():
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
     # Instantiate plugins.
-    plugins = []
+    plugin_list: List[Plugin] = []
     for module in plugin_modules:
         try:
-            plugins += create_plugins(module, args)
+            plugin_list += create_plugins(module, args)
         except Exception:  # pylint: disable=broad-except
             return 1
 
     accept = Accept[args.accept.upper()]
+    plugins = PluginCollection(plugin_list)
     return run(args.url, args.report, accept, plugins)

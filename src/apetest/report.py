@@ -350,12 +350,12 @@ class Scribe:
         self._end_time = now_local()
         self._plugins.postprocess(self)
 
-    def present(self) -> XMLContent:
+    def present(self) -> XML:
         """Yield an XHTML rendering of a combined report for all
         checked pages.
         """
         title = "APE - Automated Page Exerciser"
-        yield xml.html[
+        return xml.html[
             xml.head[xml.title[title], xml.style(type="text/css")[_STYLE_SHEET]],
             xml.body[
                 xml.h1[title],

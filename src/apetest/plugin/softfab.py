@@ -8,16 +8,20 @@ file, similar to a Windows C{.ini} file. It is a text with with one
 key-value pair per line, with C{=} as the separator.
 """
 
+from argparse import ArgumentParser, Namespace
+from typing import Iterator
+
 from apetest.plugin import Plugin
+from apetest.report import Scribe
 
 
-def plugin_arguments(parser):
+def plugin_arguments(parser: ArgumentParser) -> None:
     parser.add_argument(
         "--result", help="properties file (SoftFab compatible) to write results to"
     )
 
 
-def plugin_create(args):
+def plugin_create(args: Namespace) -> Iterator[Plugin]:
     if args.result is not None:
         yield PropertiesPlugin(args.result)
 
@@ -25,11 +29,11 @@ def plugin_create(args):
 class PropertiesPlugin(Plugin):
     """Plugin that creates a SoftFab-compatible results properties file."""
 
-    def __init__(self, properties_file):
+    def __init__(self, properties_file: str):
         """Initialize the plugin to write C{properties_file}."""
         self.properties_file = properties_file
 
-    def postprocess(self, scribe):
+    def postprocess(self, scribe: Scribe) -> None:
         total = len(scribe.get_pages())
         num_failed_pages = len(scribe.get_failed_pages())
         data = {

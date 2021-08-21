@@ -45,6 +45,6 @@ class PropertiesPlugin(Plugin):
         }
         path = self.properties_file
         print(f'Writing metadata to "{path}"...')
-        with open(path, "w") as out:
+        with open(path, "w", encoding="utf-8") as out:
             for key in sorted(data.keys()):
                 print(f"{key}={data[key]}", file=out)

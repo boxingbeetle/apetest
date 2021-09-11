@@ -18,7 +18,7 @@ a combined report from them.
 from collections import defaultdict
 from datetime import datetime, timezone
 from enum import Enum, auto
-from logging import INFO, Handler, LogRecord, Logger, LoggerAdapter, getLogger
+from logging import INFO, Handler, LogRecord, LoggerAdapter, getLogger
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -94,7 +94,7 @@ class Checked(Enum):
     """The content has been checked by at least one checker."""
 
 
-class Report(LoggerAdapter[Logger]):
+class Report(LoggerAdapter):
     """Gathers check results for a document produced by one request."""
 
     def __init__(self, url: str):

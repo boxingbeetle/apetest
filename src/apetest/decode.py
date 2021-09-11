@@ -16,7 +16,7 @@ from codecs import (
 )
 from collections import OrderedDict
 from logging import Logger, LoggerAdapter
-from typing import Dict, Iterable, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Optional, Tuple, Union
 
 
 def encoding_from_bom(data: bytes) -> Optional[str]:
@@ -93,7 +93,7 @@ def try_decode(data: bytes, encodings: Iterable[str]) -> Tuple[str, str]:
 def decode_and_report(
     data: bytes,
     encoding_options: Iterable[Tuple[Optional[str], str]],
-    logger: Union[Logger, LoggerAdapter],
+    logger: Union[Logger, LoggerAdapter[Any]],
 ) -> Tuple[str, str]:
     """Attempt to decode text using several encoding options in order.
 

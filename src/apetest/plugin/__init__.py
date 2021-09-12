@@ -220,10 +220,8 @@ def create_plugins(module: ModuleType, args: Namespace) -> Iterator[Plugin]:
             _LOG.error(
                 'Could not instantiate plugin in module "%s": %s', module.__name__, ex
             )
-            raise
         except Exception:  # pylint: disable=broad-except
             _LOG.exception('Error instantiating plugin module "%s":', module.__name__)
-            raise
 
     for plugin in _log_yield():
         if isinstance(plugin, Plugin):

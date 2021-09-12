@@ -330,6 +330,7 @@ class PageChecker:
         if response is not None and 300 <= (response.code or 0) < 400:
             assert response is not None
             content_url = normalize_url(response.url)
+            # TODO: If the URL is unchanged, we should probably warn about that.
             if content_url != req_url:
                 if content_url.startswith(self.base_url):
                     if not content_url.startswith("file:"):

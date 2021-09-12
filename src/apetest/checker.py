@@ -278,14 +278,10 @@ class PageChecker:
     to other pages.
     """
 
-    def __init__(
-        self, base_url: str, accept: Accept, scribe: Scribe, plugins: PluginCollection
-    ):
+    def __init__(self, accept: Accept, scribe: Scribe, plugins: PluginCollection):
         """
         Initialize page checker.
 
-        @param base_url:
-            Base URL for the web site or app under test.
         @param accept:
             The types of documents that we tell the server we accept.
         @param scribe:
@@ -294,26 +290,15 @@ class PageChecker:
             Plugins to notify of loaded documents.
         """
 
-        self.base_url = normalize_url(base_url)
         self.accept = accept
         self.scribe = scribe
         self.plugins = plugins
-
-    def short_url(self, url: str) -> str:
-        """
-        Return a shortened version of C{url}.
-
-        This drops the part of the URL that all pages share.
-        """
-
-        assert url.startswith(self.base_url), url
-        return url[self.base_url.rindex("/") + 1 :]
 
     def check(self, req: Request) -> Iterator[Referrer]:
         """Check a single L{Request}."""
 
         req_url = str(req)
-        _LOG.info("Checking page: %s", self.short_url(req_url))
+        _LOG.info("Checking page: %s", req_url)
 
         accept_header = {
             # Prefer XHTML to HTML because it is stricter.
@@ -330,11 +315,8 @@ class PageChecker:
             content_url = normalize_url(response.url)
             # TODO: If the URL is unchanged, we should probably warn about that.
             if content_url != req_url:
-                if content_url.startswith(self.base_url):
-                    if not content_url.startswith("file:"):
-                        report.info("Redirected to: %s", self.short_url(content_url))
-                else:
-                    report.info("Redirected outside: %s", content_url)
+                if not content_url.startswith("file:"):
+                    report.info("Redirected to: %s", content_url)
                 try:
                     yield Redirect(Request.from_url(content_url))
                 except ValueError as ex:

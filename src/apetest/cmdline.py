@@ -72,7 +72,7 @@ def run(
         scribe = Scribe(base_url, spider, plugins)
         if robots_report is not None:
             scribe.add_report(robots_report)
-        checker = PageChecker(base_url, accept, scribe, plugins)
+        checker = PageChecker(accept, scribe, plugins)
 
         print(f'Checking "{base_url}" and below...')
         for request in spider:

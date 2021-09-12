@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Text decode functions.
+"""
+Text decode functions.
 
 These functions can be used to get Unicode strings from a series of bytes.
 """
@@ -20,7 +21,8 @@ from typing import Dict, Iterable, Optional, Tuple, Union
 
 
 def encoding_from_bom(data: bytes) -> Optional[str]:
-    """Look for a byte-order-marker at the start of the given C{bytes}.
+    """
+    Look for a byte-order-marker at the start of the given C{bytes}.
     If found, return the encoding matching that BOM, otherwise return C{None}.
     """
     if data.startswith(BOM_UTF8):
@@ -34,7 +36,8 @@ def encoding_from_bom(data: bytes) -> Optional[str]:
 
 
 def standard_codec_name(name: str) -> str:
-    """Map a codec name to the preferred standardized version.
+    """
+    Map a codec name to the preferred standardized version.
 
     The preferred names were taken from this list published by IANA:
     U{http://www.iana.org/assignments/character-sets/character-sets.xhtml}
@@ -55,7 +58,8 @@ def standard_codec_name(name: str) -> str:
 
 
 def try_decode(data: bytes, encodings: Iterable[str]) -> Tuple[str, str]:
-    """Attempt to decode text using the given encodings in order.
+    """
+    Attempt to decode text using the given encodings in order.
 
     @param data:
         Encoded version of the text.
@@ -95,7 +99,8 @@ def decode_and_report(
     encoding_options: Iterable[Tuple[Optional[str], str]],
     logger: Union[Logger, LoggerAdapter],
 ) -> Tuple[str, str]:
-    """Attempt to decode text using several encoding options in order.
+    """
+    Attempt to decode text using several encoding options in order.
 
     @param data:
         Encoded version of the text.

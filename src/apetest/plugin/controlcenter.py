@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Plugin that monitors the SoftFab Control Center's log
+"""
+Plugin that monitors the SoftFab Control Center's log
 while it is being tested.
 
 This plugin is only useful as-is for people working on SoftFab, but it
@@ -25,7 +26,8 @@ def plugin_create(args):
 
 
 class DataChangeMonitor(Plugin):
-    """Monitors the log file for reported database changes.
+    """
+    Monitors the log file for reported database changes.
 
     HTTP GET requests must be idempotent, so any database activity
     resulting from them is suspect.

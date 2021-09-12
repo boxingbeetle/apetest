@@ -14,7 +14,8 @@ import json
 
 
 def results_from_exit_code(exit_code):
-    """Return a results dictionary based on PyLint's exit code.
+    """
+    Return a results dictionary based on PyLint's exit code.
 
     https://pylint.readthedocs.io/en/latest/user_guide/run.html#exit-codes
     """
@@ -115,7 +116,8 @@ def results_from_json(json_path):
 
 
 def gather_results(json_path, exit_code=0):
-    """Return a results dictionary based on PyLint's exit code and
+    """
+    Return a results dictionary based on PyLint's exit code and
     a PyLint JSON output file.
     """
 

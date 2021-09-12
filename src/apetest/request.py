@@ -9,14 +9,16 @@ from urllib.parse import quote_plus, unquote_plus, urlsplit, urlunsplit
 
 @total_ordering
 class Request:
-    """A resource request consisting of a page URL plus arguments.
+    """
+    A resource request consisting of a page URL plus arguments.
 
     To get the full URL including query, use C{str(request)}.
     """
 
     @staticmethod
     def from_url(url: str) -> "Request":
-        """Creates a L{Request} from a URL.
+        """
+        Creates a L{Request} from a URL.
 
         @raise ValueError:
             If C{url} cannot be represented by a L{Request}
@@ -46,7 +48,8 @@ class Request:
     def __init__(
         self, page_url: str, query: Iterable[Tuple[str, str]], maybe_bad: bool = False
     ):
-        """Initializes a request object from a split URL.
+        """
+        Initializes a request object from a split URL.
 
         @param page_url:
             URL without the query.
@@ -67,7 +70,8 @@ class Request:
         """The query part of the URL, as a sequence of key-value pairs."""
 
         self.maybe_bad = bool(maybe_bad)
-        """C{True} iff this request is speculative.
+        """
+        C{True} iff this request is speculative.
 
         Client errors returned when making speculative requests should not
         be reported as problems of a web app.

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Gathers and presents checker results in a report.
+"""
+Gathers and presents checker results in a report.
 
 If a page was loaded, the results of checking it can be stored
 in a L{Report} instance. If a page fails to load, the problems
@@ -50,7 +51,8 @@ _STYLE_SHEET = raw(CSS)
 
 
 class StoreHandler(Handler):
-    """A log handler that stores all logged records in a list.
+    """
+    A log handler that stores all logged records in a list.
 
     Used internally to store messages logged to reports.
 
@@ -98,7 +100,8 @@ class Report(LoggerAdapter):
     """Gathers check results for a document produced by one request."""
 
     def __init__(self, url: str):
-        """Initialize a report that will be collecting results
+        """
+        Initialize a report that will be collecting results
         for the document at C{url}.
         """
         super().__init__(_LOG, dict(url=url))
@@ -107,7 +110,8 @@ class Report(LoggerAdapter):
         """The request URL to which this report applies."""
 
         self.ok = True  # pylint: disable=invalid-name
-        """C{True} iff no warnings or errors were reported.
+        """
+        C{True} iff no warnings or errors were reported.
 
         This is initialized to C{True} and will be set to C{False}
         when a message with a level higher than C{INFO} (such as
@@ -115,7 +119,8 @@ class Report(LoggerAdapter):
         """
 
         self.checked = Checked.NOT_CHECKED
-        """The content check status of the document.
+        """
+        The content check status of the document.
 
         This is initialized to L{NOT_CHECKED}. A checker should set it to
         L{CHECKED} when it has checked the document.
@@ -129,7 +134,8 @@ class Report(LoggerAdapter):
     def process(
         self, msg: Any, kwargs: MutableMapping[str, Any]
     ) -> Tuple[Any, MutableMapping[str, Any]]:
-        """Process contextual information for a logged message.
+        """
+        Process contextual information for a logged message.
 
         Our C{url} will be inserted into the log record.
         """
@@ -171,7 +177,8 @@ class Report(LoggerAdapter):
 
 
 class FetchFailure(Report, Exception):
-    """Records the details of a request that failed.
+    """
+    Records the details of a request that failed.
 
     This is an L{Exception}, so it can be raised instead of returned,
     where that is appropriate.
@@ -189,7 +196,8 @@ class FetchFailure(Report, Exception):
 
 
 class Page:
-    """Information collected by L{Scribe} about a single page.
+    """
+    Information collected by L{Scribe} about a single page.
 
     A page is identified by a URL minus query.
     """
@@ -211,7 +219,8 @@ class Page:
         return self._name
 
     def add_report(self, report: Report) -> None:
-        """Add a L{Report} for this page.
+        """
+        Add a L{Report} for this page.
 
         For each unique query, only one report can be added.
         Reports should only be added once final: after all checks
@@ -267,7 +276,8 @@ class Scribe:
     """Collects reports for multiple pages."""
 
     def __init__(self, base_url: str, spider: Spider, plugins: PluginCollection):
-        """Initialize scribe.
+        """
+        Initialize scribe.
 
         @param base_url:
             Page URL at the base of the app or site that is being checked.
@@ -300,7 +310,8 @@ class Scribe:
 
     @property
     def end_time(self) -> Optional[datetime]:
-        """The local time at which this test run ended,
+        """
+        The local time at which this test run ended,
         or None if it did not end yet.
         """
         return self._end_time
@@ -311,7 +322,8 @@ class Scribe:
         return path[len(self._base_path) :]
 
     def add_report(self, report: Report) -> None:
-        """Add a report to this scribe.
+        """
+        Add a report to this scribe.
 
         Plugins are notified of the new report.
         """
@@ -330,7 +342,8 @@ class Scribe:
         return self._pages.values()
 
     def get_failed_pages(self) -> Collection[Page]:
-        """Like L{get_pages}, but only pages for which warnings or errors
+        """
+        Like L{get_pages}, but only pages for which warnings or errors
         were reported are returned.
         """
         return [page for page in self._pages.values() if page.failures != 0]
@@ -351,7 +364,8 @@ class Scribe:
         self._plugins.postprocess(self)
 
     def present(self) -> XML:
-        """Yield an XHTML rendering of a combined report for all
+        """
+        Yield an XHTML rendering of a combined report for all
         checked pages.
         """
         title = "APE - Automated Page Exerciser"

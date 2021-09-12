@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Models form controls.
+"""
+Models form controls.
 
 This module contains the L{Control} class and its subclasses, which can be
 used to model input elements in an (HTML) form.
@@ -22,7 +23,8 @@ class Control:
 
     @property
     def maybe_omitted(self) -> bool:
-        """Return C{True} iff this control may be omitted from the entry list on
+        """
+        Return C{True} iff this control may be omitted from the entry list on
         form submission.
 
         The default implementation returns C{False}.
@@ -30,7 +32,8 @@ class Control:
         return False
 
     def has_alternative(self, name: str, value: str) -> bool:
-        """Return C{True} iff the given name-value combination could be
+        """
+        Return C{True} iff the given name-value combination could be
         submitted by this control.
 
         Note that for free-input controls, it is possible this method
@@ -40,7 +43,8 @@ class Control:
         raise NotImplementedError
 
     def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
-        """Yield alternative name-value pairs of the ways this control
+        """
+        Yield alternative name-value pairs of the ways this control
         can be submitted.
 
         For multiple-choice controls all possible alternatives are included.
@@ -54,7 +58,8 @@ class Control:
 
 
 class SingleValueControl(Control):
-    """Control that produces at most one name-value combination.
+    """
+    Control that produces at most one name-value combination.
 
     Note that there can be any number of possible values, but in each
     submission of the form, no more than one value is submitted for this
@@ -67,7 +72,8 @@ class SingleValueControl(Control):
         self.name = name
         """The name under which this control is submitted."""
         self.value = value
-        """The default value for this control.
+        """
+        The default value for this control.
 
         Some control types can only submit this value,
         other control types can submit other values as well.
@@ -96,7 +102,8 @@ class FileInput(SingleValueControl):
 
 
 class HiddenInput(SingleValueControl):
-    """Control that is not visible to the user.
+    """
+    Control that is not visible to the user.
 
     This control submits its default value.
     """
@@ -135,7 +142,8 @@ class TextArea(SingleValueControl):
 
 
 class Checkbox(SingleValueControl):
-    """Checkbox.
+    """
+    Checkbox.
 
     This control can submit its default value (box checked)
     or nothing (box unchecked).
@@ -151,7 +159,8 @@ class Checkbox(SingleValueControl):
 
 
 class RadioButton(SingleValueControl):
-    """Single radio button.
+    """
+    Single radio button.
 
     Radio buttons must be combined in a L{RadioButtonGroup} control.
     """
@@ -167,7 +176,8 @@ class RadioButtonGroup(Control):
     """Multiple-choice control containing one or more radio buttons."""
 
     def __init__(self, buttons: Sequence[RadioButton]):
-        """Initialize a radio buttons group control containing C{buttons},
+        """
+        Initialize a radio buttons group control containing C{buttons},
         which must be a non-empty sequence of L{RadioButton} objects.
         """
 
@@ -198,7 +208,8 @@ class RadioButtonGroup(Control):
 
 
 class SubmitButton(SingleValueControl):
-    """Single submit button.
+    """
+    Single submit button.
 
     All submit buttons in a form must be combined in a L{SubmitButtons}
     control.
@@ -206,14 +217,16 @@ class SubmitButton(SingleValueControl):
 
 
 class SubmitButtons(Control):
-    """Pseudo-control which contains all submit buttons for a form.
+    """
+    Pseudo-control which contains all submit buttons for a form.
 
     Only one submit button can be used for submission;
     this pseudo-control models the choice between submit buttons.
     """
 
     def __init__(self, buttons: Sequence[SubmitButton]):
-        """Initialize a submit buttons control containing C{buttons},
+        """
+        Initialize a submit buttons control containing C{buttons},
         which must be a sequence of L{SubmitButton} objects.
         """
         Control.__init__(self)
@@ -227,7 +240,8 @@ class SubmitButtons(Control):
 
 
 class SelectMultiple(SingleValueControl):
-    """Pseudo-control which represents an option in a C{<select>} control
+    """
+    Pseudo-control which represents an option in a C{<select>} control
     where multiple options can be active at the same time.
 
     This type of control is typically shown in a browser as a list box.
@@ -246,13 +260,15 @@ class SelectMultiple(SingleValueControl):
 
 
 class SelectSingle(Control):
-    """C{<select>} control where one option can be active at the same time.
+    """
+    C{<select>} control where one option can be active at the same time.
 
     This type of control is typically shown in a browser as a drop-down list.
     """
 
     def __init__(self, name: str, options: Collection[str]):
-        """Initialize a single-choice C{<select>} control.
+        """
+        Initialize a single-choice C{<select>} control.
 
         @param name:
             The name under which this control is submitted.

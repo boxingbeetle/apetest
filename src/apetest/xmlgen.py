@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""A friendly syntax to create XML in Python.
+"""
+A friendly syntax to create XML in Python.
 
 This is a system to generate strings in XML format. It does not provide
 an editable document model or a templates. Instead, you create a tree
@@ -85,7 +86,8 @@ class _XMLSerializable:
         return concat(other, self)
 
     def _to_fragments(self) -> Iterator[str]:
-        """Iterates through the fragments (strings) forming the XML
+        """
+        Iterates through the fragments (strings) forming the XML
         serialization of this object: the XML serialization is the
         concatenation of all the fragments.
         """
@@ -96,7 +98,8 @@ class _XMLSerializable:
         return "".join(self._to_fragments())
 
     def join(self, siblings: Iterable["XMLContent"]) -> "_XMLSequence":
-        """Creates an XML sequence containing the given XML objects,
+        """
+        Creates an XML sequence containing the given XML objects,
         with itself inserted between each sibling, similar to
         C{str.join()}.
         """
@@ -137,7 +140,8 @@ class _Raw(_XMLSerializable):
 
 
 def raw(text: str) -> XML:
-    """Creates a segment that will appear in the output without escaping.
+    """
+    Creates a segment that will appear in the output without escaping.
 
     This is useful to insert CDATA sections or CSS and JavaScript when
     outputting HTML that will not be parsed by an XML parser.
@@ -147,7 +151,8 @@ def raw(text: str) -> XML:
 
 class _XMLSequence(_XMLSerializable):
     def __init__(self, children: Iterable[XML]):
-        """Creates an XML sequence.
+        """
+        Creates an XML sequence.
         The given children, must all be _XMLSerializable instances;
         if that is not guaranteed, use _adapt() to convert.
         """
@@ -201,7 +206,8 @@ class _XMLElement(_XMLSerializable):
 
 
 class _XMLElementFactory:
-    """Automatically creates _XMLElement instances for any tag that is
+    """
+    Automatically creates _XMLElement instances for any tag that is
     requested: if an attribute with a certain name is requested, a new
     _XMLElement with that same name is returned.
     """
@@ -214,7 +220,8 @@ class _XMLElementFactory:
 
 
 xml = _XMLElementFactory()  # pylint: disable=invalid-name
-"""Factory for XML elements.
+"""
+Factory for XML elements.
 
 See the module level documentation for usage instructions.
 """
@@ -235,7 +242,8 @@ def _adapt(node: XMLContent) -> Iterator[XML]:
 
 
 def concat(*siblings: XMLContent) -> _XMLSequence:
-    """Creates an XML sequence by concatenating C{siblings}.
+    """
+    Creates an XML sequence by concatenating C{siblings}.
 
     @raise TypeError:
         If one of the C{siblings} is neither an XML object nor convertible

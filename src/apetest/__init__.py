@@ -1,4 +1,5 @@
-"""Smarter-than-monkey testing for web apps.
+"""
+Smarter-than-monkey testing for web apps.
 
 You can read about APE and how to use it on its
 U{home page<https://boxingbeetle.com/tools/ape/>}.

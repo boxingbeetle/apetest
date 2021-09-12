@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Plugin that creates a properties file summarizing the test results.
+"""
+Plugin that creates a properties file summarizing the test results.
 
 This properties file can be used as-is by SoftFab, but should be easy
 to use with other tools as well. The format is of a Java C{.properties}

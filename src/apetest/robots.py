@@ -34,7 +34,8 @@ from typing import Dict, Iterable, Iterator, List, Mapping, Set, Tuple, Union
 def scan_robots_txt(
     lines: Iterable[str], logger: Union[Logger, LoggerAdapter]
 ) -> Iterator[Iterable[Tuple[int, str, str]]]:
-    """Tokenizes the contents of a C{robots.txt} file.
+    """
+    Tokenizes the contents of a C{robots.txt} file.
 
     @param lines:
         Contents of a C{robots.txt} file.
@@ -75,7 +76,8 @@ def parse_robots_txt(
     records: Iterable[Iterable[Tuple[int, str, str]]],
     logger: Union[Logger, LoggerAdapter],
 ) -> Mapping[str, Iterable[Tuple[bool, str]]]:
-    """Parses C{robots.txt} records.
+    """
+    Parses C{robots.txt} records.
 
     @param records:
         Tokenized records as produced by L{scan_robots_txt}.
@@ -141,7 +143,8 @@ def parse_robots_txt(
 
 
 def unescape_path(path: str) -> str:
-    """Decodes a percent-encoded URL path.
+    """
+    Decodes a percent-encoded URL path.
 
     @raise ValueError:
         If the escaping is incorrect.
@@ -214,7 +217,8 @@ def unescape_path(path: str) -> str:
 def lookup_robots_rules(
     rules_map: Mapping[str, Iterable[Tuple[bool, str]]], user_agent: str
 ) -> Iterable[Tuple[bool, str]]:
-    """Looks up a user agent in a rules mapping.
+    """
+    Looks up a user agent in a rules mapping.
 
     @param rules_map:
         Rules mapping as produced by L{parse_robots_txt}.
@@ -233,7 +237,8 @@ def lookup_robots_rules(
 
 
 def path_allowed(path: str, rules: Iterable[Tuple[bool, str]]) -> bool:
-    """Checks whether the given rules allow visiting the given path.
+    """
+    Checks whether the given rules allow visiting the given path.
 
     @param path:
         URL path component.

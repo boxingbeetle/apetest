@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Load documents via HTTP.
+"""
+Load documents via HTTP.
 
 L{load_page} loads arbitrary resources as C{bytes},
 while L{load_text} loads and decodes plain text documents.
@@ -89,7 +90,8 @@ _URL_OPENER = build_opener(_CustomRedirectHandler, _CustomFileHandler)
 def open_page(
     url: str, ignore_client_error: bool = False, accept_header: str = "*/*"
 ) -> addinfourl:
-    """Open a connection to retrieve a resource via HTTP GET.
+    """
+    Open a connection to retrieve a resource via HTTP GET.
 
     @param url:
         The URL of the resource to request.
@@ -152,7 +154,8 @@ def open_page(
 def load_page(
     url: str, ignore_client_error: bool = False, accept_header: str = "*/*"
 ) -> Tuple[Report, Optional[addinfourl], Optional[bytes]]:
-    """Load the contents of a resource via HTTP GET.
+    """
+    Load the contents of a resource via HTTP GET.
 
     @param url:
         The URL of the resource to load.
@@ -204,7 +207,8 @@ _RE_EOLN = re.compile(r"\r\n|\r|\n")
 def load_text(
     url: str, accept_header: str = "text/plain"
 ) -> Tuple[Report, Optional[addinfourl], Optional[List[str]]]:
-    """Load a text document.
+    """
+    Load a text document.
 
     @param url:
         The URL of the document to load.

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Client for using the web service of the Nu Html Checker (v.Nu).
+"""
+Client for using the web service of the Nu Html Checker (v.Nu).
 
 L{VNUClient} can connect to the checker web service and have it process one
 or more requests.
@@ -75,7 +76,8 @@ class RequestFailed(HTTPException):
 
 
 class VNUClient:
-    """Manages a connection to the checker web service.
+    """
+    Manages a connection to the checker web service.
 
     A connection will be opened on demand but has to be closed explicitly,
     either by calling the L{close} method or by using the client object
@@ -102,7 +104,8 @@ class VNUClient:
         self.close()
 
     def __connect(self, url: str) -> HTTPConnection:
-        """Returns an HTTPConnection instance for the given URL string.
+        """
+        Returns an HTTPConnection instance for the given URL string.
         Raises InvalidURL if the URL string cannot be parsed.
         Raises OSError if the URL uses an unsupported scheme.
         """
@@ -132,7 +135,8 @@ class VNUClient:
         return connection
 
     def close(self) -> None:
-        """Closes the current connection.
+        """
+        Closes the current connection.
 
         Does nothing if there is no open connection.
         """
@@ -144,7 +148,8 @@ class VNUClient:
     def __request_with_retries(
         self, url: str, data: bytes, content_type: str
     ) -> Tuple[HTTPResponse, Optional[bytes]]:
-        """Make a request and retry if it doesn't succeed the first time.
+        """
+        Make a request and retry if it doesn't succeed the first time.
         For example, the connection may have timed out.
         Returns a pair consisting of the closed response object (containing
         status and headers) and the response body (or None if unsuccessful).
@@ -214,7 +219,8 @@ class VNUClient:
                     raise
 
     def __request_with_redirects(self, url: str, data: bytes, content_type: str) -> str:
-        """Makes an HTTP request to the checker service.
+        """
+        Makes an HTTP request to the checker service.
         Returns the reply body as a string.
         """
         redirect_count = 0
@@ -248,7 +254,8 @@ class VNUClient:
     def request(
         self, data: bytes, content_type: str, errors_only: bool = False
     ) -> Iterator[Mapping[str, Any]]:
-        """Feeds the given document to the checker.
+        """
+        Feeds the given document to the checker.
 
         @param data:
             Document to check, as C{bytes}.

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""APE's plugin infrastructure.
+"""
+APE's plugin infrastructure.
 
 Each plugin is a separate module in the L{apetest.plugin} package.
 Plugins can register command line options by defining the
@@ -49,19 +50,22 @@ _LOG = getLogger(__name__)
 
 
 class PluginError(Exception):
-    """A plugin module can raise this in C{plugin_create()} when it fails
+    """
+    A plugin module can raise this in C{plugin_create()} when it fails
     to create the L{Plugin} instances requested by the command line
     arguments.
     """
 
 
 class Plugin:
-    """Plugin interface: your plugin class should inherit this and override
+    """
+    Plugin interface: your plugin class should inherit this and override
     one or more methods.
     """
 
     def close(self) -> None:
-        """Tells the plugin to release any resources (processes, sockets
+        """
+        Tells the plugin to release any resources (processes, sockets
         etc.) that it may have acquired.
 
         There will not be any more calls to the plugin after it is closed.
@@ -71,7 +75,8 @@ class Plugin:
     def resource_loaded(
         self, data: bytes, content_type_header: str, report: Report
     ) -> None:
-        """Called when a resource has been loaded.
+        """
+        Called when a resource has been loaded.
 
         Plugins can override this method to perform checks on the raw
         resource data. The default implementation does nothing.
@@ -86,14 +91,16 @@ class Plugin:
         """
 
     def report_added(self, report: Report) -> None:
-        """Called when a L{Report} has been finished.
+        """
+        Called when a L{Report} has been finished.
 
         Plugins can override this method to act on the report data.
         The default implementation does nothing.
         """
 
     def postprocess(self, scribe: Scribe) -> None:
-        """Called when the test run has finished.
+        """
+        Called when the test run has finished.
 
         Plugins can override this method to process the results.
         The default implementation does nothing.
@@ -107,7 +114,8 @@ else:
 
 
 class PluginCollection(PluginCollectionBase):
-    """Keeps a collection of L{Plugin} instances and dispatches calls to
+    """
+    Keeps a collection of L{Plugin} instances and dispatches calls to
     each of them.
     """
 
@@ -138,7 +146,8 @@ if TYPE_CHECKING:
 
 
 def load_plugins() -> Iterator[ModuleType]:
-    """Discover and import plugin modules.
+    """
+    Discover and import plugin modules.
 
     Errors will be logged to the default logger.
 
@@ -153,7 +162,8 @@ def load_plugins() -> Iterator[ModuleType]:
 
 
 def add_plugin_arguments(module: ModuleType, parser: ArgumentParser) -> None:
-    """Ask a plugin module to register its command line arguments.
+    """
+    Ask a plugin module to register its command line arguments.
 
     Errors will be logged to the default logger.
 
@@ -181,7 +191,8 @@ def add_plugin_arguments(module: ModuleType, parser: ArgumentParser) -> None:
 
 
 def create_plugins(module: ModuleType, args: Namespace) -> Iterator[Plugin]:
-    """Ask a plugin module to create L{Plugin} objects according to
+    """
+    Ask a plugin module to create L{Plugin} objects according to
     the command line arguments.
 
     Errors will be logged to the default logger.

@@ -45,7 +45,8 @@ def detect_url(arg: str) -> str:
 def run(
     url: str, report_file_name: str, accept: Accept, plugins: PluginCollection
 ) -> int:
-    """Runs APE with the given arguments.
+    """
+    Runs APE with the given arguments.
 
     @param url:
         Base URL of the web site or app to check.
@@ -95,7 +96,8 @@ def run(
 
 
 def main() -> int:
-    """Parse command line arguments and call L{run} with the results.
+    """
+    Parse command line arguments and call L{run} with the results.
 
     This is the entry point that gets called by the wrapper script.
     """

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Checks a document for problems and finds links to other documents.
+"""
+Checks a document for problems and finds links to other documents.
 
 The L{PageChecker} class is where the work is done.
 """
@@ -69,7 +70,8 @@ _RE_XML_DECL_ATTR = re.compile(
 
 
 def strip_xml_decl(text: str) -> str:
-    """Strip the XML declaration from the start of the given text.
+    """
+    Strip the XML declaration from the start of the given text.
 
     @return: The given text without XML declaration,
              or the unmodified text if no XML declaration was found.
@@ -79,7 +81,8 @@ def strip_xml_decl(text: str) -> str:
 
 
 def encoding_from_xml_decl(text: str) -> Optional[str]:
-    """Look for an XML declaration with an C{encoding} attribute at the start
+    """
+    Look for an XML declaration with an C{encoding} attribute at the start
     of the given text.
 
     @return: The attribute value, converted to lower case,
@@ -97,7 +100,8 @@ def encoding_from_xml_decl(text: str) -> Optional[str]:
 
 
 def normalize_url(url: str) -> str:
-    """Return a unique string for the given URL.
+    """
+    Return a unique string for the given URL.
 
     This is required in some places, since different libraries
     have different opinions whether local URLs should start with
@@ -110,7 +114,8 @@ def normalize_url(url: str) -> str:
 def parse_document(
     content: str, is_xml: bool, report: Report
 ) -> Optional[etree._ElementTree]:
-    """Parse the given XML or HTML document.
+    """
+    Parse the given XML or HTML document.
 
     @param content:
         Text to be parsed.
@@ -162,7 +167,8 @@ def parse_document(
 
 
 def repair_tree(tree: etree._ElementTree, content_type: str, report: Report) -> bool:
-    """Check the document tree for general errors that would prevent
+    """
+    Check the document tree for general errors that would prevent
     other checkers from doing their work and repair those if possible.
 
     @return: True iff the tree was modified.
@@ -268,14 +274,16 @@ def _create_input_control(node: Element, name: str) -> Optional[Control]:
 
 
 class PageChecker:
-    """Retrieves a page, checks its contents and finds references
+    """
+    Retrieves a page, checks its contents and finds references
     to other pages.
     """
 
     def __init__(
         self, base_url: str, accept: Accept, scribe: Scribe, plugins: PluginCollection
     ):
-        """Initialize page checker.
+        """
+        Initialize page checker.
 
         @param base_url:
             Base URL for the web site or app under test.
@@ -293,7 +301,8 @@ class PageChecker:
         self.plugins = plugins
 
     def short_url(self, url: str) -> str:
-        """Return a shortened version of C{url}.
+        """
+        Return a shortened version of C{url}.
 
         This drops the part of the URL that all pages share.
         """
@@ -474,7 +483,8 @@ class PageChecker:
     _linkElements.update(_xmlLinkElements)
 
     def link_attrs_for_node(self, tag: str) -> Iterator[str]:
-        """Yield names of attributes that might exist on the given tag
+        """
+        Yield names of attributes that might exist on the given tag
         and contain URLs.
         """
         try:
@@ -514,7 +524,8 @@ class PageChecker:
     def find_referrers_in_html(
         self, tree: etree._ElementTree, url: str
     ) -> Iterator[Referrer]:
-        """Yield referrers for links and forms found in HTML tags in
+        """
+        Yield referrers for links and forms found in HTML tags in
         the document C{tree}.
         """
 

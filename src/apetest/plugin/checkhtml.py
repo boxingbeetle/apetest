@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Plugin that checks HTML and optionally CSS.
+"""
+Plugin that checks HTML and optionally CSS.
 
 The actual checking is done by the Nu Html Checker (v.Nu).
 Download the checker from U{https://validator.github.io/}
@@ -36,7 +37,8 @@ def plugin_arguments(parser):
 
 
 def _pick_port():
-    """Returns an unused TCP port.
+    """
+    Returns an unused TCP port.
     While we can not guarantee it will stay unused, it is very unlikely
     that it will become used within a few seconds.
     """
@@ -99,7 +101,8 @@ class HTMLValidator(Plugin):
     """Runs the Nu Html Checker on loaded documents."""
 
     def __init__(self, service_url, launch, content_types):
-        """Initialize a validator using the given checker web service.
+        """
+        Initialize a validator using the given checker web service.
 
         @param service_url:
             URL for the checker web service.

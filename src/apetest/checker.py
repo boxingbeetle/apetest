@@ -333,12 +333,12 @@ class PageChecker:
                 if content_url.startswith(self.base_url):
                     if not content_url.startswith("file:"):
                         report.info("Redirected to: %s", self.short_url(content_url))
-                    try:
-                        yield Redirect(Request.from_url(content_url))
-                    except ValueError as ex:
-                        report.warning("%s", ex)
                 else:
                     report.info("Redirected outside: %s", content_url)
+                try:
+                    yield Redirect(Request.from_url(content_url))
+                except ValueError as ex:
+                    report.warning("%s", ex)
 
         if content_bytes is None:
             report.info("Could not get any content to check")
@@ -510,13 +510,12 @@ class PageChecker:
             if url.startswith("?"):
                 url = urlsplit(tree_url).path + url
             url = urljoin(tree_url, url)
-            if url.startswith(self.base_url):
-                try:
-                    request = Request.from_url(url)
-                except ValueError as ex:
-                    report.warning("%s", ex)
-                else:
-                    links[request.page_url].add(request)
+            try:
+                request = Request.from_url(url)
+            except ValueError as ex:
+                report.warning("%s", ex)
+            else:
+                links[request.page_url].add(request)
         yield from links.values()
 
     def find_referrers_in_html(
@@ -554,8 +553,6 @@ class PageChecker:
                 # The DTD will already have flagged this as a violation.
                 continue
             submit_url = urljoin(url, action)
-            if not submit_url.startswith(self.base_url):
-                continue
 
             controls = []
             radio_buttons: DefaultDict[str, List[RadioButton]] = defaultdict(list)

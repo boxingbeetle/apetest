@@ -88,10 +88,6 @@ class Spider:
         Returns C{True} iff this spider is allowed to visit the resources
         referenced by C{referrer}.
         """
-        # TODO: Currently the 'checker' module rejects out-of-scope URLs,
-        #       but it would be cleaner to do that at the spider level,
-        #       in case we ever want to support crawling multiple roots
-        #       or want to report all external links.
         path = urlsplit(referrer.page_url).path or "/"
         base_url = self._base_url
         if base_url.startswith("file:"):
@@ -115,9 +111,12 @@ class Spider:
         links to the added requests.
         """
 
+        base_url = self._base_url
         for referrer in referrers:
-            self.add_referrer(referrer)
-            self._page_referred_from[referrer.page_url].add(source_req)
+            page_url = referrer.page_url
+            if page_url.startswith(base_url):
+                self.add_referrer(referrer)
+                self._page_referred_from[page_url].add(source_req)
 
         # Currently each request is only visited once, so we do not have to
         # merge data, but that might change once we start doing POSTs.

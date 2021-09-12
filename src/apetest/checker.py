@@ -10,7 +10,6 @@ from collections import defaultdict
 from enum import Enum, auto
 from logging import getLogger
 from typing import (
-    Collection,
     DefaultDict,
     Iterable,
     Iterator,
@@ -310,7 +309,7 @@ class PageChecker:
         assert url.startswith(self.base_url), url
         return url[self.base_url.rindex("/") + 1 :]
 
-    def check(self, req: Request) -> Collection[Referrer]:
+    def check(self, req: Request) -> Iterator[Referrer]:
         """Check a single L{Request}."""
 
         req_url = str(req)
@@ -325,7 +324,6 @@ class PageChecker:
         report, response, content_bytes = load_page(
             req_url, req.maybe_bad, accept_header
         )
-        referrers: List[Referrer] = []
 
         if response is not None and 300 <= (response.code or 0) < 400:
             assert response is not None
@@ -336,7 +334,7 @@ class PageChecker:
                     if not content_url.startswith("file:"):
                         report.info("Redirected to: %s", self.short_url(content_url))
                     try:
-                        referrers.append(Redirect(Request.from_url(content_url)))
+                        yield Redirect(Request.from_url(content_url))
                     except ValueError as ex:
                         report.warning("%s", ex)
                 else:
@@ -348,10 +346,9 @@ class PageChecker:
         else:
             # If response is None, content_bytes is also None.
             assert response is not None
-            referrers += self._check_response(req_url, report, response, content_bytes)
+            yield from self._check_response(req_url, report, response, content_bytes)
 
         self.scribe.add_report(report)
-        return referrers
 
     def _check_response(
         self, req_url: str, report: Report, response: addinfourl, content_bytes: bytes

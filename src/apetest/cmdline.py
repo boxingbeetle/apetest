@@ -76,7 +76,7 @@ def run(
 
         print(f'Checking "{base_url}" and below...')
         for request in spider:
-            referrers = checker.check(request)
+            referrers = set(checker.check(request))
             spider.add_requests(request, referrers)
         print("Done checking")
 

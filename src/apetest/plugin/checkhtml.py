@@ -69,6 +69,7 @@ def _launch_service(jar_path):
     args = (
         "java",
         "-Xss4m",
+        "-Dnu.validator.servlet.bind-address=localhost",
         "-cp",
         str(jar_path),
         "nu.validator.servlet.Main",

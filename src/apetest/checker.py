@@ -217,7 +217,6 @@ def _get_attr(
 
 def _get_text(element: Element) -> str:
     value = element.text
-    assert not isinstance(value, bytes)
     return "" if value is None else value
 
 

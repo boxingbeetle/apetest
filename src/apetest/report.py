@@ -19,7 +19,7 @@ a combined report from them.
 from collections import defaultdict
 from datetime import datetime, timezone
 from enum import Enum, auto
-from logging import INFO, Handler, LogRecord, LoggerAdapter, getLogger
+from logging import INFO, Handler, LogRecord, getLogger
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -38,6 +38,7 @@ from urllib.response import addinfourl
 from apetest._stylesheet import CSS
 from apetest.plugin import PluginCollection
 from apetest.request import Request
+from apetest.typing import LoggerBase
 from apetest.xmlgen import XML, XMLContent, raw, xml
 
 if TYPE_CHECKING:
@@ -96,7 +97,7 @@ class Checked(Enum):
     """The content has been checked by at least one checker."""
 
 
-class Report(LoggerAdapter):
+class Report(LoggerBase):
     """Gathers check results for a document produced by one request."""
 
     def __init__(self, url: str):

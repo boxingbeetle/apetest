@@ -37,7 +37,7 @@ from importlib import import_module
 from logging import getLogger
 from pkgutil import iter_modules
 from types import ModuleType
-from typing import TYPE_CHECKING, Callable, Iterable, Iterator, List
+from typing import TYPE_CHECKING, Callable, Iterable, Iterator
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
@@ -137,12 +137,6 @@ class PluginCollection(PluginCollectionBase):
                     getattr(plugin, name)(*args, **kvargs)
 
             return dispatch
-
-
-# Work around mypy not knowing about __path__.
-#   https://github.com/python/mypy/issues/1422
-if TYPE_CHECKING:
-    __path__: List[str]
 
 
 def load_plugins() -> Iterator[ModuleType]:

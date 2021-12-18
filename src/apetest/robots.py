@@ -27,12 +27,13 @@ References:
   - U{http://www.robotstxt.org/}
 """
 
-from logging import Logger, LoggerAdapter
-from typing import Dict, Iterable, Iterator, List, Mapping, Set, Tuple, Union
+from typing import Dict, Iterable, Iterator, List, Mapping, Set, Tuple
+
+from apetest.typing import LoggerT
 
 
 def scan_robots_txt(
-    lines: Iterable[str], logger: Union[Logger, LoggerAdapter]
+    lines: Iterable[str], logger: LoggerT
 ) -> Iterator[Iterable[Tuple[int, str, str]]]:
     """
     Tokenizes the contents of a C{robots.txt} file.
@@ -73,8 +74,7 @@ def scan_robots_txt(
 
 
 def parse_robots_txt(
-    records: Iterable[Iterable[Tuple[int, str, str]]],
-    logger: Union[Logger, LoggerAdapter],
+    records: Iterable[Iterable[Tuple[int, str, str]]], logger: LoggerT
 ) -> Mapping[str, Iterable[Tuple[bool, str]]]:
     """
     Parses C{robots.txt} records.

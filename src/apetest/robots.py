@@ -171,8 +171,8 @@ def unescape_path(path: str) -> str:
                 value = int(hex_num, 16)
             except ValueError:
                 raise ValueError(
-                    'incorrect escape: expected 2 hex digits after "%%", '
-                    'got "%s"' % hex_num
+                    f"incorrect escape: "
+                    f'expected 2 hex digits after "%", got "{hex_num}"'
                 ) from None
             data.append(value)
 
@@ -184,8 +184,8 @@ def unescape_path(path: str) -> str:
                         break
                 else:
                     raise ValueError(
-                        "invalid percent-encoded UTF8: expected 0x80..0xBF "
-                        "for non-first byte, got 0x%02X" % value
+                        f"invalid percent-encoded UTF8: "
+                        f"expected 0x80..0xBF for non-first byte, got 0x{value:02X}"
                     )
             elif value == 0x2F:  # '/'
                 # Path separator should remain escaped.
@@ -196,8 +196,8 @@ def unescape_path(path: str) -> str:
                 break
             elif value < 0xC0 or value >= 0xF8:
                 raise ValueError(
-                    "invalid percent-encoded UTF8: expected 0xC0..0xF7 "
-                    "for first byte, got 0x%02X" % value
+                    "invalid percent-encoded UTF8: "
+                    f"expected 0xC0..0xF7 for first byte, got 0x{value:02X}"
                 )
             elif value < 0xE0:
                 remaining = 1

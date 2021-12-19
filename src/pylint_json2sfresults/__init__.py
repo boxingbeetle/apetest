@@ -26,7 +26,7 @@ def results_from_exit_code(exit_code):
     if exit_code & 1:
         return dict(result="error", summary="PyLint encountered fatal error")
     if exit_code & ~63:
-        return dict(result="error", summary="Unknown PyLint exit code: %d" % exit_code)
+        return dict(result="error", summary=f"Unknown PyLint exit code: {exit_code:d}")
 
     # Content problems, from more to less urgent.
     # I'm putting convention messages before refactor messages because

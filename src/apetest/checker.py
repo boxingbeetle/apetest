@@ -430,153 +430,151 @@ class PageChecker:
                             content_bytes = repaired
 
                         # Find links to other documents.
-                        yield from self.find_referrers_in_xml(tree, req_url, report)
+                        yield from find_referrers_in_xml(tree, req_url, report)
                         if is_html:
-                            yield from self.find_referrers_in_html(tree, req_url)
+                            yield from find_referrers_in_html(tree, req_url)
 
         self.plugins.resource_loaded(content_bytes, content_type_header, report)
 
-    _htmlLinkElements = {
-        "a": "href",
-        "link": "href",
-        "img": "src",
-        "script": "src",
+
+_htmlLinkElements = {
+    "a": "href",
+    "link": "href",
+    "img": "src",
+    "script": "src",
+}
+_xmlLinkElements = {
+    "{http://www.w3.org/1999/xhtml}" + tag_name: attr_name
+    for tag_name, attr_name in _htmlLinkElements.items()
+}
+# SVG 1.1 uses XLink, but SVG 2 has native 'href' attributes.
+# We're only interested in elements that can link to external
+# resources, not all elements that support 'href'.
+_xmlLinkElements.update(
+    {
+        "{http://www.w3.org/2000/svg}" + tag_name: "href"
+        for tag_name in ("a", "image", "script")
     }
-    _xmlLinkElements = {
-        "{http://www.w3.org/1999/xhtml}" + tag_name: attr_name
-        for tag_name, attr_name in _htmlLinkElements.items()
-    }
-    # SVG 1.1 uses XLink, but SVG 2 has native 'href' attributes.
-    # We're only interested in elements that can link to external
-    # resources, not all elements that support 'href'.
-    _xmlLinkElements.update(
-        {
-            "{http://www.w3.org/2000/svg}" + tag_name: "href"
-            for tag_name in ("a", "image", "script")
-        }
-    )
-    _xmlLinkElements.update({"{http://www.w3.org/2005/Atom}link": "href"})
-    # Insert HTML elements without namespace for HTML trees and
-    # with namespace for XHTML trees.
-    _linkElements = dict(_htmlLinkElements)
-    _linkElements.update(_xmlLinkElements)
+)
+_xmlLinkElements.update({"{http://www.w3.org/2005/Atom}link": "href"})
+# Insert HTML elements without namespace for HTML trees and
+# with namespace for XHTML trees.
+_linkElements = dict(_htmlLinkElements)
+_linkElements.update(_xmlLinkElements)
 
-    def link_attrs_for_node(self, tag: str) -> Iterator[str]:
-        """
-        Yield names of attributes that might exist on the given tag
-        and contain URLs.
-        """
-        try:
-            yield self._linkElements[tag]
-        except KeyError:
-            pass
-        yield "{http://www.w3.org/1999/xlink}href"
 
-    def find_urls(self, tree: etree._ElementTree) -> Iterator[str]:
-        """Yield URLs found in the document C{tree}."""
-        for node in tree.getroot().iter():
-            for attr in self.link_attrs_for_node(node.tag):
-                try:
-                    yield cast(str, node.attrib[attr])
-                except KeyError:
-                    pass
+def link_attrs_for_node(tag: str) -> Iterator[str]:
+    """
+    Yield names of attributes that might exist on the given tag and contain URLs.
+    """
+    try:
+        yield _linkElements[tag]
+    except KeyError:
+        pass
+    yield "{http://www.w3.org/1999/xlink}href"
 
-    def find_referrers_in_xml(
-        self, tree: etree._ElementTree, tree_url: str, report: Report
-    ) -> Iterator[Referrer]:
-        """Yield referrers for links found in XML tags in the document C{tree}."""
-        links: DefaultDict[str, LinkSet] = defaultdict(LinkSet)
-        for url in self.find_urls(tree):
-            _LOG.debug(" Found URL: %s", url)
-            if url.startswith("?"):
-                url = urlsplit(tree_url).path + url
-            url = urljoin(tree_url, url)
+
+def find_urls(tree: etree._ElementTree) -> Iterator[str]:
+    """Yield URLs found in the document C{tree}."""
+    for node in tree.getroot().iter():
+        for attr in link_attrs_for_node(node.tag):
             try:
-                request = Request.from_url(url)
-            except ValueError as ex:
-                report.warning("%s", ex)
-            else:
-                links[request.page_url].add(request)
-        yield from links.values()
-
-    def find_referrers_in_html(
-        self, tree: etree._ElementTree, url: str
-    ) -> Iterator[Referrer]:
-        """
-        Yield referrers for links and forms found in HTML tags in
-        the document C{tree}.
-        """
-
-        root = tree.getroot()
-        if None in root.nsmap:
-            default_ns = root.nsmap[None]
-            if isinstance(default_ns, bytes):
-                default_ns = default_ns.decode("ascii")
-            ns_prefix = "{%s}" % default_ns
-        else:
-            ns_prefix = ""
-
-        for form_node in root.iter(ns_prefix + "form"):
-            # TODO: How to handle an empty action?
-            #       1. take current path, erase query (current impl)
-            #       2. take current path, merge query
-            #       3. flag as error (not clearly specced)
-            #       I think either flag as error, or mimic the browsers.
-            try:
-                action = cast(str, form_node.attrib["action"]) or urlsplit(url).path
-                method = cast(str, form_node.attrib["method"]).lower()
+                yield cast(str, node.attrib[attr])
             except KeyError:
-                continue
-            if method == "post":
-                # TODO: Support POST (with flag to enable/disable).
-                continue
-            if method != "get":
-                # The DTD will already have flagged this as a violation.
-                continue
-            submit_url = urljoin(url, action)
+                pass
 
-            controls = []
-            radio_buttons: DefaultDict[str, List[RadioButton]] = defaultdict(list)
-            submit_buttons = []
-            for control_node, name in _parse_controls(
-                form_node.iter(ns_prefix + "input")
-            ):
-                control = _create_input_control(control_node, name)
-                if control is None:
-                    pass
-                elif isinstance(control, RadioButton):
-                    radio_buttons[name].append(control)
-                elif isinstance(control, SubmitButton):
-                    submit_buttons.append(control)
-                else:
-                    controls.append(control)
-            for control_node, name in _parse_controls(
-                form_node.iter(ns_prefix + "select")
-            ):
-                options = []
-                for option_node in control_node.iter(ns_prefix + "option"):
-                    value = _get_attr(option_node.attrib, "value")
-                    if value is None:
-                        value = _get_text(option_node)
-                    options.append(value)
-                if "multiple" in control_node.attrib:
-                    for option in options:
-                        controls.append(SelectMultiple(name, option))
-                else:
-                    controls.append(SelectSingle(name, options))
-            for control_node, name in _parse_controls(
-                form_node.iter(ns_prefix + "textarea")
-            ):
-                value = _get_text(control_node)
-                _LOG.debug('textarea "%s": %s', name, value)
-                controls.append(TextArea(name, value))
 
-            # Merge exclusive controls.
-            for buttons in radio_buttons.values():
-                controls.append(RadioButtonGroup(buttons))
-            if submit_buttons:
-                controls.append(SubmitButtons(submit_buttons))
-            # If the form contains no submit buttons, assume it can be
-            # submitted using JavaScript, so continue.
+def find_referrers_in_xml(
+    tree: etree._ElementTree, tree_url: str, report: Report
+) -> Iterator[Referrer]:
+    """
+    Yield referrers for links found in XML tags in the document C{tree}.
+    """
+    links: DefaultDict[str, LinkSet] = defaultdict(LinkSet)
+    for url in find_urls(tree):
+        _LOG.debug(" Found URL: %s", url)
+        if url.startswith("?"):
+            url = urlsplit(tree_url).path + url
+        url = urljoin(tree_url, url)
+        try:
+            request = Request.from_url(url)
+        except ValueError as ex:
+            report.warning("%s", ex)
+        else:
+            links[request.page_url].add(request)
+    yield from links.values()
 
-            yield Form(submit_url, method, controls)
+
+def find_referrers_in_html(tree: etree._ElementTree, url: str) -> Iterator[Referrer]:
+    """
+    Yield referrers for links and forms found in HTML tags in the document C{tree}.
+    """
+    root = tree.getroot()
+    if None in root.nsmap:
+        default_ns = root.nsmap[None]
+        if isinstance(default_ns, bytes):
+            default_ns = default_ns.decode("ascii")
+        ns_prefix = "{%s}" % default_ns
+    else:
+        ns_prefix = ""
+
+    for form_node in root.iter(ns_prefix + "form"):
+        # TODO: How to handle an empty action?
+        #       1. take current path, erase query (current impl)
+        #       2. take current path, merge query
+        #       3. flag as error (not clearly specced)
+        #       I think either flag as error, or mimic the browsers.
+        try:
+            action = cast(str, form_node.attrib["action"]) or urlsplit(url).path
+            method = cast(str, form_node.attrib["method"]).lower()
+        except KeyError:
+            continue
+        if method == "post":
+            # TODO: Support POST (with flag to enable/disable).
+            continue
+        if method != "get":
+            # The DTD will already have flagged this as a violation.
+            continue
+        submit_url = urljoin(url, action)
+
+        controls = []
+        radio_buttons: DefaultDict[str, List[RadioButton]] = defaultdict(list)
+        submit_buttons = []
+        for control_node, name in _parse_controls(form_node.iter(ns_prefix + "input")):
+            control = _create_input_control(control_node, name)
+            if control is None:
+                pass
+            elif isinstance(control, RadioButton):
+                radio_buttons[name].append(control)
+            elif isinstance(control, SubmitButton):
+                submit_buttons.append(control)
+            else:
+                controls.append(control)
+        for control_node, name in _parse_controls(form_node.iter(ns_prefix + "select")):
+            options = []
+            for option_node in control_node.iter(ns_prefix + "option"):
+                value = _get_attr(option_node.attrib, "value")
+                if value is None:
+                    value = _get_text(option_node)
+                options.append(value)
+            if "multiple" in control_node.attrib:
+                for option in options:
+                    controls.append(SelectMultiple(name, option))
+            else:
+                controls.append(SelectSingle(name, options))
+        for control_node, name in _parse_controls(
+            form_node.iter(ns_prefix + "textarea")
+        ):
+            value = _get_text(control_node)
+            _LOG.debug('textarea "%s": %s', name, value)
+            controls.append(TextArea(name, value))
+
+        # Merge exclusive controls.
+        for buttons in radio_buttons.values():
+            controls.append(RadioButtonGroup(buttons))
+        if submit_buttons:
+            controls.append(SubmitButtons(submit_buttons))
+        # If the form contains no submit buttons, assume it can be
+        # submitted using JavaScript, so continue.
+
+        yield Form(submit_url, method, controls)

@@ -280,19 +280,16 @@ def test_parse_robots_unescape_invalid(
 ) -> None:
     """Test handling of incorrect escaped paths."""
     with caplog.at_level(INFO, logger=__name__):
-        assert (
-            parse_robots_txt(
+        assert parse_robots_txt(
+            [
                 [
-                    [
-                        (1, "user-agent", "*"),
-                        (2, "disallow", bad_path),
-                        (3, "allow", "/good"),
-                    ]
-                ],
-                logger,
-            )
-            == {"*": [(True, "/good")]}
-        )
+                    (1, "user-agent", "*"),
+                    (2, "disallow", bad_path),
+                    (3, "allow", "/good"),
+                ]
+            ],
+            logger,
+        ) == {"*": [(True, "/good")]}
     assert caplog.record_tuples == [
         ("test_robots", ERROR, f"Bad escape in disallow URL on line 2: {reason}")
     ]

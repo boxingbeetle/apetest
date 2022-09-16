@@ -11,20 +11,28 @@ The checker is written in Java, so you must have a Java runtime (JRE)
 installed to run it.
 """
 
+from argparse import ArgumentParser, Namespace
 from cgi import parse_header
 from http.client import HTTPException
 from logging import ERROR, INFO, WARNING
 from pathlib import Path
 from socket import AF_INET, SOCK_STREAM, socket  # pylint: disable=no-name-in-module
 from subprocess import DEVNULL, Popen
+from typing import TYPE_CHECKING, Any, Container, Iterator, Mapping, Optional, Tuple
 
 from apetest.plugin import Plugin, PluginError
 from apetest.report import Checked
 from apetest.vnuclient import VNUClient
-from apetest.xmlgen import concat, xml
+from apetest.xmlgen import XMLContent, concat, xml
+
+if TYPE_CHECKING:
+    # pylint: disable=cyclic-import
+    from apetest.report import Report
+else:
+    Report = object
 
 
-def plugin_arguments(parser):
+def plugin_arguments(parser: ArgumentParser) -> None:
     parser.add_argument(
         "--check",
         metavar="PORT|URL|launch",
@@ -36,7 +44,7 @@ def plugin_arguments(parser):
     )
 
 
-def _pick_port():
+def _pick_port() -> int:
     """
     Returns an unused TCP port.
     While we can not guarantee it will stay unused, it is very unlikely
@@ -44,10 +52,11 @@ def _pick_port():
     """
     with socket(AF_INET, SOCK_STREAM) as sock:
         sock.bind(("", 0))
-        return sock.getsockname()[1]
+        port: int = sock.getsockname()[1]
+        return port
 
 
-def _find_vnujar():
+def _find_vnujar() -> Path:
     """Returns the full path to "vnu.jar".
     Raises PluginError if "vnu.jar" cannot be found.
     """
@@ -64,7 +73,7 @@ def _find_vnujar():
     return jar_path
 
 
-def _launch_service(jar_path):
+def _launch_service(jar_path: str) -> Tuple["Popen[bytes]", str]:
     port = _pick_port()
     args = (
         "java",
@@ -82,7 +91,7 @@ def _launch_service(jar_path):
     return proc, f"http://localhost:{port:d}"
 
 
-def plugin_create(args):
+def plugin_create(args: Namespace) -> Iterator[Plugin]:
     content_types = {"text/html", "application/xhtml+xml", "image/svg+xml"}
     if args.css:
         content_types.add("text/css")
@@ -101,7 +110,7 @@ def plugin_create(args):
 class HTMLValidator(Plugin):
     """Runs the Nu Html Checker on loaded documents."""
 
-    def __init__(self, service_url, launch, content_types):
+    def __init__(self, service_url: str, launch: bool, content_types: Container[str]):
         """
         Initialize a validator using the given checker web service.
 
@@ -119,17 +128,19 @@ class HTMLValidator(Plugin):
         self.content_types = content_types
         if launch:
             service, service_url = _launch_service(service_url)
-            self.service = service
+            self.service: Optional["Popen[bytes]"] = service
         else:
             self.service = None
         self.client = VNUClient(service_url)
 
-    def close(self):
+    def close(self) -> None:
         self.client.close()
         if self.service is not None:
             self.service.terminate()
 
-    def resource_loaded(self, data, content_type_header, report):
+    def resource_loaded(
+        self, data: bytes, content_type_header: str, report: Report
+    ) -> None:
         content_type, args_ = parse_header(content_type_header)
         if content_type not in self.content_types:
             return
@@ -145,10 +156,10 @@ class HTMLValidator(Plugin):
         report.checked = Checked.CHECKED
 
 
-def _process_message(message, report):
-    msg_type = message.get("type")
-    subtype = message.get("subtype")
-    text = message.get("message", "(no message)")
+def _process_message(message: Mapping[str, Any], report: Report) -> None:
+    msg_type: Optional[str] = message.get("type")
+    subtype: Optional[str] = message.get("subtype")
+    text: str = message.get("message", "(no message)")
 
     if msg_type == "info":
         level = WARNING if subtype == "warning" else INFO
@@ -168,7 +179,7 @@ def _process_message(message, report):
     if lines:
         text = f"line {lines}: {text}"
 
-    html = text
+    html: XMLContent = text
 
     if msg_type == "error" and subtype == "fatal":
         html = concat(

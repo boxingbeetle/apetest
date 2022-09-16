@@ -17,7 +17,6 @@ from codecs import (
     CodecInfo,
     lookup as lookup_codec,
 )
-from collections import OrderedDict
 from typing import Iterable
 
 from apetest.typing import LoggerT
@@ -77,7 +76,7 @@ def try_decode(data: bytes, encodings: Iterable[str]) -> tuple[str, str]:
     """
 
     # Build sequence of codecs to try.
-    codecs: dict[str, CodecInfo] = OrderedDict()
+    codecs: dict[str, CodecInfo] = {}
     for encoding in encodings:
         try:
             codec = lookup_codec(encoding)

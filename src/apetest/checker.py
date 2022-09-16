@@ -511,10 +511,7 @@ def find_referrers_in_html(tree: etree._ElementTree, url: str) -> Iterator[Refer
     """
     root = tree.getroot()
     if None in root.nsmap:
-        default_ns = root.nsmap[None]
-        if isinstance(default_ns, bytes):
-            default_ns = default_ns.decode("ascii")
-        ns_prefix = "{%s}" % default_ns
+        ns_prefix = "{%s}" % root.nsmap[None]
     else:
         ns_prefix = ""
 

@@ -9,6 +9,8 @@ file, similar to a Windows C{.ini} file. It is a text with with one
 key-value pair per line, with C{=} as the separator.
 """
 
+from __future__ import annotations
+
 from argparse import ArgumentParser, Namespace
 from typing import Iterator
 

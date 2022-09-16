@@ -11,6 +11,8 @@ The checker is written in Java, so you must have a Java runtime (JRE)
 installed to run it.
 """
 
+from __future__ import annotations
+
 from argparse import ArgumentParser, Namespace
 from cgi import parse_header
 from http.client import HTTPException
@@ -18,7 +20,7 @@ from logging import ERROR, INFO, WARNING
 from pathlib import Path
 from socket import AF_INET, SOCK_STREAM, socket  # pylint: disable=no-name-in-module
 from subprocess import DEVNULL, Popen
-from typing import TYPE_CHECKING, Any, Container, Iterator, Mapping, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Container, Iterator, Mapping
 
 from apetest.plugin import Plugin, PluginError
 from apetest.report import Checked
@@ -28,8 +30,6 @@ from apetest.xmlgen import XMLContent, concat, xml
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
     from apetest.report import Report
-else:
-    Report = object
 
 
 def plugin_arguments(parser: ArgumentParser) -> None:
@@ -73,7 +73,9 @@ def _find_vnujar() -> Path:
     return jar_path
 
 
-def _launch_service(jar_path: str) -> Tuple["Popen[bytes]", str]:
+def _launch_service(
+    jar_path: str,
+) -> tuple[Popen[bytes], str]:  # pylint: disable=unsubscriptable-object
     port = _pick_port()
     args = (
         "java",
@@ -110,6 +112,8 @@ def plugin_create(args: Namespace) -> Iterator[Plugin]:
 class HTMLValidator(Plugin):
     """Runs the Nu Html Checker on loaded documents."""
 
+    service: Popen[bytes] | None  # pylint: disable=unsubscriptable-object
+
     def __init__(self, service_url: str, launch: bool, content_types: Container[str]):
         """
         Initialize a validator using the given checker web service.
@@ -127,8 +131,7 @@ class HTMLValidator(Plugin):
         """
         self.content_types = content_types
         if launch:
-            service, service_url = _launch_service(service_url)
-            self.service: Optional["Popen[bytes]"] = service
+            self.service, service_url = _launch_service(service_url)
         else:
             self.service = None
         self.client = VNUClient(service_url)
@@ -157,8 +160,8 @@ class HTMLValidator(Plugin):
 
 
 def _process_message(message: Mapping[str, Any], report: Report) -> None:
-    msg_type: Optional[str] = message.get("type")
-    subtype: Optional[str] = message.get("subtype")
+    msg_type: str | None = message.get("type")
+    subtype: str | None = message.get("subtype")
     text: str = message.get("message", "(no message)")
 
     if msg_type == "info":

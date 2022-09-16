@@ -4,6 +4,8 @@
 Various helpers for static type checking.
 """
 
+from __future__ import annotations
+
 from logging import Logger, LoggerAdapter
 from typing import TYPE_CHECKING, Any, Union
 

@@ -9,6 +9,8 @@ can serve as an example for implementing a custom plugin that checks the
 log of a web app under test.
 """
 
+from __future__ import annotations
+
 import os
 
 from apetest.plugin import Plugin

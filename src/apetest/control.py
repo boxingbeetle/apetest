@@ -7,7 +7,9 @@ This module contains the L{Control} class and its subclasses, which can be
 used to model input elements in an (HTML) form.
 """
 
-from typing import Collection, Iterator, NoReturn, Optional, Sequence, Tuple, Union
+from __future__ import annotations
+
+from typing import Collection, Iterator, NoReturn, Sequence
 
 # TODO: The subclasses currently have an almost 1:1 mapping to HTML,
 #       but I'm not sure that is necessary. For example SelectMultiple
@@ -42,7 +44,7 @@ class Control:
         """
         raise NotImplementedError
 
-    def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
+    def alternatives(self) -> Iterator[tuple[None, None] | tuple[str, str]]:
         """
         Yield alternative name-value pairs of the ways this control
         can be submitted.
@@ -82,18 +84,18 @@ class SingleValueControl(Control):
     def has_alternative(self, name: str, value: str) -> bool:
         return name == self.name and value == self.value
 
-    def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
+    def alternatives(self) -> Iterator[tuple[None, None] | tuple[str, str]]:
         yield self.name, self.value
 
 
 class FileInput(SingleValueControl):
     """Control for selecting and uploading files."""
 
-    def has_alternative(self, name: Optional[str], value: Optional[str]) -> bool:
+    def has_alternative(self, name: str | None, value: str | None) -> bool:
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
-    def alternatives(self) -> Iterator[Tuple[str, str]]:
+    def alternatives(self) -> Iterator[tuple[str, str]]:
         # Today's browsers, as a security precaution, will provide an empty
         # file name input field even if a default value is provided.
         # Since we have no idea what kind of file should be uploaded, we just
@@ -116,7 +118,7 @@ class TextField(SingleValueControl):
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
-    def alternatives(self) -> Iterator[Tuple[str, str]]:
+    def alternatives(self) -> Iterator[tuple[str, str]]:
         name = self.name
         value = self.value
         if value:
@@ -132,7 +134,7 @@ class TextArea(SingleValueControl):
         # Any text could be submitted, so we only have to check the name.
         return name == self.name
 
-    def alternatives(self) -> Iterator[Tuple[str, str]]:
+    def alternatives(self) -> Iterator[tuple[str, str]]:
         name = self.name
         value = self.value
         if value:
@@ -153,7 +155,7 @@ class Checkbox(SingleValueControl):
     def maybe_omitted(self) -> bool:
         return True
 
-    def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
+    def alternatives(self) -> Iterator[tuple[None, None] | tuple[str, str]]:
         yield None, None  # box unchecked
         yield self.name, self.value  # box checked
 
@@ -202,7 +204,7 @@ class RadioButtonGroup(Control):
     def has_alternative(self, name: str, value: str) -> bool:
         return name == self.name and value in self.values
 
-    def alternatives(self) -> Iterator[Tuple[str, str]]:
+    def alternatives(self) -> Iterator[tuple[str, str]]:
         for value in self.values:
             yield self.name, value
 
@@ -235,7 +237,7 @@ class SubmitButtons(Control):
     def has_alternative(self, name: str, value: str) -> bool:
         return (name, value) in self.buttons
 
-    def alternatives(self) -> Iterator[Tuple[str, str]]:
+    def alternatives(self) -> Iterator[tuple[str, str]]:
         yield from self.buttons
 
 
@@ -254,7 +256,7 @@ class SelectMultiple(SingleValueControl):
     def has_alternative(self, name: str, value: str) -> bool:
         return name == self.name and value == self.value
 
-    def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
+    def alternatives(self) -> Iterator[tuple[None, None] | tuple[str, str]]:
         yield None, None  # not selected
         yield self.name, self.value  # selected
 
@@ -287,7 +289,7 @@ class SelectSingle(Control):
     def has_alternative(self, name: str, value: str) -> bool:
         return name == self.name and value in self.options
 
-    def alternatives(self) -> Iterator[Union[Tuple[None, None], Tuple[str, str]]]:
+    def alternatives(self) -> Iterator[tuple[None, None] | tuple[str, str]]:
         yield None, None  # nothing selected
         for option in self.options:
             yield self.name, option

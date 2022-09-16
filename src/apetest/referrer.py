@@ -9,7 +9,9 @@ L{Form} models a form that can generate requests for other documents
 when submitted.
 """
 
-from typing import Collection, Iterator, List, Optional, Sequence, Set, Tuple, TypeVar
+from __future__ import annotations
+
+from typing import Collection, Iterator, List, Sequence, Tuple, TypeVar
 
 from apetest.control import Control
 from apetest.request import Request
@@ -85,7 +87,7 @@ class Redirect(Referrer):
 class LinkSet(Referrer):
     """One or more links to different queries of the same page."""
 
-    page_url: Optional[str]  # type: ignore[assignment]
+    page_url: str | None  # type: ignore[assignment]
 
     def __init__(self) -> None:
         """
@@ -96,7 +98,7 @@ class LinkSet(Referrer):
         # page_url is set later
         Referrer.__init__(self, None)  # type: ignore[arg-type]
 
-        self.links: Set[Request] = set()
+        self.links: set[Request] = set()
         """The links (L{Request} objects) that were added."""
 
     def add(self, request: Request) -> None:
@@ -171,9 +173,9 @@ class Form(Referrer):
                 combinations *= len(alternatives)
 
         self.all_alternatives: Sequence[
-            Sequence[Tuple[Optional[str], Optional[str]]]
+            Sequence[tuple[str | None, str | None]]
         ] = all_alternatives
-        self.base_query: Sequence[Tuple[str, str]] = base_query
+        self.base_query: Sequence[tuple[str, str]] = base_query
         self.combinations = combinations
 
         print("non-alternatives:", base_query)
@@ -252,7 +254,7 @@ class Form(Referrer):
             def _get_length(self) -> int:
                 return len(produces_pairs)
 
-            def _value_at(self, index: int) -> Tuple[List[bool], bool]:
+            def _value_at(self, index: int) -> tuple[list[bool], bool]:
                 return produces_pairs[index], produces_empty[index]
 
         class PairIterator(MatrixIterator[Sequence[int]]):

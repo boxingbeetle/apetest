@@ -11,17 +11,10 @@ At any point during or after the crawling, the L{iter_referring_requests}
 method can be used to ask which other requests linked to a given request.
 """
 
+from __future__ import annotations
+
 from collections import defaultdict
-from typing import (
-    Collection,
-    DefaultDict,
-    Dict,
-    Iterable,
-    Iterator,
-    Optional,
-    Set,
-    Tuple,
-)
+from typing import Collection, DefaultDict, Iterable, Iterator
 from urllib.parse import urljoin, urlsplit
 
 from apetest.fetch import USER_AGENT_PREFIX, load_text
@@ -56,7 +49,7 @@ class Spider:
     # TODO: Currently just the first 100 are checked, it would be better
     #       to try variations of all query arguments.
 
-    def __init__(self, base_url: str, rules: Iterable[Tuple[bool, str]]):
+    def __init__(self, base_url: str, rules: Iterable[tuple[bool, str]]):
         """
         Initializes a spider that starts at C{first_req} and follows
         the given exclusion rules.
@@ -65,13 +58,13 @@ class Spider:
         """
         self._base_url = base_url
         self._rules = rules
-        self._requests_to_check: Set[Request] = set()
-        self._requests_checked: Set[Request] = set()
+        self._requests_to_check: set[Request] = set()
+        self._requests_checked: set[Request] = set()
         self._queries_per_page: DefaultDict[str, int] = defaultdict(int)
         # Maps source request to referrers (destination).
-        self._site_graph: Dict[Request, Collection[Referrer]] = {}
+        self._site_graph: dict[Request, Collection[Referrer]] = {}
         # Maps destination page to source requests.
-        self._page_referred_from: DefaultDict[str, Set[Request]] = defaultdict(set)
+        self._page_referred_from: DefaultDict[str, set[Request]] = defaultdict(set)
 
     def __iter__(self) -> Iterator[Request]:
         checked = self._requests_checked
@@ -150,7 +143,7 @@ class Spider:
                     yield source_req
 
 
-def spider_req(first_req: Request) -> Tuple[Spider, Optional[Report]]:
+def spider_req(first_req: Request) -> tuple[Spider, Report | None]:
     """
     Creates a L{Spider} that starts at the given L{Request}.
 
@@ -165,8 +158,8 @@ def spider_req(first_req: Request) -> Tuple[Spider, Optional[Report]]:
         robots_url = urljoin(base_url, "/robots.txt")
 
     print('fetching "robots.txt"...')
-    report: Optional[Report]
-    rules: Iterable[Tuple[bool, str]]
+    report: Report | None
+    rules: Iterable[tuple[bool, str]]
     report, response, robots_lines = load_text(robots_url)
     if robots_lines is None:
         if response is not None and response.code == 404:

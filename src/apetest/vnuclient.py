@@ -9,17 +9,19 @@ or more requests.
 You can find the checker itself at U{https://validator.github.io/}.
 """
 
+from __future__ import annotations
+
 from gzip import GzipFile
 from http.client import HTTPConnection, HTTPException, HTTPResponse
 from io import BytesIO
 from logging import getLogger
 from time import sleep
 from types import TracebackType
-from typing import Any, Iterator, Mapping, Optional, Tuple, Type, cast
+from typing import Any, Iterator, Mapping, cast
 from urllib.parse import urlsplit
 import json
 
-https_connection_factory: Optional[Type[HTTPConnection]]
+https_connection_factory: type[HTTPConnection] | None
 try:
     from http.client import HTTPSConnection  # pylint: disable=ungrouped-imports
 
@@ -89,17 +91,17 @@ class VNUClient:
     def __init__(self, url: str):
         """Initializes a client that connects to the v.Nu checker at C{url}."""
         self.service_url = url
-        self._connection: Optional[HTTPConnection] = None
-        self._remote: Optional[Tuple[str, str]] = None
+        self._connection: HTTPConnection | None = None
+        self._remote: tuple[str, str] | None = None
 
-    def __enter__(self) -> "VNUClient":
+    def __enter__(self) -> VNUClient:
         return self
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         self.close()
 
@@ -147,7 +149,7 @@ class VNUClient:
 
     def __request_with_retries(
         self, url: str, data: bytes, content_type: str
-    ) -> Tuple[HTTPResponse, Optional[bytes]]:
+    ) -> tuple[HTTPResponse, bytes | None]:
         """
         Make a request and retry if it doesn't succeed the first time.
         For example, the connection may have timed out.
@@ -184,7 +186,7 @@ class VNUClient:
                 connection.request("POST", request, body, headers)
                 response = connection.getresponse()
 
-                response_body: Optional[bytes]
+                response_body: bytes | None
                 status = response.status
                 if status == 200:
                     if response.getheader("Content-Encoding", "identity").lower() in (

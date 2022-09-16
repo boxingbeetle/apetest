@@ -27,14 +27,16 @@ References:
   - U{http://www.robotstxt.org/}
 """
 
-from typing import Dict, Iterable, Iterator, List, Mapping, Set, Tuple
+from __future__ import annotations
+
+from typing import Iterable, Iterator, Mapping
 
 from apetest.typing import LoggerT
 
 
 def scan_robots_txt(
     lines: Iterable[str], logger: LoggerT
-) -> Iterator[Iterable[Tuple[int, str, str]]]:
+) -> Iterator[Iterable[tuple[int, str, str]]]:
     """
     Tokenizes the contents of a C{robots.txt} file.
 
@@ -46,7 +48,7 @@ def scan_robots_txt(
         Yields records, where each record is a sequence of
         C{(lineno, token, value)} triples.
     """
-    record: List[Tuple[int, str, str]] = []
+    record: list[tuple[int, str, str]] = []
     for lineno, line in enumerate(lines, 1):
         stripped_line = line.lstrip()
         if stripped_line.startswith("#"):
@@ -74,8 +76,8 @@ def scan_robots_txt(
 
 
 def parse_robots_txt(
-    records: Iterable[Iterable[Tuple[int, str, str]]], logger: LoggerT
-) -> Mapping[str, Iterable[Tuple[bool, str]]]:
+    records: Iterable[Iterable[tuple[int, str, str]]], logger: LoggerT
+) -> Mapping[str, Iterable[tuple[bool, str]]]:
     """
     Parses C{robots.txt} records.
 
@@ -89,11 +91,11 @@ def parse_robots_txt(
         allow/disallow rules, where C{allowed} is C{True} iff the user agent
         is allowed to visit URLs starting with C{url_prefix}.
     """
-    result: Dict[str, Iterable[Tuple[bool, str]]] = {}
-    unknowns: Set[str] = set()
+    result: dict[str, Iterable[tuple[bool, str]]] = {}
+    unknowns: set[str] = set()
     for record in records:
         seen_user_agent = False
-        rules: List[Tuple[bool, str]] = []
+        rules: list[tuple[bool, str]] = []
         for lineno, field, value in record:
             if field == "user-agent":
                 if rules:
@@ -215,8 +217,8 @@ def unescape_path(path: str) -> str:
 
 
 def lookup_robots_rules(
-    rules_map: Mapping[str, Iterable[Tuple[bool, str]]], user_agent: str
-) -> Iterable[Tuple[bool, str]]:
+    rules_map: Mapping[str, Iterable[tuple[bool, str]]], user_agent: str
+) -> Iterable[tuple[bool, str]]:
     """
     Looks up a user agent in a rules mapping.
 
@@ -236,7 +238,7 @@ def lookup_robots_rules(
     return rules_map.get("*", [])
 
 
-def path_allowed(path: str, rules: Iterable[Tuple[bool, str]]) -> bool:
+def path_allowed(path: str, rules: Iterable[tuple[bool, str]]) -> bool:
     """
     Checks whether the given rules allow visiting the given path.
 

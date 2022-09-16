@@ -16,22 +16,13 @@ L{Scribe} collects reports for multiple pages and can generate
 a combined report from them.
 """
 
+from __future__ import annotations
+
 from collections import defaultdict
 from datetime import datetime, timezone
 from enum import Enum, auto
 from logging import INFO, Handler, LogRecord, getLogger
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Collection,
-    DefaultDict,
-    Dict,
-    Iterator,
-    List,
-    MutableMapping,
-    Optional,
-    Tuple,
-)
+from typing import TYPE_CHECKING, Any, Collection, DefaultDict, Iterator, MutableMapping
 from urllib.parse import unquote_plus, urlsplit
 from urllib.response import addinfourl
 
@@ -44,8 +35,6 @@ from apetest.xmlgen import XML, XMLContent, raw, xml
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
     from apetest.spider import Spider
-else:
-    Spider = object
 
 
 _STYLE_SHEET = raw(CSS)
@@ -63,7 +52,7 @@ class StoreHandler(Handler):
 
     def __init__(self) -> None:
         super().__init__()
-        self.records: DefaultDict[str, List[LogRecord]] = defaultdict(list)
+        self.records: DefaultDict[str, list[LogRecord]] = defaultdict(list)
         """Maps a URL to a collection of reports for that URL."""
 
     def emit(self, record: LogRecord) -> None:
@@ -134,7 +123,7 @@ class Report(LoggerBase):
 
     def process(
         self, msg: Any, kwargs: MutableMapping[str, Any]
-    ) -> Tuple[Any, MutableMapping[str, Any]]:
+    ) -> tuple[Any, MutableMapping[str, Any]]:
         """
         Process contextual information for a logged message.
 
@@ -150,7 +139,7 @@ class Report(LoggerBase):
 
         return msg, kwargs
 
-    def present(self, scribe: "Scribe") -> XMLContent:
+    def present(self, scribe: Scribe) -> XMLContent:
         """Yield an XHTML rendering of this report."""
 
         present_record = self.present_record
@@ -185,7 +174,7 @@ class FetchFailure(Report, Exception):
     where that is appropriate.
     """
 
-    def __init__(self, url: str, message: str, http_error: Optional[addinfourl] = None):
+    def __init__(self, url: str, message: str, http_error: addinfourl | None = None):
         """Initialize the report and log C{message} as an error."""
         Report.__init__(self, url)
         Exception.__init__(self, message)
@@ -208,7 +197,7 @@ class Page:
 
         self._name = name
 
-        self.query_to_report: Dict[str, Report] = {}
+        self.query_to_report: dict[str, Report] = {}
         """Maps a query string to the report for that query."""
 
         self.failures = 0
@@ -234,7 +223,7 @@ class Page:
         if not report.ok:
             self.failures += 1
 
-    def present(self, scribe: "Scribe") -> XMLContent:
+    def present(self, scribe: Scribe) -> XMLContent:
         """Yield an XHTML rendering of all reports for this page."""
 
         # Use more compact presentation for local files.
@@ -300,9 +289,9 @@ class Scribe:
 
         self._spider = spider
         self._plugins = plugins
-        self._pages: Dict[str, Page] = {}
+        self._pages: dict[str, Page] = {}
         self._start_time = now_local()
-        self._end_time: Optional[datetime] = None
+        self._end_time: datetime | None = None
 
     @property
     def start_time(self) -> datetime:
@@ -310,7 +299,7 @@ class Scribe:
         return self._start_time
 
     @property
-    def end_time(self) -> Optional[datetime]:
+    def end_time(self) -> datetime | None:
         """
         The local time at which this test run ended,
         or None if it did not end yet.

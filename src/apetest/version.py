@@ -2,6 +2,8 @@
 
 """Package version info."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 # On Python 3.8+, use importlib.metadata from the standard library.

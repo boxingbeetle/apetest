@@ -9,6 +9,8 @@ ran successfully but finds errors in the code it examined, that means it did
 its job correctly and the SoftFab result will be 'warning'.
 """
 
+from __future__ import annotations
+
 from collections import Counter
 import json
 

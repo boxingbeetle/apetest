@@ -32,6 +32,8 @@ If one of the requested plugins cannot be created, L{PluginError} should
 be raised with a message that is meaningful to the end user.
 """
 
+from __future__ import annotations
+
 from argparse import ArgumentParser, Namespace
 from importlib import import_module
 from logging import getLogger
@@ -42,8 +44,6 @@ from typing import TYPE_CHECKING, Callable, Iterable, Iterator
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
     from apetest.report import Report, Scribe
-else:
-    Report = Scribe = object
 
 
 _LOG = getLogger(__name__)

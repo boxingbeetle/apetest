@@ -69,8 +69,10 @@ encoding. For example::
         out.write(tree.flatten())
 """
 
+from __future__ import annotations
+
 from html import escape
-from typing import Iterable, Iterator, Mapping, Optional, Union
+from typing import Iterable, Iterator, Mapping, Union
 
 
 class _XMLSerializable:
@@ -79,10 +81,10 @@ class _XMLSerializable:
     def __str__(self) -> str:
         return self.flatten()
 
-    def __add__(self, other: "XMLContent") -> "_XMLSequence":
+    def __add__(self, other: XMLContent) -> _XMLSequence:
         return concat(self, other)
 
-    def __radd__(self, other: "XMLContent") -> "_XMLSequence":
+    def __radd__(self, other: XMLContent) -> _XMLSequence:
         return concat(other, self)
 
     def _to_fragments(self) -> Iterator[str]:
@@ -97,7 +99,7 @@ class _XMLSerializable:
         """Creates the XML string for this object."""
         return "".join(self._to_fragments())
 
-    def join(self, siblings: Iterable["XMLContent"]) -> "_XMLSequence":
+    def join(self, siblings: Iterable[XMLContent]) -> _XMLSequence:
         """
         Creates an XML sequence containing the given XML objects,
         with itself inserted between each sibling, similar to
@@ -169,14 +171,14 @@ class _XMLSequence(_XMLSerializable):
 
 class _XMLElement(_XMLSerializable):
     def __init__(
-        self, name: str, attrs: Mapping[str, str], children: Optional[_XMLSequence]
+        self, name: str, attrs: Mapping[str, str], children: _XMLSequence | None
     ):
         _XMLSerializable.__init__(self)
         self.__name = name
         self.__attributes = attrs
         self.__children = children
 
-    def __call__(self, **attributes: Optional[str]) -> "_XMLElement":
+    def __call__(self, **attributes: str | None) -> _XMLElement:
         attrs = dict(self.__attributes)
         attrs.update(
             (key.rstrip("_"), escape(str(value)))
@@ -185,7 +187,7 @@ class _XMLElement(_XMLSerializable):
         )
         return _XMLElement(self.__name, attrs, self.__children)
 
-    def __getitem__(self, index: XMLContent) -> "_XMLElement":
+    def __getitem__(self, index: XMLContent) -> _XMLElement:
         children = concat(self.__children, index)
         return _XMLElement(self.__name, self.__attributes, children)
 

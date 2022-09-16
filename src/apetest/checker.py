@@ -6,19 +6,12 @@ Checks a document for problems and finds links to other documents.
 The L{PageChecker} class is where the work is done.
 """
 
+from __future__ import annotations
+
 from collections import defaultdict
 from enum import Enum, auto
 from logging import getLogger
-from typing import (
-    DefaultDict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    cast,
-    overload,
-)
+from typing import DefaultDict, Iterable, Iterator, cast, overload
 from urllib.parse import urljoin, urlsplit, urlunsplit
 from urllib.response import addinfourl
 import re
@@ -79,7 +72,7 @@ def strip_xml_decl(text: str) -> str:
     return text if match is None else text[match.end() :]
 
 
-def encoding_from_xml_decl(text: str) -> Optional[str]:
+def encoding_from_xml_decl(text: str) -> str | None:
     """
     Look for an XML declaration with an C{encoding} attribute at the start
     of the given text.
@@ -112,7 +105,7 @@ def normalize_url(url: str) -> str:
 
 def parse_document(
     content: str, is_xml: bool, report: Report
-) -> Optional[etree._ElementTree]:
+) -> etree._ElementTree | None:
     """
     Parse the given XML or HTML document.
 
@@ -195,7 +188,7 @@ def repair_tree(tree: etree._ElementTree, content_type: str, report: Report) -> 
 
 
 @overload
-def _get_attr(attrib: etree._Attrib, name: str) -> Optional[str]:
+def _get_attr(attrib: etree._Attrib, name: str) -> str | None:
     ...
 
 
@@ -205,8 +198,8 @@ def _get_attr(attrib: etree._Attrib, name: str, default: str) -> str:
 
 
 def _get_attr(
-    attrib: etree._Attrib, name: str, default: Optional[str] = None
-) -> Optional[str]:
+    attrib: etree._Attrib, name: str, default: str | None = None
+) -> str | None:
     value = attrib.get(name)
     if value is None:
         return default
@@ -220,7 +213,7 @@ def _get_text(element: Element) -> str:
     return "" if value is None else value
 
 
-def _parse_controls(nodes: Iterable[Element]) -> Iterator[Tuple[Element, str]]:
+def _parse_controls(nodes: Iterable[Element]) -> Iterator[tuple[Element, str]]:
     """
     Iterate through the submittable controls defined in the given HTML nodes.
 
@@ -245,7 +238,7 @@ def _parse_controls(nodes: Iterable[Element]) -> Iterator[Tuple[Element, str]]:
         yield node, name
 
 
-def _create_input_control(node: Element, name: str) -> Optional[Control]:
+def _create_input_control(node: Element, name: str) -> Control | None:
     attrib = node.attrib
     _LOG.debug("input: %s", attrib)
     # TODO: Support readonly controls?
@@ -535,7 +528,7 @@ def find_referrers_in_html(tree: etree._ElementTree, url: str) -> Iterator[Refer
         submit_url = urljoin(url, action)
 
         controls = []
-        radio_buttons: DefaultDict[str, List[RadioButton]] = defaultdict(list)
+        radio_buttons: DefaultDict[str, list[RadioButton]] = defaultdict(list)
         submit_buttons = []
         for control_node, name in _parse_controls(form_node.iter(ns_prefix + "input")):
             control = _create_input_control(control_node, name)

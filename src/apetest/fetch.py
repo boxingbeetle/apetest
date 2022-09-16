@@ -7,12 +7,14 @@ L{load_page} loads arbitrary resources as C{bytes},
 while L{load_text} loads and decodes plain text documents.
 """
 
+from __future__ import annotations
+
 from email import message_from_string
 from http.client import HTTPMessage
 from io import BytesIO
 from logging import getLogger
 from time import sleep
-from typing import IO, List, Optional, Tuple
+from typing import IO
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import (
@@ -43,7 +45,7 @@ class _CustomRedirectHandler(HTTPRedirectHandler):
         msg: str,
         headers: HTTPMessage,
         newurl: str,
-    ) -> Optional[URLRequest]:
+    ) -> URLRequest | None:
         raise HTTPError(newurl, code, msg, headers, fp)
 
 
@@ -153,7 +155,7 @@ def open_page(
 
 def load_page(
     url: str, ignore_client_error: bool = False, accept_header: str = "*/*"
-) -> Tuple[Report, Optional[addinfourl], Optional[bytes]]:
+) -> tuple[Report, addinfourl | None, bytes | None]:
     """
     Load the contents of a resource via HTTP GET.
 
@@ -178,7 +180,7 @@ def load_page(
     """
 
     report: Report
-    response: Optional[addinfourl]
+    response: addinfourl | None
     try:
         response = open_page(url, ignore_client_error, accept_header)
     except FetchFailure as failure:
@@ -206,7 +208,7 @@ _RE_EOLN = re.compile(r"\r\n|\r|\n")
 
 def load_text(
     url: str, accept_header: str = "text/plain"
-) -> Tuple[Report, Optional[addinfourl], Optional[List[str]]]:
+) -> tuple[Report, addinfourl | None, list[str] | None]:
     """
     Load a text document.
 

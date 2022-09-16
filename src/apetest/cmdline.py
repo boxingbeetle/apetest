@@ -2,9 +2,10 @@
 
 """Command line interface."""
 
+from __future__ import annotations
+
 from argparse import ArgumentParser
 from os import getcwd
-from typing import List
 from urllib.parse import urljoin, urlparse
 import logging
 
@@ -142,7 +143,7 @@ def main() -> int:
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
     # Instantiate plugins.
-    plugin_list: List[Plugin] = []
+    plugin_list: list[Plugin] = []
     for module in plugin_modules:
         try:
             plugin_list += create_plugins(module, args)

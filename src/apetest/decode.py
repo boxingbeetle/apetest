@@ -6,6 +6,8 @@ Text decode functions.
 These functions can be used to get Unicode strings from a series of bytes.
 """
 
+from __future__ import annotations
+
 from codecs import (
     BOM_UTF8,
     BOM_UTF16_BE,
@@ -16,12 +18,12 @@ from codecs import (
     lookup as lookup_codec,
 )
 from collections import OrderedDict
-from typing import Dict, Iterable, Optional, Tuple
+from typing import Iterable
 
 from apetest.typing import LoggerT
 
 
-def encoding_from_bom(data: bytes) -> Optional[str]:
+def encoding_from_bom(data: bytes) -> str | None:
     """
     Look for a byte-order-marker at the start of the given C{bytes}.
     If found, return the encoding matching that BOM, otherwise return C{None}.
@@ -58,7 +60,7 @@ def standard_codec_name(name: str) -> str:
     }.get(name, name)
 
 
-def try_decode(data: bytes, encodings: Iterable[str]) -> Tuple[str, str]:
+def try_decode(data: bytes, encodings: Iterable[str]) -> tuple[str, str]:
     """
     Attempt to decode text using the given encodings in order.
 
@@ -75,7 +77,7 @@ def try_decode(data: bytes, encodings: Iterable[str]) -> Tuple[str, str]:
     """
 
     # Build sequence of codecs to try.
-    codecs: Dict[str, CodecInfo] = OrderedDict()
+    codecs: dict[str, CodecInfo] = OrderedDict()
     for encoding in encodings:
         try:
             codec = lookup_codec(encoding)
@@ -97,9 +99,9 @@ def try_decode(data: bytes, encodings: Iterable[str]) -> Tuple[str, str]:
 
 def decode_and_report(
     data: bytes,
-    encoding_options: Iterable[Tuple[Optional[str], str]],
+    encoding_options: Iterable[tuple[str | None, str]],
     logger: LoggerT,
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """
     Attempt to decode text using several encoding options in order.
 

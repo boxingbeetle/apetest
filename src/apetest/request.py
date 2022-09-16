@@ -2,8 +2,10 @@
 
 """Home of the L{Request} class."""
 
+from __future__ import annotations
+
 from functools import total_ordering
-from typing import Iterable, Tuple
+from typing import Iterable
 from urllib.parse import quote_plus, unquote_plus, urlsplit, urlunsplit
 
 
@@ -16,7 +18,7 @@ class Request:
     """
 
     @staticmethod
-    def from_url(url: str) -> "Request":
+    def from_url(url: str) -> Request:
         """
         Creates a L{Request} from a URL.
 
@@ -46,7 +48,7 @@ class Request:
         return Request(page_url, query)
 
     def __init__(
-        self, page_url: str, query: Iterable[Tuple[str, str]], maybe_bad: bool = False
+        self, page_url: str, query: Iterable[tuple[str, str]], maybe_bad: bool = False
     ):
         """
         Initializes a request object from a split URL.

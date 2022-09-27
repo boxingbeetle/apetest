@@ -150,14 +150,14 @@ def decode_and_report(
         std_name = standard_codec_name(codec.name)
         if std_name != used_encoding:
             logger.warning(
-                '%s specifies encoding "%s", ' 'while actual encoding seems to be "%s"',
+                '%s specifies encoding "%s", while actual encoding seems to be "%s"',
                 source,
                 encoding,
                 used_encoding,
             )
         elif std_name != encoding:
             logger.info(
-                '%s specifies encoding "%s", ' 'which is not the standard name "%s"',
+                '%s specifies encoding "%s", which is not the standard name "%s"',
                 source,
                 encoding,
                 used_encoding,

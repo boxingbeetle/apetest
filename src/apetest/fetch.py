@@ -128,14 +128,12 @@ def open_page(
                     except ValueError:
                         # TODO: HTTP spec allows a date string here.
                         _LOG.warning(
-                            'Parsing of "Retry-After" dates ' "is not yet implemented"
+                            'Parsing of "Retry-After" dates is not yet implemented'
                         )
                         seconds = 5
                 else:
                     seconds = 5
-                _LOG.info(
-                    "Server not ready yet, trying again " "in %d seconds", seconds
-                )
+                _LOG.info("Server not ready yet, trying again in %d seconds", seconds)
                 sleep(seconds)
             elif 300 <= ex.code < 400:
                 # Do not treat redirects as errors.

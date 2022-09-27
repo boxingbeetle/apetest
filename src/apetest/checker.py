@@ -57,7 +57,7 @@ _LOG = getLogger(__name__)
 
 _RE_XML_DECL = re.compile(r'<\?xml([ \t\r\n\'"\w.\-=]*).*\?>')
 _RE_XML_DECL_ATTR = re.compile(
-    r"[ \t\r\n]+([a-z]+)[ \t\r\n]*=[ \t\r\n]*" r'(?P<quote>[\'"])([\w.\-]*)(?P=quote)'
+    r"[ \t\r\n]+([a-z]+)[ \t\r\n]*=[ \t\r\n]*(?P<quote>['\"])([\w.\-]*)(?P=quote)"
 )
 
 

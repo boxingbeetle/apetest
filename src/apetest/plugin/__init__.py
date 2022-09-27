@@ -181,7 +181,7 @@ def add_plugin_arguments(module: ModuleType, parser: ArgumentParser) -> None:
             # TODO: Perhaps it is better to disable the plugin when this happens,
             #       since it's unlikely to function correctly.
             _LOG.exception(
-                "Error registering command line arguments for " 'plugin module "%s":',
+                'Error registering command line arguments for plugin module "%s":',
                 module.__name__,
             )
 

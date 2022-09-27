@@ -209,9 +209,7 @@ class VNUClient:
                     # Service is unlikely to appear anymore; give up.
                     raise
                 # Wait for service to start up.
-                _LOG.info(
-                    "v.Nu service refuses connection; " "trying again in 1 second"
-                )
+                _LOG.info("v.Nu service refuses connection; trying again in 1 second")
                 sleep(1)
             except (HTTPException, OSError):
                 self.close()

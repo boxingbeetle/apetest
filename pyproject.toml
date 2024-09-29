@@ -49,14 +49,19 @@ isort = "^5.9.3"
 pylint-json2html = "^0.1.0"
 markdown = "^3.1"
 mypy = '>=0.920'
-pyflakes = "^2.1"
 lxml-stubs = '>=0.1.1'
 pydoctor = ">=20.7.0"
 pre-commit = "^3.8.0"
 black = "^21.7b0"
+ruff = "0.6.8"
 
 [tool.poetry.scripts]
 apetest = 'apetest.cmdline:main'
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+src = ["src"]
 
 [build-system]
 requires = ["poetry-core"]

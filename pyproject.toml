@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'apetest'
-version = "0.2.0"
+version = "0.2.1"
 description = 'Smarter-than-monkey testing for web apps'
 authors = [
     'Maarten ter Huurne <maarten@boxingbeetle.com>'

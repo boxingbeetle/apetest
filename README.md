@@ -32,7 +32,7 @@ So roughly, APE will work if your app supports deep-linking and JavaScript is us
 Installation
 ------------
 
-APE requires Python 3.6 or higher.
+APE requires Python 3.9 or higher.
 
 You can use the package tool "pip" that comes with Python to install APE:
 
@@ -41,7 +41,7 @@ You can use the package tool "pip" that comes with Python to install APE:
 Now you should be able to run the `apetest` command:
 
     $ apetest --version
-    APE 0.1.0
+    APE 0.2.1
 
 APE uses the [Nu Html Checker (v.Nu)](<https://validator.github.io/>) to check HTML. The checker itself is installed by pip, but you also need a Java runtime on your machine to run it, such as [OpenJDK](https://openjdk.java.net/install/index.html). You only need the runtime (JRE) and not the full development kit (JDK).
 

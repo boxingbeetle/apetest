@@ -1,3 +1,5 @@
+# mypy: allow-untyped-defs
+
 from itertools import chain
 from pathlib import Path
 from shutil import rmtree

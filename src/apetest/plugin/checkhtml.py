@@ -14,8 +14,8 @@ installed to run it.
 from __future__ import annotations
 
 from argparse import ArgumentParser, Namespace
-from cgi import parse_header
 from collections.abc import Container, Iterator, Mapping
+from email.message import EmailMessage
 from http.client import HTTPException
 from logging import ERROR, INFO, WARNING
 from pathlib import Path
@@ -43,6 +43,12 @@ def plugin_arguments(parser: ArgumentParser) -> None:
     parser.add_argument(
         "--css", action="store_true", help="check CSS using v.Nu web service as well"
     )
+
+
+def _parse_content_type(header: str) -> str:
+    msg = EmailMessage()
+    msg["content-type"] = header
+    return msg.get_content_type()
 
 
 def _pick_port() -> int:
@@ -145,7 +151,7 @@ class HTMLValidator(Plugin):
     def resource_loaded(
         self, data: bytes, content_type_header: str, report: Report
     ) -> None:
-        content_type, args_ = parse_header(content_type_header)
+        content_type = _parse_content_type(content_type_header)
         if content_type not in self.content_types:
             return
 

@@ -39,7 +39,7 @@ _LOG = getLogger(__name__)
 
 
 class _CustomRedirectHandler(HTTPRedirectHandler):
-    def redirect_request(
+    def redirect_request(  # pylint: disable=too-many-positional-arguments
         self,
         req: URLRequest,
         fp: IO[bytes],

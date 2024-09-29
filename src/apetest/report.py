@@ -95,7 +95,7 @@ class Report(LoggerBase):
         Initialize a report that will be collecting results
         for the document at C{url}.
         """
-        super().__init__(_LOG, dict(url=url))
+        super().__init__(_LOG, {"url": url})
 
         self.url = url
         """The request URL to which this report applies."""
@@ -229,6 +229,8 @@ class Page:
 
         # Use more compact presentation for local files.
         if len(self.query_to_report) == 1:
+            # pylint: disable=unbalanced-dict-unpacking
+            # https://github.com/pylint-dev/pylint/issues/9986
             ((query, report),) = self.query_to_report.items()
             if query == "" and report.url.startswith("file:"):
                 verdict = "pass" if report.ok else "fail"

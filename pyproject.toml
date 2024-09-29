@@ -32,7 +32,7 @@ html5validator = '>=0.4.2'
 
 [tool.poetry.dev-dependencies]
 pytest = '^8.3.3'
-pylint = '^2.0'
+pylint = '^3.3.1'
 invoke = "^2.2.0"
 pylint-json2html = "^0.1.0"
 markdown = "^3.1"

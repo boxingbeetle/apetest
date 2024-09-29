@@ -31,7 +31,7 @@ lxml = '^4.0'
 html5validator = '>=0.4.2'
 
 [tool.poetry.dev-dependencies]
-pytest = '^6.2.4'
+pytest = '^8.3.3'
 pylint = '^2.0'
 invoke = "^2.2.0"
 pylint-json2html = "^0.1.0"

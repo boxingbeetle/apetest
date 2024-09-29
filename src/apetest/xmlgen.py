@@ -110,7 +110,7 @@ class _XMLSerializable:
 
 
 XML = _XMLSerializable
-XMLContent = Union[str, None, XML, Iterable]
+XMLContent = Union[str, None, XML, Iterable["XMLContent"]]
 
 
 def _join(separator: XML, nodes: Iterable[XML]) -> Iterator[XML]:

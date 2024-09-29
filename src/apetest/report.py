@@ -140,7 +140,7 @@ class Report(LoggerBase):
 
         return msg, kwargs
 
-    def present(self, scribe: Scribe) -> XMLContent:
+    def present(self, scribe: Scribe) -> Iterator[XMLContent]:
         """Yield an XHTML rendering of this report."""
 
         present_record = self.present_record
@@ -224,7 +224,7 @@ class Page:
         if not report.ok:
             self.failures += 1
 
-    def present(self, scribe: Scribe) -> XMLContent:
+    def present(self, scribe: Scribe) -> Iterator[XMLContent]:
         """Yield an XHTML rendering of all reports for this page."""
 
         # Use more compact presentation for local files.
@@ -376,7 +376,7 @@ class Scribe:
             ],
         ]
 
-    def _present_failed_index(self) -> XMLContent:
+    def _present_failed_index(self) -> Iterator[XMLContent]:
         failed_page_names = [
             name for name, page in self._pages.items() if page.failures != 0
         ]

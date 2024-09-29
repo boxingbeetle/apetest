@@ -9,6 +9,7 @@ while L{load_text} loads and decodes plain text documents.
 
 from __future__ import annotations
 
+import re
 from email import message_from_string
 from http.client import HTTPMessage
 from io import BytesIO
@@ -20,11 +21,12 @@ from urllib.parse import urlsplit
 from urllib.request import (
     FileHandler,
     HTTPRedirectHandler,
-    Request as URLRequest,
     build_opener,
 )
+from urllib.request import (
+    Request as URLRequest,
+)
 from urllib.response import addinfourl
-import re
 
 from apetest.decode import decode_and_report, encoding_from_bom
 from apetest.report import FetchFailure, Report

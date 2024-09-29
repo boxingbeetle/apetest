@@ -33,9 +33,7 @@ Allow: /serv
 # Comment-only lines do not end record.
 Allow: /~mak
 Disallow: /
-""".split(
-    "\n"
-)
+""".split("\n")
 
 EXAMPLE_RECORDS = [
     [(2, "user-agent", "unhipbot"), (3, "disallow", "/")],
@@ -242,8 +240,8 @@ def test_parse_robots_unescape_valid(caplog: LogCaptureFixture) -> None:
                 (False, "/a<d.html"),
                 (False, "/~joe/"),
                 (False, "/a%2fb.html"),
-                (False, "/\u00A2"),
-                (False, "/\u20AC"),
+                (False, "/\u00a2"),
+                (False, "/\u20ac"),
                 (False, "/\U00010348"),
             ]
         }

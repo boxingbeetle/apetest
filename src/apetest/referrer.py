@@ -173,9 +173,9 @@ class Form(Referrer):
                 all_alternatives.append(tuple(alternatives))
                 combinations *= len(alternatives)
 
-        self.all_alternatives: Sequence[
-            Sequence[tuple[str | None, str | None]]
-        ] = all_alternatives
+        self.all_alternatives: Sequence[Sequence[tuple[str | None, str | None]]] = (
+            all_alternatives
+        )
         self.base_query: Sequence[tuple[str, str]] = base_query
         self.combinations = combinations
 

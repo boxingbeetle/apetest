@@ -8,6 +8,7 @@ The L{PageChecker} class is where the work is done.
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
 from enum import Enum, auto
@@ -15,7 +16,6 @@ from logging import getLogger
 from typing import DefaultDict, cast, overload
 from urllib.parse import urljoin, urlsplit, urlunsplit
 from urllib.response import addinfourl
-import re
 
 from lxml import etree
 
@@ -189,13 +189,11 @@ def repair_tree(tree: etree._ElementTree, content_type: str, report: Report) -> 
 
 
 @overload
-def _get_attr(attrib: etree._Attrib, name: str) -> str | None:
-    ...
+def _get_attr(attrib: etree._Attrib, name: str) -> str | None: ...
 
 
 @overload
-def _get_attr(attrib: etree._Attrib, name: str, default: str) -> str:
-    ...
+def _get_attr(attrib: etree._Attrib, name: str, default: str) -> str: ...
 
 
 def _get_attr(

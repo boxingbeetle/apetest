@@ -15,6 +15,8 @@ from codecs import (
     BOM_UTF32_BE,
     BOM_UTF32_LE,
     CodecInfo,
+)
+from codecs import (
     lookup as lookup_codec,
 )
 from collections.abc import Iterable

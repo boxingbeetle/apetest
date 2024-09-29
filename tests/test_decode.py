@@ -2,9 +2,9 @@
 Unit tests for `apetest.decode`.
 """
 
+import codecs
 from logging import INFO, WARNING, getLogger
 from typing import Iterator, Tuple
-import codecs
 
 from pytest import LogCaptureFixture, mark, raises
 
@@ -109,7 +109,7 @@ def test_try_decode_no_valid_options() -> None:
         yield "utf-8"
 
     with raises(ValueError):
-        try_decode(b"\xC0", to_try())
+        try_decode(b"\xc0", to_try())
 
 
 def test_try_decode_first() -> None:

@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
+import logging
 from argparse import ArgumentParser
 from os import getcwd
 from urllib.parse import urljoin, urlparse
-import logging
 
 from apetest.checker import Accept, PageChecker
 from apetest.plugin import (

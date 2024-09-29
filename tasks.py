@@ -132,22 +132,6 @@ def types(c, src=None, clean=False, report=False, results=None):
 
 
 @task
-def black(c, src=None):
-    """Format source files."""
-    print("Formatting sources...")
-    with c.cd(str(TOP_DIR)):
-        c.run(f"black {' '.join(source_arg(src))}", pty=True)
-
-
-@task
-def isort(c, src=None):
-    """Sort imports."""
-    print("Sorting imports...")
-    with c.cd(str(TOP_DIR)):
-        c.run(f"isort {' '.join(source_arg(src))}", pty=True)
-
-
-@task
 def readme(c):
     """Render README.md to HTML."""
     print("Rendering README...")

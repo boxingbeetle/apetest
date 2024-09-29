@@ -14,7 +14,8 @@ method can be used to ask which other requests linked to a given request.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Collection, DefaultDict, Iterable, Iterator
+from collections.abc import Collection, Iterable, Iterator
+from typing import DefaultDict
 from urllib.parse import urljoin, urlsplit
 
 from apetest.fetch import USER_AGENT_PREFIX, load_text

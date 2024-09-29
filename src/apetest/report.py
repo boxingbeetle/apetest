@@ -19,10 +19,11 @@ a combined report from them.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Collection, Iterator, MutableMapping
 from datetime import datetime, timezone
 from enum import Enum, auto
 from logging import INFO, Handler, LogRecord, getLogger
-from typing import TYPE_CHECKING, Any, Collection, DefaultDict, Iterator, MutableMapping
+from typing import TYPE_CHECKING, Any, DefaultDict
 from urllib.parse import unquote_plus, urlsplit
 from urllib.response import addinfourl
 

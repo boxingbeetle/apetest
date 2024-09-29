@@ -15,12 +15,13 @@ from __future__ import annotations
 
 from argparse import ArgumentParser, Namespace
 from cgi import parse_header
+from collections.abc import Container, Iterator, Mapping
 from http.client import HTTPException
 from logging import ERROR, INFO, WARNING
 from pathlib import Path
 from socket import AF_INET, SOCK_STREAM, socket  # pylint: disable=no-name-in-module
 from subprocess import DEVNULL, Popen
-from typing import TYPE_CHECKING, Any, Container, Iterator, Mapping
+from typing import TYPE_CHECKING, Any
 
 from apetest.plugin import Plugin, PluginError
 from apetest.report import Checked

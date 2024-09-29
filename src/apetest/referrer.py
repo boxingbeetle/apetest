@@ -11,7 +11,8 @@ when submitted.
 
 from __future__ import annotations
 
-from typing import Collection, Iterator, List, Sequence, Tuple, TypeVar
+from collections.abc import Collection, Iterator, Sequence
+from typing import TypeVar
 
 from apetest.control import Control
 from apetest.request import Request
@@ -238,7 +239,7 @@ class Form(Referrer):
                 self._index = index
                 return self._value_at(index)
 
-        class ControlIterator(MatrixIterator[Tuple[List[bool], bool]]):
+        class ControlIterator(MatrixIterator[tuple[list[bool], bool]]):
             """
             Iterates through produces_pairs and produces_empty one control
             at a time, offering methods to remove controls and pairs without

@@ -29,7 +29,7 @@ References:
 
 from __future__ import annotations
 
-from typing import Iterable, Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 
 from apetest.typing import LoggerT
 

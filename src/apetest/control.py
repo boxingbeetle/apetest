@@ -9,7 +9,8 @@ used to model input elements in an (HTML) form.
 
 from __future__ import annotations
 
-from typing import Collection, Iterator, NoReturn, Sequence
+from collections.abc import Collection, Iterator, Sequence
+from typing import NoReturn
 
 # TODO: The subclasses currently have an almost 1:1 mapping to HTML,
 #       but I'm not sure that is necessary. For example SelectMultiple

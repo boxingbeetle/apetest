@@ -9,9 +9,10 @@ The L{PageChecker} class is where the work is done.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterable, Iterator
 from enum import Enum, auto
 from logging import getLogger
-from typing import DefaultDict, Iterable, Iterator, cast, overload
+from typing import DefaultDict, cast, overload
 from urllib.parse import urljoin, urlsplit, urlunsplit
 from urllib.response import addinfourl
 import re

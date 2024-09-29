@@ -17,7 +17,7 @@ from codecs import (
     CodecInfo,
     lookup as lookup_codec,
 )
-from typing import Iterable
+from collections.abc import Iterable
 
 from apetest.typing import LoggerT
 

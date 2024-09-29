@@ -71,8 +71,9 @@ encoding. For example::
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Iterator, Mapping
 from html import escape
-from typing import Iterable, Iterator, Mapping, Union
+from typing import Union
 
 
 class _XMLSerializable:

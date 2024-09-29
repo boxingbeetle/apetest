@@ -11,13 +11,14 @@ You can find the checker itself at U{https://validator.github.io/}.
 
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping
 from gzip import GzipFile
 from http.client import HTTPConnection, HTTPException, HTTPResponse
 from io import BytesIO
 from logging import getLogger
 from time import sleep
 from types import TracebackType
-from typing import Any, Iterator, Mapping, cast
+from typing import Any, cast
 from urllib.parse import urlsplit
 import json
 

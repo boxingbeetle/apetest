@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from functools import total_ordering
-from typing import Iterable
 from urllib.parse import quote_plus, unquote_plus, urlsplit, urlunsplit
 
 

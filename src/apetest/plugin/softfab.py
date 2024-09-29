@@ -12,7 +12,7 @@ key-value pair per line, with C{=} as the separator.
 from __future__ import annotations
 
 from argparse import ArgumentParser, Namespace
-from typing import Iterator
+from collections.abc import Iterator
 
 from apetest.plugin import Plugin
 from apetest.report import Scribe

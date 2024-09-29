@@ -13,7 +13,7 @@ from collections import defaultdict
 from collections.abc import Iterable, Iterator
 from enum import Enum, auto
 from logging import getLogger
-from typing import DefaultDict, cast, overload
+from typing import DefaultDict, cast
 from urllib.parse import urljoin, urlsplit, urlunsplit
 from urllib.response import addinfourl
 
@@ -188,25 +188,6 @@ def repair_tree(tree: etree._ElementTree, content_type: str, report: Report) -> 
     return modified
 
 
-@overload
-def _get_attr(attrib: etree._Attrib, name: str) -> str | None: ...
-
-
-@overload
-def _get_attr(attrib: etree._Attrib, name: str, default: str) -> str: ...
-
-
-def _get_attr(
-    attrib: etree._Attrib, name: str, default: str | None = None
-) -> str | None:
-    value = attrib.get(name)
-    if value is None:
-        return default
-    else:
-        assert not isinstance(value, bytes)
-        return value
-
-
 def _get_text(element: Element) -> str:
     value = element.text
     return "" if value is None else value
@@ -229,7 +210,7 @@ def _parse_controls(nodes: Iterable[Element]) -> Iterator[tuple[Element, str]]:
             # Disabled controls should not be submitted.
             continue
 
-        name = _get_attr(attrib, "name")
+        name = attrib.get("name")
         if not name:
             # Nameless controls cannot be submitted.
             continue
@@ -241,20 +222,20 @@ def _create_input_control(node: Element, name: str) -> Control | None:
     attrib = node.attrib
     _LOG.debug("input: %s", attrib)
     # TODO: Support readonly controls?
-    ctype = _get_attr(attrib, "type", "text")
+    ctype = attrib.get("type", "text")
 
     if ctype in ("text", "password"):
-        return TextField(name, _get_attr(attrib, "value", ""))
+        return TextField(name, attrib.get("value", ""))
     elif ctype == "checkbox":
-        return Checkbox(name, _get_attr(attrib, "value", "on"))
+        return Checkbox(name, attrib.get("value", "on"))
     elif ctype == "radio":
-        return RadioButton(name, _get_attr(attrib, "value", "on"))
+        return RadioButton(name, attrib.get("value", "on"))
     elif ctype == "file":
-        return FileInput(name, _get_attr(attrib, "value", ""))
+        return FileInput(name, attrib.get("value", ""))
     elif ctype == "hidden":
-        return HiddenInput(name, _get_attr(attrib, "value", ""))
+        return HiddenInput(name, attrib.get("value", ""))
     elif ctype in ("submit", "image"):
-        return SubmitButton(name, _get_attr(attrib, "value", ""))
+        return SubmitButton(name, attrib.get("value", ""))
     elif ctype in ("button", "reset"):
         # Type "button" is used by JavaScript, "reset" by the browser.
         return None
@@ -542,7 +523,7 @@ def find_referrers_in_html(tree: etree._ElementTree, url: str) -> Iterator[Refer
         for control_node, name in _parse_controls(form_node.iter(ns_prefix + "select")):
             options = []
             for option_node in control_node.iter(ns_prefix + "option"):
-                value = _get_attr(option_node.attrib, "value")
+                value = option_node.attrib.get("value")
                 if value is None:
                     value = _get_text(option_node)
                 options.append(value)

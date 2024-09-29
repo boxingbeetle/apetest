@@ -30,14 +30,6 @@ def remove_dir(path):
         rmtree(path)
 
 
-def write_results(results, results_path):
-    """Write a results dictionary to file."""
-    with open(str(results_path), "w", encoding="utf-8") as out:
-        for key, value in results.items():
-            escaped = value.replace("\\", "\\\\")
-            out.write(f"{key}={escaped}\n")
-
-
 @task
 def clean(c):
     """Clean up our output."""
@@ -49,17 +41,10 @@ def clean(c):
 
 
 @task
-def lint(c, src=None, html=None, results=None):
+def lint(c, src=None, html=None):
     """Check sources with PyLint."""
     print("Checking sources with PyLint...")
-    if results is None:
-        report_dir = TOP_DIR
-    else:
-        # We need to output JSON to produce the results file, but we also
-        # need to report the issues, so we have to get those from the JSON
-        # output and the easiest way to do so is to enable the HTML report.
-        report_dir = Path(results).parent.resolve()
-        html = report_dir / "pylint.html"
+    report_dir = TOP_DIR
     cmd = ["pylint"]
     sources = set(source_arg(src))
     sources.remove(__file__)
@@ -72,28 +57,19 @@ def lint(c, src=None, html=None, results=None):
             f">{json_file}",
         ]
     with c.cd(str(TOP_DIR)):
-        lint_result = c.run(" ".join(cmd), env=SRC_ENV, warn=True, pty=results is None)
+        c.run(" ".join(cmd), env=SRC_ENV, warn=True, pty=True)
     if html is not None:
         c.run(f"pylint-json2html -f jsonextended -o {html} {json_file}")
-    if results is not None:
-        import sys
-
-        sys.path.append(str(SRC_DIR))
-        from pylint_json2sfresults import gather_results
-
-        results_dict = gather_results(json_file, lint_result.exited)
-        results_dict["report"] = str(html)
-        write_results(results_dict, results)
 
 
 @task
-def types(c, src=None, clean=False, report=False, results=None):
+def types(c, src=None, clean=False, report=False):
     """Check sources with mypy."""
     if clean:
         print("Clearing mypy cache...")
         remove_dir(TOP_DIR / ".mypy_cache")
     print("Checking sources with mypy...")
-    report_dir = None if results is None else Path(results).parent.resolve()
+    report_dir = None
     cmd = ["mypy"]
     if report:
         if report_dir is None:
@@ -117,18 +93,6 @@ def types(c, src=None, clean=False, report=False, results=None):
     finally:
         if out_stream is not None:
             out_stream.close()
-    if results is not None:
-        errors = 0
-        with open(out_path, "r", encoding="utf-8") as log:
-            for line in log:
-                if " error: " in line:
-                    errors += 1
-        with open(results, "w", encoding="utf-8") as out:
-            out.write(f'result={"warning" if errors else "ok"}\n')
-            out.write(f"summary=mypy found {errors} errors\n")
-            out.write(f"report.{0 if errors else 2}={out_path}\n")
-            if report:
-                out.write(f"report.1={report_dir}/mypy-coverage\n")
 
 
 @task
@@ -169,20 +133,14 @@ def doctest(c):
 
 
 @task
-def unittest(c, junit_xml=None, results=None):
+def unittest(c, junit_xml=None):
     """Run unit tests."""
-    if results is not None:
-        report_dir = Path(results).parent.resolve()
-        junit_xml = report_dir / "pytest-report.xml"
     args = ["pytest"]
     if junit_xml is not None:
         args.append(f"--junit-xml={junit_xml}")
     args.append("tests")
     with c.cd(str(TOP_DIR)):
-        c.run(" ".join(args), env=SRC_ENV, pty=results is None)
-    if results is not None:
-        results_dict = dict(report=str(junit_xml))
-        write_results(results_dict, results)
+        c.run(" ".join(args), env=SRC_ENV, pty=True)
 
 
 @task(post=[doctest, unittest, lint])
